@@ -9,7 +9,7 @@ These scripts are written with [F#](http://fsharp.org/), a cross-platform functi
 The scripts assume the presence of the following environment variables:
 
 * `IgaApiKey`: an API key for the Indiana General Assembly API
-* 'SendGridApiKey`: an API key for SendGrid with permission to send email
+* `SendGridApiKey`: an API key for SendGrid with permission to send email
 * `WindowsAzure.StorageAccount`: a connection string to a Microsoft Azure storage account
 * `EmailRecipients`: a semicolon-separated list of email addresses that should receive updates 
 
