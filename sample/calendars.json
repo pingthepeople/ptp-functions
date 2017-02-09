@@ -1,0 +1,231 @@
+{
+  "availableFilters": [
+    "date",
+    "minDate",
+    "maxDate"
+  ],
+  "itemCount": 22,
+  "items": [
+    {
+      "chamber": "house",
+      "edition": "First",
+      "headings": "{\"HB on 2nd Reading\": 1, \"HB on 3rd Reading\": 2}",
+      "sessionday": 16,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-02-07",
+      "link": "/2017/calendars/house_calendar_scheduled_day16_01"
+    },
+    {
+      "chamber": "senate",
+      "edition": "First",
+      "headings": "{\"SB on 3rd Reading\": 2, \"SB on 2nd Reading\": 1}",
+      "sessionday": 16,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-02-07",
+      "link": "/2017/calendars/senate_calendar_scheduled_day16_01"
+    },
+    {
+      "chamber": "senate",
+      "edition": "First",
+      "headings": "{\"SB on 3rd Reading\": 2, \"SB on 2nd Reading\": 1}",
+      "sessionday": 15,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-02-06",
+      "link": "/2017/calendars/senate_calendar_scheduled_day15_01"
+    },
+    {
+      "chamber": "house",
+      "edition": "First",
+      "headings": "{\"HB on 2nd Reading\": 1, \"HB on 3rd Reading\": 2}",
+      "sessionday": 15,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-02-06",
+      "link": "/2017/calendars/house_calendar_scheduled_day15_01"
+    },
+    {
+      "chamber": "senate",
+      "edition": "First",
+      "headings": "{\"SB on 3rd Reading\": 2, \"SB on 2nd Reading\": 1}",
+      "sessionday": 14,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-02-02",
+      "link": "/2017/calendars/senate_calendar_scheduled_day14_01"
+    },
+    {
+      "chamber": "house",
+      "edition": "First",
+      "headings": "{\"HB on 2nd Reading\": 1, \"HB on 3rd Reading\": 2}",
+      "sessionday": 14,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-02-02",
+      "link": "/2017/calendars/house_calendar_scheduled_day14_01"
+    },
+    {
+      "chamber": "senate",
+      "edition": "First",
+      "headings": "{\"SB on 3rd Reading\": 2, \"SB on 2nd Reading\": 1}",
+      "sessionday": 13,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-01-31",
+      "link": "/2017/calendars/senate_calendar_scheduled_day13_01"
+    },
+    {
+      "chamber": "house",
+      "edition": "First",
+      "headings": "{\"HB on 2nd Reading\": 1, \"HB on 3rd Reading\": 2}",
+      "sessionday": 13,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-01-31",
+      "link": "/2017/calendars/house_calendar_scheduled_day13_01"
+    },
+    {
+      "chamber": "senate",
+      "edition": "First",
+      "headings": "{\"SB on 3rd Reading\": 2, \"SB on 2nd Reading\": 1}",
+      "sessionday": 12,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-01-30",
+      "link": "/2017/calendars/senate_calendar_scheduled_day12_01"
+    },
+    {
+      "chamber": "house",
+      "edition": "First",
+      "headings": "{\"HB on 2nd Reading\": 1, \"HB on 3rd Reading\": 2}",
+      "sessionday": 12,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-01-30",
+      "link": "/2017/calendars/house_calendar_scheduled_day12_01"
+    },
+    {
+      "chamber": "senate",
+      "edition": "First",
+      "headings": "{\"SB on 2nd Reading\": 1}",
+      "sessionday": 11,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-01-26",
+      "link": "/2017/calendars/senate_calendar_scheduled_day11_01"
+    },
+    {
+      "chamber": "house",
+      "edition": "First",
+      "headings": "{\"HB on 2nd Reading\": 1, \"HB on 3rd Reading\": 2}",
+      "sessionday": 11,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-01-26",
+      "link": "/2017/calendars/house_calendar_scheduled_day11_01"
+    },
+    {
+      "chamber": "senate",
+      "edition": "First",
+      "headings": "{\"SJR on 3rd Reading\": 2, \"SB on 3rd Reading\": 3, \"SB on 2nd Reading\": 1}",
+      "sessionday": 10,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-01-24",
+      "link": "/2017/calendars/senate_calendar_scheduled_day10_01"
+    },
+    {
+      "chamber": "house",
+      "edition": "First",
+      "headings": "{\"HB on 2nd Reading\": 1, \"HB on 3rd Reading\": 2}",
+      "sessionday": 10,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-01-24",
+      "link": "/2017/calendars/house_calendar_scheduled_day10_01"
+    },
+    {
+      "chamber": "senate",
+      "edition": "First",
+      "headings": "{\"SB on 2nd Reading\": 2, \"SJR on 2nd Reading\": 1, \"SB on 3rd Reading\": 3}",
+      "sessionday": 9,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-01-23",
+      "link": "/2017/calendars/senate_calendar_scheduled_day09_01"
+    },
+    {
+      "chamber": "house",
+      "edition": "First",
+      "headings": "{\"HB on 2nd Reading\": 1, \"HB on 3rd Reading\": 2}",
+      "sessionday": 9,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-01-23",
+      "link": "/2017/calendars/house_calendar_scheduled_day09_01"
+    },
+    {
+      "chamber": "house",
+      "edition": "First",
+      "headings": "{\"HB on 3rd Reading\": 1}",
+      "sessionday": 8,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-01-18",
+      "link": "/2017/calendars/house_calendar_scheduled_day08_01"
+    },
+    {
+      "chamber": "senate",
+      "edition": "First",
+      "headings": "{\"SB on 2nd Reading\": 1}",
+      "sessionday": 7,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-01-17",
+      "link": "/2017/calendars/senate_calendar_scheduled_day07_01"
+    },
+    {
+      "chamber": "house",
+      "edition": "First",
+      "headings": "{\"HB on 2nd Reading\": 1, \"HB on 3rd Reading\": 2}",
+      "sessionday": 7,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-01-17",
+      "link": "/2017/calendars/house_calendar_scheduled_day07_01"
+    },
+    {
+      "chamber": "house",
+      "edition": "First",
+      "headings": "{\"HB on 2nd Reading\": 1}",
+      "sessionday": 6,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2017-01-12",
+      "link": "/2017/calendars/house_calendar_scheduled_day06_01"
+    },
+    {
+      "chamber": "senate",
+      "edition": "First",
+      "headings": "",
+      "sessionday": 1,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2016-11-22",
+      "link": "/2017/calendars/senate_calendar_scheduled_day01_01"
+    },
+    {
+      "chamber": "house",
+      "edition": "First",
+      "headings": "",
+      "sessionday": 1,
+      "sessionid": "session_2017",
+      "type": "Daily Calendar",
+      "date": "2016-11-22",
+      "link": "/2017/calendars/house_calendar_scheduled_day01_01"
+    }
+  ],
+  "revno": 806093
+}

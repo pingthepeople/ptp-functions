@@ -1,0 +1,88 @@
+{
+  "chamber": "house",
+  "headings": "{\"HB on 2nd Reading\": 1, \"HB on 3rd Reading\": 2}",
+  "sessionday": 16,
+  "sessionid": "session_2017",
+  "type": "Daily Calendar",
+  "edition": "First",
+  "date": "2017-02-07",
+  "link": "/2017/calendars/house_calendar_scheduled_day16_01",
+  "hb2head": {
+    "special_heading": "",
+    "bills": [
+      {
+        "billName": "HB1136.02.COMH",
+        "link": "/2017/bills/hb1136/versions/hb1136.02.comh"
+      },
+      {
+        "billName": "HB1318.02.COMH",
+        "link": "/2017/bills/hb1318/versions/hb1318.02.comh"
+      }
+    ],
+    "heading": "HB on 2nd Reading"
+  },
+  "hb3head": {
+    "special_heading": "",
+    "bills": [
+      {
+        "billName": "HB1004.02.COMH",
+        "link": "/2017/bills/hb1004/versions/hb1004.02.comh"
+      },
+      {
+        "billName": "HB1074.02.COMH",
+        "link": "/2017/bills/hb1074/versions/hb1074.02.comh"
+      }
+    ],
+    "heading": "HB on 3rd Reading"
+  },
+  "hjr2head": {
+  },
+  "hjr3head": {
+  },
+  "hrhead": {
+  },
+  "sb2head": {
+    "special_heading": "",
+    "bills": [
+      {
+        "billName": "HB1136.02.COMH",
+        "link": "/2017/bills/hb1136/versions/hb1136.02.comh"
+      },
+      {
+        "billName": "HB1318.02.COMH",
+        "link": "/2017/bills/hb1318/versions/hb1318.02.comh"
+      }
+    ],
+    "heading": "SB on 2nd Reading"
+  },
+  "sb3head": {
+    "special_heading": "",
+    "bills": [
+      {
+        "billName": "HB1136.02.COMH",
+        "link": "/2017/bills/hb1136/versions/hb1136.02.comh"
+      },
+      {
+        "billName": "HB1318.02.COMH",
+        "link": "/2017/bills/hb1318/versions/hb1318.02.comh"
+      }
+    ],
+    "heading": "SB on 3rd Reading"
+  },
+  "sjr2head": {
+  },
+  "sjr3head": {
+  },
+  "srhead": {
+  },
+  "ccrhead": {
+  },
+  "senateccrhead": {
+  },
+  "concurhead": {
+  },
+  "vetohead": {
+  },
+  "revno": 806093,
+  "pdfDownloadLink": "/2017/calendars/house_calendar_scheduled_day16_01?format=pdf"
+}

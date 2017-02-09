@@ -1,2 +1,2 @@
-# iga-tracker-functions
-Azure Functions to support the IGA Tracker project
+# iga-tracker
+An application for tracking the progress of legislation through the Indiana General Assembly.

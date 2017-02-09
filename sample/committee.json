@@ -1,0 +1,321 @@
+{
+  "chamber": {
+    "link": "/2017/chambers/senate",
+    "name": "Senate"
+  },
+  "members": [
+    {
+      "position_title": "Senator",
+      "firstName": "Eric",
+      "lastName": "Bassler",
+      "party": "Republican",
+      "link": "/2017/legislators/eric_bassler_1",
+      "fullName": "Senator Eric Bassler"
+    },
+    {
+      "position_title": "Senator",
+      "firstName": "John",
+      "lastName": "Crane",
+      "party": "Republican",
+      "link": "/2017/legislators/john_crane_1",
+      "fullName": "Senator John Crane"
+    },
+    {
+      "position_title": "Senator",
+      "firstName": "Aaron",
+      "lastName": "Freeman",
+      "party": "Republican",
+      "link": "/2017/legislators/aaron_freeman_1",
+      "fullName": "Senator Aaron Freeman"
+    },
+    {
+      "position_title": "Senator",
+      "firstName": "Luke",
+      "lastName": "Kenley",
+      "party": "Republican",
+      "link": "/2017/legislators/luke_kenley_158",
+      "fullName": "Senator Luke Kenley"
+    },
+    {
+      "position_title": "Senator",
+      "firstName": "Dennis",
+      "lastName": "Kruse",
+      "party": "Republican",
+      "link": "/2017/legislators/dennis_kruse_780",
+      "fullName": "Senator Dennis Kruse"
+    },
+    {
+      "position_title": "Senator",
+      "firstName": "Jean",
+      "lastName": "Leising",
+      "party": "Republican",
+      "link": "/2017/legislators/jean_leising_136",
+      "fullName": "Senator Jean Leising"
+    },
+    {
+      "position_title": "Senator",
+      "firstName": "Eddie",
+      "lastName": "Melton",
+      "party": "Democratic",
+      "link": "/2017/legislators/eddie_melton_1",
+      "fullName": "Senator Eddie Melton"
+    },
+    {
+      "position_title": "Senator",
+      "firstName": "Frank",
+      "lastName": "Mrvan",
+      "party": "Democratic",
+      "link": "/2017/legislators/frank_mrvan_536",
+      "fullName": "Senator Frank Mrvan"
+    },
+    {
+      "position_title": "Senator",
+      "firstName": "Jeff",
+      "lastName": "Raatz",
+      "party": "Republican",
+      "link": "/2017/legislators/jeff_raatz_1",
+      "fullName": "Senator Jeff Raatz"
+    },
+    {
+      "position_title": "Senator",
+      "firstName": "Mark",
+      "lastName": "Stoops",
+      "party": "Democratic",
+      "link": "/2017/legislators/mark_stoops_1107",
+      "fullName": "Senator Mark Stoops"
+    },
+    {
+      "position_title": "Senator",
+      "firstName": "Andy",
+      "lastName": "Zay",
+      "party": "Republican",
+      "link": "/2017/legislators/andy_zay_1",
+      "fullName": "Senator Andy Zay"
+    }
+  ],
+  "chair": {
+    "position_title": "Senator",
+    "firstName": "Dennis",
+    "lastName": "Kruse",
+    "party": "Republican",
+    "link": "/2017/legislators/dennis_kruse_780",
+    "fullName": "Senator Dennis Kruse"
+  },
+  "viceChair": {
+    "position_title": "Senator",
+    "firstName": "Jeff",
+    "lastName": "Raatz",
+    "party": "Republican",
+    "link": "/2017/legislators/jeff_raatz_1",
+    "fullName": "Senator Jeff Raatz"
+  },
+  "rankingMinMember": {
+    "position_title": "Senator",
+    "firstName": "Eddie",
+    "lastName": "Melton",
+    "party": "Democratic",
+    "link": "/2017/legislators/eddie_melton_1",
+    "fullName": "Senator Eddie Melton"
+  },
+  "meetings": {
+    "link": "/2017/committees/committee_education_and_career_development_3400/meetings"
+  },
+  "type": {
+    "name": "standing",
+    "link": "/2017/standing-committees"
+  },
+  "assignedBills": [
+    {
+      "billName": "SB0029.01.INTR",
+      "link": "/2017/bills/sb0029/versions/sb0029.01.intr"
+    },
+    {
+      "billName": "SB0030.01.INTR",
+      "link": "/2017/bills/sb0030/versions/sb0030.01.intr"
+    },
+    {
+      "billName": "SB0034.02.COMS",
+      "link": "/2017/bills/sb0034/versions/sb0034.02.coms"
+    },
+    {
+      "billName": "SB0035.01.INTR",
+      "link": "/2017/bills/sb0035/versions/sb0035.01.intr"
+    },
+    {
+      "billName": "SB0048.01.INTR",
+      "link": "/2017/bills/sb0048/versions/sb0048.01.intr"
+    },
+    {
+      "billName": "SB0057.01.INTR",
+      "link": "/2017/bills/sb0057/versions/sb0057.01.intr"
+    },
+    {
+      "billName": "SB0062.02.COMS",
+      "link": "/2017/bills/sb0062/versions/sb0062.02.coms"
+    },
+    {
+      "billName": "SB0086.01.INTR",
+      "link": "/2017/bills/sb0086/versions/sb0086.01.intr"
+    },
+    {
+      "billName": "SB0087.01.INTR",
+      "link": "/2017/bills/sb0087/versions/sb0087.01.intr"
+    },
+    {
+      "billName": "SB0088.01.INTR",
+      "link": "/2017/bills/sb0088/versions/sb0088.01.intr"
+    },
+    {
+      "billName": "SB0097.02.COMS",
+      "link": "/2017/bills/sb0097/versions/sb0097.02.coms"
+    },
+    {
+      "billName": "SB0108.01.INTR",
+      "link": "/2017/bills/sb0108/versions/sb0108.01.intr"
+    },
+    {
+      "billName": "SB0109.01.INTR",
+      "link": "/2017/bills/sb0109/versions/sb0109.01.intr"
+    },
+    {
+      "billName": "SB0116.01.INTR",
+      "link": "/2017/bills/sb0116/versions/sb0116.01.intr"
+    },
+    {
+      "billName": "SB0117.01.INTR",
+      "link": "/2017/bills/sb0117/versions/sb0117.01.intr"
+    },
+    {
+      "billName": "SB0182.01.INTR",
+      "link": "/2017/bills/sb0182/versions/sb0182.01.intr"
+    },
+    {
+      "billName": "SB0224.01.INTR",
+      "link": "/2017/bills/sb0224/versions/sb0224.01.intr"
+    },
+    {
+      "billName": "SB0240.01.INTR",
+      "link": "/2017/bills/sb0240/versions/sb0240.01.intr"
+    },
+    {
+      "billName": "SB0248.01.INTR",
+      "link": "/2017/bills/sb0248/versions/sb0248.01.intr"
+    },
+    {
+      "billName": "SB0249.01.INTR",
+      "link": "/2017/bills/sb0249/versions/sb0249.01.intr"
+    },
+    {
+      "billName": "SB0250.01.INTR",
+      "link": "/2017/bills/sb0250/versions/sb0250.01.intr"
+    },
+    {
+      "billName": "SB0274.01.INTR",
+      "link": "/2017/bills/sb0274/versions/sb0274.01.intr"
+    },
+    {
+      "billName": "SB0276.01.INTR",
+      "link": "/2017/bills/sb0276/versions/sb0276.01.intr"
+    },
+    {
+      "billName": "SB0284.01.INTR",
+      "link": "/2017/bills/sb0284/versions/sb0284.01.intr"
+    },
+    {
+      "billName": "SB0286.01.INTR",
+      "link": "/2017/bills/sb0286/versions/sb0286.01.intr"
+    },
+    {
+      "billName": "SB0298.02.COMS",
+      "link": "/2017/bills/sb0298/versions/sb0298.02.coms"
+    },
+    {
+      "billName": "SB0311.01.INTR",
+      "link": "/2017/bills/sb0311/versions/sb0311.01.intr"
+    },
+    {
+      "billName": "SB0319.01.INTR",
+      "link": "/2017/bills/sb0319/versions/sb0319.01.intr"
+    },
+    {
+      "billName": "SB0325.01.INTR",
+      "link": "/2017/bills/sb0325/versions/sb0325.01.intr"
+    },
+    {
+      "billName": "SB0330.01.INTR",
+      "link": "/2017/bills/sb0330/versions/sb0330.01.intr"
+    },
+    {
+      "billName": "SB0337.01.INTR",
+      "link": "/2017/bills/sb0337/versions/sb0337.01.intr"
+    },
+    {
+      "billName": "SB0349.01.INTR",
+      "link": "/2017/bills/sb0349/versions/sb0349.01.intr"
+    },
+    {
+      "billName": "SB0359.01.INTR",
+      "link": "/2017/bills/sb0359/versions/sb0359.01.intr"
+    },
+    {
+      "billName": "SB0407.01.INTR",
+      "link": "/2017/bills/sb0407/versions/sb0407.01.intr"
+    },
+    {
+      "billName": "SB0428.01.INTR",
+      "link": "/2017/bills/sb0428/versions/sb0428.01.intr"
+    },
+    {
+      "billName": "SB0432.01.INTR",
+      "link": "/2017/bills/sb0432/versions/sb0432.01.intr"
+    },
+    {
+      "billName": "SB0460.01.INTR",
+      "link": "/2017/bills/sb0460/versions/sb0460.01.intr"
+    },
+    {
+      "billName": "SB0471.01.INTR",
+      "link": "/2017/bills/sb0471/versions/sb0471.01.intr"
+    },
+    {
+      "billName": "SB0475.01.INTR",
+      "link": "/2017/bills/sb0475/versions/sb0475.01.intr"
+    },
+    {
+      "billName": "SB0498.01.INTR",
+      "link": "/2017/bills/sb0498/versions/sb0498.01.intr"
+    },
+    {
+      "billName": "SB0503.01.INTR",
+      "link": "/2017/bills/sb0503/versions/sb0503.01.intr"
+    },
+    {
+      "billName": "SB0504.01.INTR",
+      "link": "/2017/bills/sb0504/versions/sb0504.01.intr"
+    },
+    {
+      "billName": "SB0534.01.INTR",
+      "link": "/2017/bills/sb0534/versions/sb0534.01.intr"
+    },
+    {
+      "billName": "SB0557.01.INTR",
+      "link": "/2017/bills/sb0557/versions/sb0557.01.intr"
+    },
+    {
+      "billName": "SB0564.01.INTR",
+      "link": "/2017/bills/sb0564/versions/sb0564.01.intr"
+    },
+    {
+      "billName": "SB0570.01.INTR",
+      "link": "/2017/bills/sb0570/versions/sb0570.01.intr"
+    },
+    {
+      "billName": "SR0017.01.INTR",
+      "link": "/2017/bills/sr0017/versions/sr0017.01.intr"
+    }
+  ],
+  "name": "Education and Career Development",
+  "notes": "",
+  "link": "/2017/committees/committee_education_and_career_development_3400",
+  "revno": 804120
+}

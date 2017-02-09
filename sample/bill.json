@@ -1,0 +1,233 @@
+{
+  "title": "A BILL FOR AN ACT to amend the Indiana Code concerning education.",
+  "billName": "SB0029",
+  "number": 29,
+  "description": "",
+  "status": "bs_0_not_released",
+  "stage": "Senate Bill (H)",
+  "year": "2017",
+  "originChamber": "senate",
+  "currentChamber": "house",
+  "type": "BILL",
+  "authors": [
+    {
+      "position_title": "Senator",
+      "firstName": "Eric",
+      "lastName": "Koch",
+      "party": "Republican",
+      "link": "/2017/legislators/eric_koch_1",
+      "fullName": "Senator Eric Koch"
+    },
+    {
+      "position_title": "Senator",
+      "firstName": "Dennis",
+      "lastName": "Kruse",
+      "party": "Republican",
+      "link": "/2017/legislators/dennis_kruse_780",
+      "fullName": "Senator Dennis Kruse"
+    }
+  ],
+  "coauthors": [
+    {
+      "position_title": "Senator",
+      "firstName": "Lonnie",
+      "lastName": "Randolph",
+      "party": "Democratic",
+      "link": "/2017/legislators/lonnie_randolph_160",
+      "fullName": "Senator Lonnie Randolph"
+    },
+    {
+      "position_title": "Senator",
+      "firstName": "James",
+      "lastName": "Smith",
+      "party": "Republican",
+      "link": "/2017/legislators/james_smith_1023",
+      "fullName": "Senator James Smith"
+    },
+    {
+      "position_title": "Senator",
+      "firstName": "Rodric",
+      "lastName": "Bray",
+      "party": "Republican",
+      "link": "/2017/legislators/rodric_bray_1106",
+      "fullName": "Senator Rodric Bray"
+    }
+  ],
+  "sponsors": [
+    {
+      "position_title": "Representative",
+      "firstName": "Anthony",
+      "lastName": "Cook",
+      "party": "Republican",
+      "link": "/2017/legislators/anthony_cook_1",
+      "fullName": "Representative Anthony Cook"
+    }
+  ],
+  "cosponsors": [],
+  "advisors": [],
+  "link": "/2017/bills/sb0029",
+  "committeeStatus": "DO PASS AMEND Yeas: 11; Nays: 0; (Voted on 01/11)",
+  "motions": [],
+  "latestVersion": {
+    "billName": "SB0029",
+    "printVersion": 2,
+    "printVersionName": "SB0029.02.COMS",
+    "stage": "COMS",
+    "stageVerbose": "Senate Bill (H)",
+    "year": "2017",
+    "title": "A BILL FOR AN ACT to amend the Indiana Code concerning education.",
+    "shortDescription": "Elective course on Indiana studies.",
+    "longDescription": "",
+    "digest": "Requires each: (1) school corporation; (2) charter school; and (3) accredited nonpublic school; to offer Indiana studies as a one semester elective course in its high school curriculum at least once every school year. Provides that, if fewer than 15 students of a public school, a charter school, or an accredited nonpublic school enroll in an Indiana studies course, the public school, charter school, or accredited nonpublic school may offer the course as an independent study course.",
+    "created": "2016-11-28T15:39:35",
+    "updated": "2017-01-12T11:30:58",
+    "enrolled": null,
+    "introduced": "2016-12-29T11:04:21",
+    "filed": "2016-11-28T03:38:00",
+    "printed": "2017-01-13T00:00:00",
+    "authors": [
+      {
+        "position_title": "Senator",
+        "firstName": "Eric",
+        "lastName": "Koch",
+        "party": "Republican",
+        "link": "/2017/legislators/eric_koch_1",
+        "fullName": "Senator Eric Koch"
+      },
+      {
+        "position_title": "Senator",
+        "firstName": "Dennis",
+        "lastName": "Kruse",
+        "party": "Republican",
+        "link": "/2017/legislators/dennis_kruse_780",
+        "fullName": "Senator Dennis Kruse"
+      }
+    ],
+    "coauthors": [
+      {
+        "position_title": "Senator",
+        "firstName": "Lonnie",
+        "lastName": "Randolph",
+        "party": "Democratic",
+        "link": "/2017/legislators/lonnie_randolph_160",
+        "fullName": "Senator Lonnie Randolph"
+      },
+      {
+        "position_title": "Senator",
+        "firstName": "James",
+        "lastName": "Smith",
+        "party": "Republican",
+        "link": "/2017/legislators/james_smith_1023",
+        "fullName": "Senator James Smith"
+      },
+      {
+        "position_title": "Senator",
+        "firstName": "Rodric",
+        "lastName": "Bray",
+        "party": "Republican",
+        "link": "/2017/legislators/rodric_bray_1106",
+        "fullName": "Senator Rodric Bray"
+      }
+    ],
+    "sponsors": [
+      {
+        "position_title": "Representative",
+        "firstName": "Anthony",
+        "lastName": "Cook",
+        "party": "Republican",
+        "link": "/2017/legislators/anthony_cook_1",
+        "fullName": "Representative Anthony Cook"
+      }
+    ],
+    "cosponsors": [],
+    "advisors": [],
+    "subjects": [
+      {
+        "entry": "EDUCATION generally",
+        "link": "/2017/subjects/si_education_generally_4050"
+      },
+      {
+        "entry": "SCHOOLS, Curricula",
+        "link": "/2017/subjects/si_schools_curricula_313"
+      }
+    ],
+    "link": "/2017/bills/sb0029/versions/sb0029.02.coms",
+    "amendments": [],
+    "floor_amendments": [],
+    "cmte_amendments": [],
+    "fiscal-notes": [
+      {
+        "name": "SB0029.02.COMS.FN003",
+        "link": "/2017/fiscal-notes/SB0029.02.COMS/SB0029.02.COMS.FN003"
+      },
+      {
+        "name": "SB0029.02.COMS.FN002",
+        "link": "/2017/fiscal-notes/SB0029.02.COMS/SB0029.02.COMS.FN002"
+      },
+      {
+        "name": "SB0029.02.COMS.FN001",
+        "link": "/2017/fiscal-notes/SB0029.02.COMS/SB0029.02.COMS.FN001"
+      }
+    ],
+    "committee-reports": [],
+    "rollcalls": [
+      {
+        "target": "SB0029.02.COMS",
+        "chamber": {
+          "link": "/2017/chambers/senate",
+          "name": "Senate"
+        },
+        "rollcall_number": "11",
+        "results": {
+          "yea": 47,
+          "nay": 3
+        },
+        "link": "/2017/rollcalls/MTIwLzIwMTcvY2FiaW5ldC9iaWxscy9zZW5hdGUvU0IwMDI5L3JvbGxjYWxsL1NCMDAyOS4xMS5wZGYuaHRtbA=="
+      }
+    ]
+  },
+  "versions": [
+    {
+      "billName": "SB0029",
+      "printVersion": 2,
+      "printVersionName": "SB0029.02.COMS",
+      "stage": "COMS",
+      "stageVerbose": "Senate Bill (H)",
+      "year": "2017",
+      "title": "A BILL FOR AN ACT to amend the Indiana Code concerning education.",
+      "shortDescription": "Elective course on Indiana studies.",
+      "longDescription": "",
+      "digest": "Requires each: (1) school corporation; (2) charter school; and (3) accredited nonpublic school; to offer Indiana studies as a one semester elective course in its high school curriculum at least once every school year. Provides that, if fewer than 15 students of a public school, a charter school, or an accredited nonpublic school enroll in an Indiana studies course, the public school, charter school, or accredited nonpublic school may offer the course as an independent study course.",
+      "created": "2016-11-28T15:39:35",
+      "updated": "2017-01-12T11:30:58",
+      "enrolled": null,
+      "introduced": "2016-12-29T11:04:21",
+      "filed": "2016-11-28T03:38:00",
+      "printed": "2017-01-13T00:00:00",
+      "link": "/2017/bills/sb0029/versions/sb0029.02.coms"
+    },
+    {
+      "billName": "SB0029",
+      "printVersion": 1,
+      "printVersionName": "SB0029.01.INTR",
+      "stage": "INTR",
+      "stageVerbose": "Introduced Senate Bill (S)",
+      "year": "2017",
+      "title": "A BILL FOR AN ACT to amend the Indiana Code concerning education.",
+      "shortDescription": "Elective course on Indiana studies.",
+      "longDescription": "",
+      "digest": "Requires each: (1) school corporation; (2) charter school; and (3) accredited nonpublic school; to offer Indiana studies as a one semester elective course in its high school curriculum at least once every school year. Provides that, if fewer than 15 students of a public school, a charter school, or an accredited nonpublic school enroll in an Indiana studies course, the public school, charter school, or accredited nonpublic school may offer the course as an independent study course.",
+      "created": "2016-11-28T15:39:35",
+      "updated": "2017-01-02T15:16:52",
+      "enrolled": null,
+      "introduced": "2016-12-29T11:04:21",
+      "filed": "2016-11-28T03:38:00",
+      "printed": null,
+      "link": "/2017/bills/sb0029/versions/sb0029.01.intr"
+    }
+  ],
+  "actions": {
+    "link": "/2017/bills/sb0029/actions"
+  },
+  "revno": 804120
+}
