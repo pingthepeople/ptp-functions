@@ -151,7 +151,8 @@ let update (outputPath:string) (actions:Actions.Item list) (calendars:Calendars.
     getLatestDocument tempPath |> ignore
     let artifact = File.ReadAllLines(tempPath) |> Array.map (fun i -> i.Split([|"\",\""|], StringSplitOptions.None) |> Array.map (fun j -> j.Trim([|'"'|])) )
     updateAction artifact actions |> ignore
-    updateCalendar artifact calendars |> ignore
+    updateCalendar artifact calendars "House" |> ignore
+    updateCalendar artifact calendars "Senate" |> ignore 
     let content = artifact |> Array.map(fun r -> r |> Array.map(fun c -> sprintf "\"%s\"" c) |> String.concat ",")
     File.WriteAllLines(outputPath, content)
     postDocument outputPath |> ignore
