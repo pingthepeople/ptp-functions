@@ -112,19 +112,24 @@ let postDocument path =
 let updateArtifact (artifact:string[][]) (billName:string) (chamber:string) (reading:Reading) (date:DateTime) (result:string) =
     let bill = billName.Substring(0,6)
     let inOriginChamber = (bill.StartsWith("H") && chamber = "House") || (bill.StartsWith("S") && chamber = "Senate")
-    let row = artifact |> Array.find (fun r -> r.[0].Equals(bill))
-    let column = 
-        match reading with
-        | Committee when inOriginChamber -> 6
-        | Committee when not inOriginChamber -> 12
-        | Second when inOriginChamber -> 8
-        | Second when not inOriginChamber -> 14
-        | Third when inOriginChamber -> 10
-        | Third when not inOriginChamber -> 16
-        | _ -> raise (Exception("unrecognized Reading!"))
-    row.[column] <- date.ToString("MM/dd/yyyy")
-    row.[column+1] <- result
-    ignore
+    let row = artifact |> Array.tryFind (fun r -> r.[0].Equals(bill))
+    match row with
+    | None -> 
+        printfn "Found no row matching %s" bill
+        ignore
+    | Some(r) ->
+        let column = 
+            match reading with
+            | Committee when inOriginChamber -> 6
+            | Committee when not inOriginChamber -> 12
+            | Second when inOriginChamber -> 8
+            | Second when not inOriginChamber -> 14
+            | Third when inOriginChamber -> 10
+            | Third when not inOriginChamber -> 16
+            | _ -> raise (Exception("unrecognized Reading!"))
+        r.[column] <- date.ToString("MM/dd/yyyy")
+        r.[column+1] <- result
+        ignore
 
 let updateCalendar (artifact:string[][]) (calendars:Calendars.Root) (chamber:string) =
     let found = calendars.Items |> Array.tryFind (fun i -> (i.Chamber.ToLower()).Equals(chamber.ToLower()))
