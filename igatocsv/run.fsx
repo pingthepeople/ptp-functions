@@ -3,21 +3,16 @@
 #r "System.Net.Primitives"
 #r "System.Net.Http.Formatting"
 #r "System.Web.Http"
+#r "Microsoft.WindowsAzure.Storage"
 #r "../packages/FSharp.Data/lib/portable-net45+sl50+netcore45/FSharp.Data.dll"
 #r "../packages/FSharp.Formatting/lib/net40/FSharp.Formatting.Common.dll"
 #r "../packages/FSharp.Formatting/lib/net40/FSharp.Markdown.dll"
 #r "../packages/StrongGrid/lib/net452/StrongGrid.dll"
-#r "../packages/Microsoft.Azure.WebJobs/lib/net45/Microsoft.Azure.WebJobs.Host.dll"
-#r "../packages/WindowsAzure.Storage/lib/net45/Microsoft.WindowsAzure.Storage.dll"
 
-open FSharp.Data
-open FSharp.Formatting.Common
-open FSharp.Markdown
-open Microsoft.Azure.WebJobs.Host
-open Microsoft.Azure.WebJobs.Host
-open Microsoft.WindowsAzure.Storage
-open Microsoft.WindowsAzure.Storage.Blob
-open StrongGrid
+#if !COMPILED
+#r "../packages/Microsoft.Azure.WebJobs/lib/net45/Microsoft.Azure.WebJobs.Host.dll"
+#endif
+
 open System
 open System.IO
 open System.Text
@@ -204,9 +199,15 @@ let emailResult (attachmentPath:string) (body:string) =
 // AZURE FUNCTION ENTRY POINT
 let Run(myTimer: TimerInfo, log: TraceWriter) =
     log.Info(sprintf "F# Timer trigger function executed at: %s" (DateTime.Now.ToString()))
-    let actions = fetchActions today
-    let calendars = get ("2017/calendars?minDate=" + tomorrow) |> Calendars.Parse
-    let outputPath = Path.Combine(Path.GetTempPath(), sprintf "iga-%s.csv" today)
-    update outputPath actions calendars |> ignore
-    let body = describe actions calendars |> String.concat "\n\n" 
-    emailResult outputPath body    
+    try
+        let today = DateTime.Now.ToString("yyyy-MM-dd") 
+        let tomorrow = DateTime.Now.AddDays(1.0).ToString("yyyy-MM-dd") 
+        let actions = fetchActions today
+        let calendars = get ("2017/calendars?minDate=" + tomorrow) |> Calendars.Parse
+        let outputPath = Path.Combine(Path.GetTempPath(), sprintf "iga-%s.csv" today)
+        update outputPath actions calendars |> ignore
+        let body = describe actions calendars |> String.concat "\n\n" 
+        emailResult outputPath body
+        log.Info("Execution completed successfully")
+    with
+    | ex -> log.Error(sprintf "Caught exception: %s" (ex.ToString()))
