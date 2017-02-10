@@ -20,9 +20,14 @@ open System.Net
 open System.Net.Http
 open System.Threading
 open System.Threading.Tasks
+open FSharp.Data
+open FSharp.Formatting.Common
+open FSharp.Markdown
+open Microsoft.Azure.WebJobs.Host
+open Microsoft.WindowsAzure.Storage
+open Microsoft.WindowsAzure.Storage.Blob
+open StrongGrid
 
-let today = DateTime.Now.ToString("yyyy-MM-dd") 
-let tomorrow = DateTime.Now.AddDays(1.0).ToString("yyyy-MM-dd") 
 
 let get endpoint = 
     let standardHeaders = [ "Accept", "application/json"; "Authorization", "Token " + Environment.GetEnvironmentVariable("IgaApiKey") ]
@@ -95,13 +100,16 @@ let storageContainer =
 
 let getLatestDocument path =
     let container = storageContainer
-    let blob = container.ListBlobs() |> Seq.sortByDescending (fun b -> b.Uri.AbsolutePath) |> Seq.head :?> CloudBlockBlob
+    let blobs = container.ListBlobs() 
+    let blob = blobs |> Seq.sortByDescending (fun b -> b.Uri.ToString()) |> Seq.head :?> CloudBlockBlob
     blob.DownloadToFile(path, FileMode.OpenOrCreate) |> ignore
 
 let postDocument path =
     let container = storageContainer
+    let stream = File.OpenRead(path)
     let blob = container.GetBlockBlobReference(Path.GetFileName(path))
-    container.GetBlockBlobReference(Path.GetFileName(path)).UploadFromFile(path)
+    blob.UploadFromStream(stream)
+    stream.Close()
 
 // UPDATE SPREADSHEET
 let updateArtifact (artifact:string[][]) (billName:string) (chamber:string) (reading:Reading) (date:DateTime) (result:string) =
