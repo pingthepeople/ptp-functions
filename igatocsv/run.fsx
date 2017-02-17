@@ -28,7 +28,6 @@ open Microsoft.WindowsAzure.Storage
 open Microsoft.WindowsAzure.Storage.Blob
 open StrongGrid
 
-
 let get endpoint = 
     let standardHeaders = [ "Accept", "application/json"; "Authorization", "Token " + Environment.GetEnvironmentVariable("IgaApiKey") ]
     Http.RequestString("https://api.iga.in.gov/" + endpoint, httpMethod = "GET", headers = standardHeaders) |> JsonValue.Parse |>  (fun s -> s.ToString())
@@ -198,17 +197,17 @@ let emailResult (attachmentPath:string) (body:string) =
     let client = new StrongGrid.Client(Environment.GetEnvironmentVariable("SendGridApiKey"))
     let recipients = Environment.GetEnvironmentVariable("EmailRecipients").Split([|';'|]) |> Array.map (fun r -> new Model.MailAddress(r,r))
     let toAddress = new Model.MailAddress("jhoerr@gmail.com", "John Hoerr")
-    let fromAddress = new Model.MailAddress("jhoerr@iu.edu", "John Hoerr")
+    let fromAddress = new Model.MailAddress("jhoerr@gmail.edu", "John Hoerr")
     let attch = [ new Model.Attachment(FileName = Path.GetFileName(attachmentPath), Type="text/csv", Content = (encodeAttachmentContent attachmentPath)) ]
     let textContent = body 
     let htmlContent = body |> Markdown.Parse |> Markdown.WriteHtml
     let subject = sprintf "IGA legislative update for %s" (DateTime.Now.ToString("MM-dd-yyyy"))
     client.Mail.SendToMultipleRecipientsAsync(recipients, fromAddress, subject, htmlContent, textContent, attachments=attch, trackOpens=false, trackClicks=false).Wait()
 
-// AZURE FUNCTION ENTRY POINT
-let Run(myTimer: TimerInfo, log: TraceWriter) =
-    log.Info(sprintf "F# Timer trigger function executed at: %s" (DateTime.Now.ToString()))
+
+let execute (log:TraceWriter) = 
     try
+        log.Info("Execution started")
         let today = DateTime.Now.ToString("yyyy-MM-dd") 
         let tomorrow = DateTime.Now.AddDays(1.0).ToString("yyyy-MM-dd") 
         let actions = fetchActions today
@@ -220,3 +219,9 @@ let Run(myTimer: TimerInfo, log: TraceWriter) =
         log.Info("Execution completed successfully")
     with
     | ex -> log.Error(sprintf "Caught exception: %s" (ex.ToString()))
+
+// AZURE FUNCTION ENTRY POINT
+let Run(myTimer: TimerInfo, log: TraceWriter) =
+    log.Info(sprintf "F# Timer trigger function executed at: %s" (DateTime.Now.ToString()))
+    let runAt = "19:30"
+    if (DateTime.Now.ToString("HH:mm") = runAt) then (execute log) else log.Info(sprintf "Function will execute once daily at %s" runAt)
