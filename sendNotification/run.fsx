@@ -7,6 +7,8 @@
 #r "../packages/FSharp.Formatting/lib/net40/FSharp.Formatting.Common.dll"
 #r "../packages/FSharp.Formatting/lib/net40/FSharp.Markdown.dll"
 #r "../packages/StrongGrid/lib/net452/StrongGrid.dll"
+#r "../packages/Twilio/lib/3.5/Twilio.Api.dll"
+#r "../packages/Newtonsoft.Json/lib/net45/Newtonsoft.Json.dll"
 
 #load "../shared/model.fs"
 
@@ -21,7 +23,9 @@ open FSharp.Data
 open FSharp.Formatting.Common
 open FSharp.Markdown
 open StrongGrid
+open Twilio
 open IgaTracker.Model
+open Newtonsoft.Json
 
 let sendEmailNotification message= 
     let client = new StrongGrid.Client(Environment.GetEnvironmentVariable("SendGridApiKey"))
@@ -31,18 +35,18 @@ let sendEmailNotification message=
     client.Mail.SendToSingleRecipientAsync(toAddress, fromAddress, message.Subject, htmlContent, message.Body, trackOpens=false, trackClicks=false).Wait()
 
 let sendSMSNotification message =
-    // stub
-    message |> ignore
+    let sid = Environment.GetEnvironmentVariable("Twilio.AccountSid")
+    let token = Environment.GetEnvironmentVariable("Twilio.AuthToken")
+    let phoneNumber = Environment.GetEnvironmentVariable("Twilio.PhoneNumber")
+    let twilio = new TwilioRestClient(sid, token)
+    twilio.SendMessage(phoneNumber, message.Recipient, message.Body) |> ignore
 
 #r "../packages/Microsoft.Azure.WebJobs/lib/net45/Microsoft.Azure.WebJobs.Host.dll"
-#r "../packages/WindowsAzure.ServiceBus/lib/net45-full/Microsoft.ServiceBus.dll"
-
 open Microsoft.Azure.WebJobs.Host
-open Microsoft.ServiceBus.Messaging
 
-let Run(message: BrokeredMessage, log: TraceWriter) =
+let Run(message: string, log: TraceWriter) =
     log.Info(sprintf "F# function 'sendNotification' executed  at %s" (DateTime.Now.ToString()))
-    let body = message.GetBody<Message>()
+    let body = JsonConvert.DeserializeObject<Message>(message)
     log.Info(sprintf "Delivering %A message to '%s' re: '%s'" body.MessageType body.Recipient body.Subject)
     match body.MessageType with
     | MessageType.Email -> sendEmailNotification body

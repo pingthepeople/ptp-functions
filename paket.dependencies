@@ -6,5 +6,6 @@ nuget fsharp.formatting
 nuget microsoft.azure.webjobs
 nuget stronggrid
 nuget system.net.primitives
+nuget twilio
 nuget windowsazure.servicebus
 nuget windowsazure.storage

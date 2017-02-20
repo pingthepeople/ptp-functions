@@ -138,6 +138,7 @@ NUGET
       System.Threading.Tasks (>= 4.0.11) - framework: >= netstandard10
       System.Xml.ReaderWriter (>= 4.0.11) - framework: >= netstandard10
       System.Xml.XDocument (>= 4.0.11) - framework: >= netstandard10
+    RestSharp (105.2.3)
     runtime.debian.8-x64.runtime.native.System.Security.Cryptography.OpenSsl (4.3) - framework: net46, >= net46, >= netstandard13, netstandard14
     runtime.fedora.23-x64.runtime.native.System.Security.Cryptography.OpenSsl (4.3) - framework: net46, >= net46, >= netstandard13, netstandard14
     runtime.fedora.24-x64.runtime.native.System.Security.Cryptography.OpenSsl (4.3) - framework: net46, >= net46, >= netstandard13, netstandard14
@@ -740,6 +741,8 @@ NUGET
       System.Text.Encoding (>= 4.3) - framework: >= netstandard13
       System.Threading (>= 4.3) - framework: >= netstandard13
       System.Xml.ReaderWriter (>= 4.3) - framework: >= netstandard13
+    Twilio (4.7.2)
+      RestSharp (>= 105.2.2)
     WindowsAzure.ServiceBus (3.4.6)
     WindowsAzure.Storage (8.0.1)
       Microsoft.Azure.KeyVault.Core (>= 1.0) - framework: >= net45, wpv8.0
