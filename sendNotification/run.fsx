@@ -9,9 +9,6 @@
 #r "../packages/StrongGrid/lib/net452/StrongGrid.dll"
 
 #load "../shared/model.fs"
-#load "../shared/queries.fs"
-#load "../shared/http.fsx"
-#load "../shared/db.fsx"
 
 open System
 open System.IO
@@ -25,9 +22,6 @@ open FSharp.Formatting.Common
 open FSharp.Markdown
 open StrongGrid
 open IgaTracker.Model
-open IgaTracker.Queries
-open IgaTracker.Http
-open IgaTracker.Db
 
 let sendEmailNotification message= 
     let client = new StrongGrid.Client(Environment.GetEnvironmentVariable("SendGridApiKey"))

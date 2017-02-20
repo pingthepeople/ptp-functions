@@ -5,7 +5,7 @@
             "queueName": "notification",
             "connection": "ServiceBus.ConnectionString",
             "name": "message",
-            "accessRights": "listen",
+            "accessRights": "Listen",
             "type": "serviceBusTrigger",
             "direction": "in"
         }
