@@ -1,0 +1,21 @@
+{
+    "disabled": true,
+    "bindings": [
+        {
+            "queueName": "action",
+            "connection": "ServiceBus.ConnectionString",
+            "name": "actionId",
+            "accessRights": "Listen",
+            "type": "serviceBusTrigger",
+            "direction": "in"
+        },
+        {
+            "queueName": "notification",
+            "connection": "ServiceBus.ConnectionString",
+            "name": "notifications",
+            "accessRights": "Listen",
+            "type": "serviceBus",
+            "direction": "out"
+        }
+    ]
+}
