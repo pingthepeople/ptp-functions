@@ -3,6 +3,16 @@ namespace IgaTracker
 module Queries =
 
     [<Literal>]
+    let InsertAction = """INSERT INTO Action(Description,Link,Date,ActionType,Chamber,BillId) 
+VALUES (@Description,@Link,@Date,@ActionType,@Chamber,@BillId); 
+SELECT CAST(SCOPE_IDENTITY() as int)"""
+
+    [<Literal>]
+    let SelectActionsRequiringNotification = """SELECT a.Id From Action a
+JOIN UserBill ub on a.BillId = ub.BillId
+WHERE a.Id in (@Ids)"""
+
+    [<Literal>]
     let UpdateBillCommittees = """With BillCommittee_CTE (BillId, CommitteeId, Assigned)
 As
 (
