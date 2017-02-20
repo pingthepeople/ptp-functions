@@ -14,9 +14,12 @@
 #load "../shared/db.fsx"
 
 open System
-open System.Data.SqlClient
-open System.Dynamic
-open System.Collections.Generic
+open System.IO
+open System.Text
+open System.Net
+open System.Net.Http
+open System.Threading
+open System.Threading.Tasks
 open FSharp.Data
 open FSharp.Formatting.Common
 open FSharp.Markdown
@@ -38,12 +41,16 @@ let sendSMSNotification message =
     message |> ignore
 
 #r "../packages/Microsoft.Azure.WebJobs/lib/net45/Microsoft.Azure.WebJobs.Host.dll"
+#r "../packages/WindowsAzure.ServiceBus/lib/net45-full/Microsoft.ServiceBus.dll"
+
 open Microsoft.Azure.WebJobs.Host
+open Microsoft.ServiceBus.Messaging
 
-let Run(message: Message, log: TraceWriter) =
-    log.Info(sprintf "F# function 'sendNotification' executed for %A msg to %s with subject %s at %s" message.MessageType message.Recipient message.Subject (DateTime.Now.ToString()))
-    match message.MessageType with
-    | MessageType.Email -> sendEmailNotification message
-    | MessageType.SMS -> sendSMSNotification message
-    | _ -> log.Error("unrecognized message type") 
-
+let Run(message: BrokeredMessage, log: TraceWriter) =
+    log.Info(sprintf "F# function 'sendNotification' executed  at %s" (DateTime.Now.ToString()))
+    let body = message.GetBody<Message>()
+    log.Info(sprintf "Delivering %A message to '%s' re: '%s'" body.MessageType body.Recipient body.Subject)
+    match body.MessageType with
+    | MessageType.Email -> sendEmailNotification body
+    | MessageType.SMS -> sendSMSNotification body
+    | _ -> log.Error("unrecognized message type")
