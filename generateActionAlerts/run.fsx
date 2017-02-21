@@ -23,9 +23,11 @@ open IgaTracker.Http
 open IgaTracker.Db
 open Newtonsoft.Json
 
+// Find the user for whom we're generating a particular alert.
 let locateUserToAlert users userBill =
     users |> Seq.find (fun u -> u.Id = userBill.UserId)
 
+// Format a nice description of the action
 let prettyPrint actionType =
     match actionType with
     | ActionType.AssignedToCommittee -> "was assigned to the"
@@ -37,19 +39,24 @@ let prettyPrint actionType =
 // Format a nice message body
 let body (bill:Bill) (action:Action) =
     sprintf "In the %A at %s %s %s %s." action.Chamber (action.Date.ToString()) bill.Name (prettyPrint action.ActionType) action.Description   
+// Format a nice message subject
 let subject (bill:Bill) =
     sprintf "Update on %s" bill.Name
+
+// Generate email message models
 let generateEmailMessages (bill:Bill) action users userBills =
     userBills 
     |> Seq.map (fun ub -> 
         locateUserToAlert users ub 
         |> (fun u -> {MessageType=MessageType.Email; Recipient=u.Email; Subject=(subject bill); Body=(body bill action)}))
+// Generate SMS message models
 let generateSmsMessages (bill:Bill) action users userBills = 
     userBills 
     |> Seq.map (fun ub -> 
         locateUserToAlert users ub 
         |> (fun u -> {MessageType=MessageType.SMS; Recipient=u.Mobile; Subject=(subject bill); Body=(body bill action)}))
 
+// Fetch user/bill/action/ records from database to support message generation
 let fetchUserBills (cn:SqlConnection) id =
     cn.Open()
     let action = cn |> dapperMapParametrizedQuery<Action> "SELECT * FROM Action WHERE Id = @Id" (Map["Id", id :> obj] ) |> Seq.head
@@ -60,6 +67,7 @@ let fetchUserBills (cn:SqlConnection) id =
     cn.Close()
     (bill, action, users, userBills)
 
+// Create action alert messages for people that have opted-in to receiving them
 let generateAlerts (cn:SqlConnection) id =
     let (bill, action, users, userBills) = id |> fetchUserBills cn
     let emailMessages = userBills |> Seq.filter(fun ub -> ub.ReceiveAlertEmail) |> generateEmailMessages bill action users
@@ -73,8 +81,17 @@ open Microsoft.Azure.WebJobs.Host
 let Run(actionId: string, notifications: ICollector<string>, log: TraceWriter) =
     log.Info(sprintf "F# function 'generateActionAlerts' executed for action %s at %s" actionId (DateTime.Now.ToString()))
     let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
+
+    log.Info("Generating action alerts ...")
     let (emailMessages, smsMessages) = (Int32.Parse(actionId)) |> generateAlerts cn
-    emailMessages |> Seq.iter (fun m -> log.Info(sprintf "Enqueuing email to '%s' re: '%s'" m.Recipient m.Subject))
-    emailMessages |> Seq.iter (fun m -> notifications.Add(JsonConvert.SerializeObject(m)))
-    smsMessages |> Seq.iter (fun m -> log.Info(sprintf "Enqueuing SMS to '%s' re: '%s'" m.Recipient m.Subject))
-    smsMessages |> Seq.iter (fun m -> notifications.Add(JsonConvert.SerializeObject(m)))
+    log.Info("Generating action alerts [OK]")
+
+    log.Info("Enqueueing action alerts ...")
+    emailMessages |> Seq.iter (fun m -> 
+        log.Info(sprintf "  Enqueuing email action alert to '%s' re: '%s'" m.Recipient m.Subject)
+        notifications.Add(JsonConvert.SerializeObject(m)))
+    smsMessages |> Seq.iter (fun m -> 
+        log.Info(sprintf "  Enqueuing SMS action alert to '%s' re: '%s'" m.Recipient m.Subject)
+        notifications.Add(JsonConvert.SerializeObject(m)))
+    log.Info("Enqueueing action alerts [OK]")
+    
