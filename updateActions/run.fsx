@@ -22,7 +22,8 @@ open IgaTracker.Http
 open IgaTracker.Db
 
 type Link = {Link:string}
-let updateActions (cn:SqlConnection) session minDate =
+let updateActions (cn:SqlConnection) allActions =
+
     // Determine the type of action this is. We only care about particular types.
     let determineActionType a = 
         match a?description.AsString() with
@@ -49,7 +50,7 @@ let updateActions (cn:SqlConnection) session minDate =
         bills 
         |> Seq.find (fun b -> b.Name=a?billName?billName.AsString()) 
         |> (fun b -> b.Id)
-
+    // Generate 'Action' domain model using data from API
     let toModel (bills:Bill seq) (action,actionType) = {
         Action.Id = 0;
         Date = action?date.AsDateTime();
@@ -59,12 +60,7 @@ let updateActions (cn:SqlConnection) session minDate =
         Chamber = action |> determineChamber;
         BillId = action |> determineBillId bills;
     } 
-
-    let actionNotInDatabase (action:Action) =
-        let existingId = cn.Query<int>("SELECT  ISNULL((Select Id From Action where Link = @Link),0)", {Link=action.Link}) |> Seq.head
-        existingId = 0
-
-    // If we don't have a record of this action in the database, add one and enqueue an alert message 
+    // Add this action to the database and capture the new record's ID
     let insertAction (action:Action) =
         let parameters = 
             (Map[
@@ -78,27 +74,29 @@ let updateActions (cn:SqlConnection) session minDate =
             |> dapperMapParametrizedQuery<int> InsertAction parameters 
             |> Seq.head // inserted Action Id
 
-    // Fetch all existing bills (as a lookup table)
-    let bills = cn.Query<Bill>("SELECT Id, Name FROM Bill")
-
     // Add records to the database for the action events that we care about.
     let addActionsToDb actions =
+        // Fetch all existing bills (as a lookup table)
+        let bills = cn |> dapperQuery<Bill> ("SELECT Id, Name FROM Bill")
+        let links = cn |> dapperMapParametrizedQuery<string> ("SELECT Link FROM Action WHERE Date > @Date") (Map ["Date", DateTime.Now.ToString("yyyy-MM-dd") :> obj])
+        
         actions
+        |> List.filter (fun a -> 
+            // Find actions matching known bills
+            (bills |> Seq.exists (fun b -> b.Name=a?billName?billName.AsString())) &&
+            // Filter out the actions that are already in the database
+            (links |> Seq.exists (fun l -> l=a?link.AsString()) |> not))
+        // Determine the type of action this is
         |> List.map (fun a -> (a, (determineActionType a)))
+        // Filter out all the unknown action types
         |> List.filter (fun t -> (snd t) <> ActionType.Unknown)
-        |> List.map (fun t -> toModel bills t)
-        |> List.filter actionNotInDatabase
-        |> List.map insertAction
+        // Map actions to a domain model and insert them into the database.
+        |> List.map (fun t -> toModel bills t |> insertAction)
+        // Determine the actions that require user notification
         |> (fun ids -> dapperMapParametrizedQuery<int> SelectActionsRequiringNotification (Map["Ids", ids :> obj]) cn)
 
-    fetchAll (sprintf "/%s/bill-actions?minDate=%s" session minDate) 
-    |> addActionsToDb
+    allActions |> addActionsToDb
 
-// Add any missing bill/committee relationships
-let updateBillCommitteeAssignments (cn:SqlConnection) = 
-    cn.Open()
-    cn.Execute(UpdateBillCommittees) |> ignore
-    cn.Close()
 
 #r "../packages/Microsoft.Azure.WebJobs/lib/net45/Microsoft.Azure.WebJobs.Host.dll"
 open Microsoft.Azure.WebJobs.Host
@@ -106,10 +104,22 @@ open Microsoft.Azure.WebJobs.Host
 let Run(myTimer: TimerInfo, actions: ICollector<string>, log: TraceWriter) =
     log.Info(sprintf "F# function 'updateActions' executed at: %s" (DateTime.Now.ToString()))
     let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
-    // Enueue new action Ids for alert processing
-    updateActions cn (System.Environment.GetEnvironmentVariable("SessionYear")) (DateTime.Now.ToString("yyyy-MM-dd"))
-    |> Seq.iter (fun actionId -> 
-        log.Info(sprintf "Enqueuing action %d" actionId)
+    
+    log.Info("Fetching actions from API ...")
+    let allActions = fetchAll (sprintf "/%s/bill-actions?minDate=%s" (System.Environment.GetEnvironmentVariable("SessionYear")) (DateTime.Now.ToString("yyyy-MM-dd"))) 
+    log.Info("Fetching actions from API [OK]")
+
+    log.Info("Adding actions to database ...")
+    let newActionIds = updateActions cn allActions
+    log.Info("Adding actions to database [OK]")
+
+    log.Info("Enqueue alerts for new actions ...")
+    newActionIds |> Seq.iter (fun actionId -> 
+        log.Info(sprintf "  Enqueuing action %d" actionId)
         actions.Add(actionId.ToString()))
-    // Enueue new action Ids for alert processing
-    updateBillCommitteeAssignments cn
+    log.Info("Enqueue alerts for new actions [OK]")
+
+    log.Info("Updating bill/committee assignments ...")
+    cn.Execute(UpdateBillCommittees) |> ignore
+    log.Info("Updating bill/committee assignments [OK]")
+    
