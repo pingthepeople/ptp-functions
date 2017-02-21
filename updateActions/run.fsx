@@ -105,21 +105,21 @@ let Run(myTimer: TimerInfo, actions: ICollector<string>, log: TraceWriter) =
     log.Info(sprintf "F# function 'updateActions' executed at: %s" (DateTime.Now.ToString()))
     let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
     
-    log.Info("Fetching actions from API ...")
+    log.Info(sprintf "[%s] Fetching actions from API ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
     let allActions = fetchAll (sprintf "/%s/bill-actions?minDate=%s" (System.Environment.GetEnvironmentVariable("SessionYear")) (DateTime.Now.ToString("yyyy-MM-dd"))) 
-    log.Info("Fetching actions from API [OK]")
+    log.Info(sprintf "[%s] Fetching actions from API [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) )
 
-    log.Info("Adding actions to database ...")
+    log.Info(sprintf "[%s] Adding actions to database ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
     let newActionIds = updateActions cn allActions
-    log.Info("Adding actions to database [OK]")
+    log.Info(sprintf "[%s] Adding actions to database [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
 
-    log.Info("Enqueue alerts for new actions ...")
+    log.Info(sprintf "[%s] Enqueue alerts for new actions ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
     newActionIds |> Seq.iter (fun actionId -> 
-        log.Info(sprintf "  Enqueuing action %d" actionId)
+        log.Info(sprintf "[%s]  Enqueuing action %d" (DateTime.Now.ToString("HH:mm:ss.fff")) actionId)
         actions.Add(actionId.ToString()))
-    log.Info("Enqueue alerts for new actions [OK]")
+    log.Info(sprintf "[%s] Enqueue alerts for new actions [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
 
-    log.Info("Updating bill/committee assignments ...")
+    log.Info(sprintf "[%s] Updating bill/committee assignments ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
     cn.Execute(UpdateBillCommittees) |> ignore
-    log.Info("Updating bill/committee assignments [OK]")
+    log.Info(sprintf "[%s] Updating bill/committee assignments [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
     

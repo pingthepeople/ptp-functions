@@ -74,6 +74,7 @@ let generateAlerts (cn:SqlConnection) id =
     let smsMessages = userBills |> Seq.filter(fun ub -> ub.ReceiveAlertSms) |>  generateSmsMessages bill action users
     (emailMessages, smsMessages)
 
+
 #r "../packages/Microsoft.Azure.WebJobs/lib/net45/Microsoft.Azure.WebJobs.Host.dll"
 
 open Microsoft.Azure.WebJobs.Host
@@ -82,16 +83,16 @@ let Run(actionId: string, notifications: ICollector<string>, log: TraceWriter) =
     log.Info(sprintf "F# function 'generateActionAlerts' executed for action %s at %s" actionId (DateTime.Now.ToString()))
     let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
 
-    log.Info("Generating action alerts ...")
+    log.Info(sprintf "[%s] Generating action alerts ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
     let (emailMessages, smsMessages) = (Int32.Parse(actionId)) |> generateAlerts cn
-    log.Info("Generating action alerts [OK]")
+    log.Info(sprintf "[%s] Generating action alerts [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
 
-    log.Info("Enqueueing action alerts ...")
+    log.Info(sprintf "[%s] Enqueueing action alerts ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
     emailMessages |> Seq.iter (fun m -> 
-        log.Info(sprintf "  Enqueuing email action alert to '%s' re: '%s'" m.Recipient m.Subject)
+        log.Info(sprintf "[%s]   Enqueuing email action alert to '%s' re: '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) m.Recipient m.Subject )
         notifications.Add(JsonConvert.SerializeObject(m)))
     smsMessages |> Seq.iter (fun m -> 
-        log.Info(sprintf "  Enqueuing SMS action alert to '%s' re: '%s'" m.Recipient m.Subject)
+        log.Info(sprintf "[%s]   Enqueuing SMS action alert to '%s' re: '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) m.Recipient m.Subject)
         notifications.Add(JsonConvert.SerializeObject(m)))
-    log.Info("Enqueueing action alerts [OK]")
+    log.Info(sprintf "[%s] Enqueueing action alerts [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
     
