@@ -28,17 +28,17 @@ let locateUserToAlert users userBill =
     users |> Seq.find (fun u -> u.Id = userBill.UserId)
 
 // Format a nice description of the action
-let prettyPrint actionType =
+let prettyPrint actionType chamber =
     match actionType with
-    | ActionType.AssignedToCommittee -> "was assigned to the"
-    | ActionType.CommitteeReading -> "was read in committee. The vote was:"
-    | ActionType.SecondReading -> "had a second reading. The vote was:"
-    | ActionType.ThirdReading -> "had a third reading. The vote was:"
+    | ActionType.AssignedToCommittee -> sprintf "was assigned to the %A" chamber
+    | ActionType.CommitteeReading -> sprintf "was read in committee in the %A. The vote was:" chamber
+    | ActionType.SecondReading -> sprintf "had a second reading in the %A. The vote was:" chamber
+    | ActionType.ThirdReading -> sprintf "had a third reading in the %A. The vote was:" chamber
     | _ -> "(some other event type?)"
 
 // Format a nice message body
 let body (bill:Bill) (action:Action) =
-    sprintf "%s (%s) %s %s. (%A; %s)" bill.Name bill.Title (prettyPrint action.ActionType) action.Description action.Chamber (action.Date.ToString())
+    sprintf "%s ('%s') %s %s. (@ %s)" bill.Name (bill.Title.TrimEnd('.')) (prettyPrint action.ActionType action.Chamber) action.Description (action.Date.ToString())
 // Format a nice message subject
 let subject (bill:Bill) =
     sprintf "Update on %s" bill.Name
