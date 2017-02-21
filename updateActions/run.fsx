@@ -22,7 +22,7 @@ open IgaTracker.Http
 open IgaTracker.Db
 
 type Link = {Link:string}
-let updateActions (cn:SqlConnection) allActions =
+let addToDatabase date (cn:SqlConnection) allActions =
 
     // Determine the type of action this is. We only care about particular types.
     let determineActionType a = 
@@ -62,23 +62,15 @@ let updateActions (cn:SqlConnection) allActions =
     } 
     // Add this action to the database and capture the new record's ID
     let insertAction (action:Action) =
-        let parameters = 
-            (Map[
-                "Description", action.Description :> obj; 
-                "Link", action.Link :> obj;
-                "Date", action.Date :> obj;
-                "ActionType", action.ActionType :> obj;
-                "Chamber", action.Chamber :> obj;
-                "BillId", action.BillId :> obj])
         cn 
-            |> dapperMapParametrizedQuery<int> InsertAction parameters 
+            |> dapperParametrizedQuery<int> InsertAction action 
             |> Seq.head // inserted Action Id
 
     // Add records to the database for the action events that we care about.
     let addActionsToDb actions =
         // Fetch all existing bills (as a lookup table)
         let bills = cn |> dapperQuery<Bill> ("SELECT Id, Name FROM Bill")
-        let links = cn |> dapperMapParametrizedQuery<string> ("SELECT Link FROM Action WHERE Date > @Date") (Map ["Date", DateTime.Now.ToString("yyyy-MM-dd") :> obj])
+        let links = cn |> dapperParametrizedQuery<string> ("SELECT Link FROM Action WHERE Date > @Date") {DateSelectArgs.Date=date}
         
         actions
         |> List.filter (fun a -> 
@@ -93,7 +85,7 @@ let updateActions (cn:SqlConnection) allActions =
         // Map actions to a domain model and insert them into the database.
         |> List.map (fun t -> toModel bills t |> insertAction)
         // Determine the actions that require user notification
-        |> (fun ids -> dapperMapParametrizedQuery<int> SelectActionsRequiringNotification (Map["Ids", ids :> obj]) cn)
+        |> (fun ids -> cn |> dapperParametrizedQuery<int> SelectActionsRequiringNotification {Ids=ids})
 
     allActions |> addActionsToDb
 
@@ -103,20 +95,23 @@ open Microsoft.Azure.WebJobs.Host
 
 let Run(myTimer: TimerInfo, actions: ICollector<string>, log: TraceWriter) =
     log.Info(sprintf "F# function 'updateActions' executed at: %s" (DateTime.Now.ToString()))
+   
     let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
+    let sessionYear = System.Environment.GetEnvironmentVariable("SessionYear")
+    let date = DateTime.Now.ToString("yyyy-MM-dd")
     
     log.Info(sprintf "[%s] Fetching actions from API ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
-    let allActions = fetchAll (sprintf "/%s/bill-actions?minDate=%s" (System.Environment.GetEnvironmentVariable("SessionYear")) (DateTime.Now.ToString("yyyy-MM-dd"))) 
+    let allActions = fetchAll (sprintf "/%s/bill-actions?minDate=%s" sessionYear date) 
     log.Info(sprintf "[%s] Fetching actions from API [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) )
 
     log.Info(sprintf "[%s] Adding actions to database ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
-    let newActionIds = updateActions cn allActions
+    let actionIdsRequiringAlert = allActions |> addToDatabase date cn
     log.Info(sprintf "[%s] Adding actions to database [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
 
     log.Info(sprintf "[%s] Enqueue alerts for new actions ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
-    newActionIds |> Seq.iter (fun actionId -> 
-        log.Info(sprintf "[%s]  Enqueuing action %d" (DateTime.Now.ToString("HH:mm:ss.fff")) actionId)
-        actions.Add(actionId.ToString()))
+    actionIdsRequiringAlert |> Seq.iter (fun id -> 
+        log.Info(sprintf "[%s]  Enqueuing action %d" (DateTime.Now.ToString("HH:mm:ss.fff")) id)
+        actions.Add(id.ToString()))
     log.Info(sprintf "[%s] Enqueue alerts for new actions [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
 
     log.Info(sprintf "[%s] Updating bill/committee assignments ..." (DateTime.Now.ToString("HH:mm:ss.fff")))

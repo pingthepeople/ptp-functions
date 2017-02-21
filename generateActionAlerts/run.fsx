@@ -2,7 +2,6 @@
 
 #r "System.Data"
 #r "../packages/Dapper/lib/net45/Dapper.dll"
-#r "../packages/FSharp.Data/lib/portable-net45+sl50+netcore45/FSharp.Data.dll"
 #r "../packages/Newtonsoft.Json/lib/net45/Newtonsoft.Json.dll"
 
 #load "../shared/model.fs"
@@ -15,8 +14,6 @@ open System.Data.SqlClient
 open System.Dynamic
 open System.Collections.Generic
 open Dapper
-open FSharp.Data
-open FSharp.Data.JsonExtensions
 open IgaTracker.Model
 open IgaTracker.Queries
 open IgaTracker.Http
@@ -24,7 +21,7 @@ open IgaTracker.Db
 open Newtonsoft.Json
 
 // Find the user for whom we're generating a particular alert.
-let locateUserToAlert users userBill =
+let locateUserToAlert (users:User seq) userBill =
     users |> Seq.find (fun u -> u.Id = userBill.UserId)
 
 // Format a nice description of the action
@@ -59,11 +56,11 @@ let generateSmsMessages (bill:Bill) action users userBills =
 // Fetch user/bill/action/ records from database to support message generation
 let fetchUserBills (cn:SqlConnection) id =
     cn.Open()
-    let action = cn |> dapperMapParametrizedQuery<Action> "SELECT * FROM Action WHERE Id = @Id" (Map["Id", id :> obj] ) |> Seq.head
-    let bill = cn |> dapperMapParametrizedQuery<Bill> "SELECT * FROM Bill WHERE Id = @Id" (Map["Id", action.BillId :> obj] ) |> Seq.head
-    let userBills = cn |> dapperMapParametrizedQuery<UserBill> "SELECT * FROM UserBill WHERE BillId = @Id" (Map["Id", action.BillId :> obj] )
+    let action = cn |> dapperParametrizedQuery<Action> "SELECT * FROM Action WHERE Id = @Id" {Id=id} |> Seq.head
+    let bill = cn |> dapperParametrizedQuery<Bill> "SELECT * FROM Bill WHERE Id = @Id" {Id=action.BillId} |> Seq.head
+    let userBills = cn |> dapperParametrizedQuery<UserBill> "SELECT * FROM UserBill WHERE BillId = @Id" {Id=action.BillId}
     let userIds = userBills |> Seq.map (fun ub -> ub.UserId)
-    let users = cn |> dapperMapParametrizedQuery<User> "SELECT * FROM [User] WHERE Id IN @Ids" (Map["Ids", userIds :> obj] )
+    let users = cn |> dapperParametrizedQuery<User> "SELECT * FROM [User] WHERE Id IN @Ids" {Ids=userIds}
     cn.Close()
     (bill, action, users, userBills)
 
