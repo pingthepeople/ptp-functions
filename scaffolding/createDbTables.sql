@@ -1,12 +1,12 @@
-DROP table [Session]
-Drop Table [Committee]
+--DROP table [Session]
+--Drop Table [Committee]
 
-DROP TABLE [UserBill]
-DROP TABLE [BillCommittee]
-DROP TABLE [Action]
-DROP TABLE [Schedule]
-Drop TABLE [Bill]
-drop table [User]
+--DROP TABLE [UserBill]
+--DROP TABLE [BillCommittee]
+--DROP TABLE [Action]
+--DROP TABLE [ScheduledAction]
+--Drop TABLE [Bill]
+--drop table [User]
 
 CREATE TABLE [Session]
 (
@@ -45,7 +45,6 @@ CREATE TABLE Bill
     SessionId int NOT NULL FOREIGN KEY REFERENCES [Session](Id)
 )
 
-
 CREATE TABLE [Action]
 (
     Id int IDENTITY(1,1) PRIMARY KEY,
@@ -57,15 +56,15 @@ CREATE TABLE [Action]
     BillId int NOT NULL FOREIGN KEY REFERENCES Bill(Id),
 )
 
-Create Table Schedule
+CREATE TABLE ScheduledAction
 (
     Id int IDENTITY(1,1) PRIMARY KEY,
-    OriginCommitteeReading Date,
-    OriginSecondReading Date,
-    OriginThirdReading Date,
-    CrossoverCommitteeReading Date,
-    CrossoverSecondReading Date,
-    CrossoverThirdReading Date,
+    Link nvarchar(256) NOT NULL,
+    ActionType TINYINT NOT NULL,
+    Date DATETIME NOT NULL,
+    [Start] nvarchar(16) NOT NULL,
+    [End] nvarchar(16) NOT NULL,
+    Location nvarchar(256) NOT NULL,
     BillId int NOT NULL FOREIGN KEY REFERENCES Bill(Id),
 )
 

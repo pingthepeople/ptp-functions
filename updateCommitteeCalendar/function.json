@@ -1,0 +1,19 @@
+{
+    "disabled": false,
+    "bindings": [
+        {
+            "name": "myTimer",
+            "type": "timerTrigger",
+            "direction": "in",
+            "schedule": "0 */15 8-19 * * 1-5"
+        },
+        {
+            "queueName": "schedule",
+            "connection": "ServiceBus.ConnectionString",
+            "name": "scheduledActions",
+            "accessRights": "Listen",
+            "type": "serviceBus",
+            "direction": "out"
+        }
+    ]
+}

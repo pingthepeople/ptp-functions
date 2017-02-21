@@ -45,6 +45,18 @@ module Model =
     } 
 
     [<CLIMutable>]
+    type ScheduledAction = {
+        Id:int;
+        Link:string;
+        Date:System.DateTime;
+        Start:string;
+        End:string;
+        Location:string;
+        ActionType:ActionType;
+        BillId:int;
+    } 
+
+    [<CLIMutable>]
     type UserBill = {
         Id:int;
         BillId:int;
