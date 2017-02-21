@@ -31,14 +31,14 @@ let locateUserToAlert users userBill =
 let prettyPrint actionType =
     match actionType with
     | ActionType.AssignedToCommittee -> "was assigned to the"
-    | ActionType.CommitteeReading -> "was read in committee. The vote was"
-    | ActionType.SecondReading -> "had a second reading. The vote was"
-    | ActionType.ThirdReading -> "had a third reading. The vote was"
+    | ActionType.CommitteeReading -> "was read in committee. The vote was:"
+    | ActionType.SecondReading -> "had a second reading. The vote was:"
+    | ActionType.ThirdReading -> "had a third reading. The vote was:"
     | _ -> "(some other event type?)"
 
 // Format a nice message body
 let body (bill:Bill) (action:Action) =
-    sprintf "In the %A at %s %s %s %s." action.Chamber (action.Date.ToString()) bill.Name (prettyPrint action.ActionType) action.Description   
+    sprintf "%s (%s) %s %s. (%A; %s)" bill.Name bill.Title (prettyPrint action.ActionType) action.Description action.Chamber (action.Date.ToString())
 // Format a nice message subject
 let subject (bill:Bill) =
     sprintf "Update on %s" bill.Name
