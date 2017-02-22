@@ -11,7 +11,6 @@ module Db =
 
     type DateSelectArgs = {Date:string}
     type IdSelect = {Id:int}
-    type IdsSelect = {Ids:int seq}
 
     let dapperQuery<'Result> (query:string) (connection:SqlConnection) =
         connection.Query<'Result>(query)

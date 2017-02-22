@@ -85,7 +85,7 @@ let addToDatabase date (cn:SqlConnection) allActions =
         // Map actions to a domain model and insert them into the database.
         |> List.map (fun t -> toModel bills t |> insertAction)
         // Determine the actions that require user notification
-        |> (fun ids -> cn |> dapperParametrizedQuery<int> SelectActionsRequiringNotification {Ids=ids})
+        |> (fun ids -> cn |> dapperMapParametrizedQuery<int> SelectActionsRequiringNotification (Map ["Ids", ids :> obj]))
 
     allActions |> addActionsToDb
 

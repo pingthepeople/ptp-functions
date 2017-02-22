@@ -8,7 +8,7 @@ VALUES (@Description,@Link,@Date,@ActionType,@Chamber,@BillId);
 SELECT CAST(SCOPE_IDENTITY() as int)"""
 
     [<Literal>]
-    let InsertScheduledAction = """INSERT INTO ScheduledAction(Link,Date,ActionType,Start,End,Location,BillId) 
+    let InsertScheduledAction = """INSERT INTO ScheduledAction(Link,Date,ActionType,[Start],[End],Location,BillId) 
 VALUES (@Link,@Date,@ActionType,@Start,@End,@Location,@BillId); 
 SELECT CAST(SCOPE_IDENTITY() as int)"""
 

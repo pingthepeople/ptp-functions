@@ -27,14 +27,14 @@ let locateUserToAlert (users:User seq) userBill =
 // Format a nice description of the action
 let prettyPrint sa =
     match sa.ActionType with
-    | ActionType.CommitteeReading -> sprintf "is scheduled for a committe reading on %s between %s and %s in %s" (sa.Date.ToString("MM/dd/yyyy")) sa.Start sa.End sa.Location
+    | ActionType.CommitteeReading -> sprintf "is scheduled for a committee reading on %s between %s and %s in %s" (sa.Date.ToString("MM/dd/yyyy")) sa.Start sa.End sa.Location
     | ActionType.SecondReading -> sprintf "is scheduled for a second reading in the %s on %s" sa.Location (sa.Date.ToString("MM/dd/yyyy"))
     | ActionType.ThirdReading -> sprintf "is scheduled for a third reading in the %s on %s" sa.Location (sa.Date.ToString("MM/dd/yyyy"))
     | _ -> "(some other event type?)"
 
 // Format a nice message body
 let body (bill:Bill) (scheduledAction:ScheduledAction) =
-    sprintf "%s ('%s') %s. (@ %s)" bill.Name (bill.Title.TrimEnd('.')) (prettyPrint scheduledAction) (scheduledAction.Date.ToString())
+    sprintf "%s ('%s') %s." bill.Name (bill.Title.TrimEnd('.')) (prettyPrint scheduledAction)
 // Format a nice message subject
 let subject (bill:Bill) =
     sprintf "Update on %s" bill.Name
@@ -58,7 +58,7 @@ let fetchUserBills (cn:SqlConnection) id =
     let bill = cn |> dapperParametrizedQuery<Bill> "SELECT * FROM Bill WHERE Id = @Id" {Id=action.BillId} |> Seq.head
     let userBills = cn |> dapperParametrizedQuery<UserBill> "SELECT * FROM UserBill WHERE BillId = @Id" {Id=action.BillId}
     let userIds = userBills |> Seq.map (fun ub -> ub.UserId)
-    let users = cn |> dapperParametrizedQuery<User> "SELECT * FROM [User] WHERE Id IN @Ids" {Ids=userIds}
+    let users = cn |> dapperMapParametrizedQuery<User> "SELECT * FROM [User] WHERE Id IN @Ids" (Map["Ids",userIds:>obj])
     (bill, action, users, userBills)
 
 // Create action alert messages for people that have opted-in to receiving them
