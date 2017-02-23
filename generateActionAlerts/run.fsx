@@ -77,7 +77,7 @@ let generateAlerts (cn:SqlConnection) id =
 open Microsoft.Azure.WebJobs.Host
 
 let Run(actionId: string, notifications: ICollector<string>, log: TraceWriter) =
-    log.Info(sprintf "F# function 'generateActionAlerts' executed for action %s at %s" actionId (DateTime.Now.ToString()))
+    log.Info(sprintf "F# function executed for action %s at %s" actionId (DateTime.Now.ToString()))
     let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
 
     log.Info(sprintf "[%s] Generating action alerts ..." (DateTime.Now.ToString("HH:mm:ss.fff")))

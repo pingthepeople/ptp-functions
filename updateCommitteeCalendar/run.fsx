@@ -59,7 +59,7 @@ let addToDatabase cn scheduledActions =
 open Microsoft.Azure.WebJobs.Host
 
 let Run(myTimer: TimerInfo, scheduledActions: ICollector<string>, log: TraceWriter) =
-    log.Info(sprintf "F# function 'updateCommitteeSchedule' executed at: %s" (DateTime.Now.ToString()))
+    log.Info(sprintf "F# function executed at: %s" (DateTime.Now.ToString()))
 
     let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
     let sessionYear = (System.Environment.GetEnvironmentVariable("SessionYear"))
