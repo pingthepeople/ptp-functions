@@ -5,7 +5,7 @@
             "name": "myTimer",
             "type": "timerTrigger",
             "direction": "in",
-            "schedule": "0 */15 8-19 * * 1-5"
+            "schedule": "0 */10 8-20 * * 1-5"
         },
         {
             "queueName": "schedule",
