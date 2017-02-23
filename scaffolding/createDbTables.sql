@@ -12,7 +12,8 @@ CREATE TABLE [Session]
 (
     Id int IDENTITY(1,1) PRIMARY KEY,
     Name nvarchar(256) NOT NULL,
-    Link nvarchar(256) NOT NULL
+    Link nvarchar(256) NOT NULL,
+    Created DATETIME NOT NULL DEFAULT GetUtcDate()
 )
 
 CREATE TABLE Committee
@@ -21,6 +22,7 @@ CREATE TABLE Committee
     Name nvarchar(256) NOT NULL,
     Link nvarchar(256) NOT NULL,
     Chamber TINYINT NOT NULL,
+    Created DATETIME NOT NULL DEFAULT GetUtcDate(),
     SessionId int NOT NULL FOREIGN KEY REFERENCES [Session](Id)
 )
 
@@ -30,7 +32,8 @@ CREATE TABLE [User]
     Name nvarchar(256),
     Email nvarchar(256) NOT NULL,
     Mobile nvarchar(256),
-    ReceiveDigestEmail bit NOT NULL DEFAULT 1
+    ReceiveDigestEmail bit NOT NULL DEFAULT 1,
+    Created DATETIME NOT NULL DEFAULT GetUtcDate()
 )
 
 CREATE TABLE Bill
@@ -42,6 +45,7 @@ CREATE TABLE Bill
     Description nvarchar(max),
     Topics nvarchar(max),
     Authors nvarchar(256),
+    Created DATETIME NOT NULL DEFAULT GetUtcDate(),
     SessionId int NOT NULL FOREIGN KEY REFERENCES [Session](Id)
 )
 
@@ -53,6 +57,7 @@ CREATE TABLE [Action]
     Date DATETIME NOT NULL,
     Chamber TINYINT NOT NULL,
     ActionType TINYINT NOT NULL,
+    Created DATETIME NOT NULL DEFAULT GetUtcDate(),
     BillId int NOT NULL FOREIGN KEY REFERENCES Bill(Id),
 )
 
@@ -65,6 +70,7 @@ CREATE TABLE ScheduledAction
     [Start] nvarchar(16) NOT NULL,
     [End] nvarchar(16) NOT NULL,
     Location nvarchar(256) NOT NULL,
+    Created DATETIME NOT NULL DEFAULT GetUtcDate(),
     BillId int NOT NULL FOREIGN KEY REFERENCES Bill(Id),
 )
 
@@ -75,6 +81,7 @@ Create Table UserBill
     Id int IDENTITY(1,1) PRIMARY KEY,
     ReceiveAlertEmail bit NOT NULL DEFAULT 0,
     ReceiveAlertSms bit NOT NULL DEFAULT 0,
+    Created DATETIME NOT NULL DEFAULT GetUtcDate(),
     BillId int NOT NULL FOREIGN KEY REFERENCES Bill(Id),
     UserId int NOT NULL FOREIGN KEY REFERENCES [User](Id)
 )
@@ -83,6 +90,7 @@ CREATE TABLE BillCommittee
 (
     Id int IDENTITY(1,1) PRIMARY KEY,
     Assigned DATETIME,
+    Created DATETIME NOT NULL DEFAULT GetUtcDate(),
     BillId int FOREIGN KEY REFERENCES Bill(Id),
     CommitteeId int FOREIGN KEY REFERENCES Committee(Id),
 )
