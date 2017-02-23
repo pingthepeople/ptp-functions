@@ -13,6 +13,16 @@ VALUES (@Link,@Date,@ActionType,@Start,@End,@Location,@BillId);
 SELECT CAST(SCOPE_IDENTITY() as int)"""
 
     [<Literal>]
+    let InsertBill= """INSERT INTO Bill(Name,Link,Title,Description,Topics,Authors,SessionId) 
+VALUES (@Name,@Link,@Title,@Description,@Topics,@Authors,@SessionId); 
+SELECT CAST(SCOPE_IDENTITY() as int)"""
+
+    [<Literal>]
+    let InsertCommittee= """INSERT INTO Committee(Name,Link,Chamber,SessionId) 
+VALUES (@Name,@Link,@Chamber,@SessionId); 
+SELECT CAST(SCOPE_IDENTITY() as int)"""
+
+    [<Literal>]
     let SelectActionsRequiringNotification = """SELECT DISTINCT (a.Id) From Action a
 JOIN UserBill ub on a.BillId = ub.BillId
 WHERE a.Id in @Ids"""
