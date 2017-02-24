@@ -65,8 +65,8 @@ let Run(myTimer: TimerInfo, scheduledActions: ICollector<string>, log: TraceWrit
         let sessionYear = (System.Environment.GetEnvironmentVariable("SessionYear"))
         let date = DateTime.Now.AddDays(1.0).ToString("yyyy-MM-dd")
         
-        let bills = cn |> dapperQuery<Bill> "SELECT Id,Name from Bill"
-        let links = cn |> dapperParametrizedQuery<string> "SELECT Link from ScheduledAction WHERE Date = @Date" {DateSelectArgs.Date=date}
+        let bills = cn |> dapperQuery<Bill> "SELECT Id,Name from Bill "
+        let links = cn |> dapperParametrizedQuery<string> "SELECT Link from ScheduledAction WHERE Date >= @Date" {DateSelectArgs.Date=date}
 
         log.Info(sprintf "[%s] Fetch committee meetings from API ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
         let scheduledActionModels = (sessionYear, date, bills, links) |> generateScheduledActions 
