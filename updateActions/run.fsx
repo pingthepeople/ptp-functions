@@ -95,26 +95,27 @@ open Microsoft.Azure.WebJobs.Host
 
 let Run(myTimer: TimerInfo, actions: ICollector<string>, log: TraceWriter) =
     log.Info(sprintf "F# function executed at: %s" (DateTime.Now.ToString()))
-   
-    let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
-    let sessionYear = System.Environment.GetEnvironmentVariable("SessionYear")
-    let date = DateTime.Now.ToString("yyyy-MM-dd")
-    
-    log.Info(sprintf "[%s] Fetching actions from API ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
-    let allActions = fetchAll (sprintf "/%s/bill-actions?minDate=%s" sessionYear date) 
-    log.Info(sprintf "[%s] Fetching actions from API [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) )
+    try
+        let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
+        let sessionYear = System.Environment.GetEnvironmentVariable("SessionYear")
+        let date = DateTime.Now.ToString("yyyy-MM-dd")
+        
+        log.Info(sprintf "[%s] Fetching actions from API ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        let allActions = fetchAll (sprintf "/%s/bill-actions?minDate=%s" sessionYear date) 
+        log.Info(sprintf "[%s] Fetching actions from API [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) )
 
-    log.Info(sprintf "[%s] Adding actions to database ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
-    let actionIdsRequiringAlert = allActions |> addToDatabase date cn
-    log.Info(sprintf "[%s] Adding actions to database [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Adding actions to database ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        let actionIdsRequiringAlert = allActions |> addToDatabase date cn
+        log.Info(sprintf "[%s] Adding actions to database [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
 
-    log.Info(sprintf "[%s] Enqueue alerts for new actions ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
-    actionIdsRequiringAlert |> Seq.iter (fun id -> 
-        log.Info(sprintf "[%s]  Enqueuing action %d" (DateTime.Now.ToString("HH:mm:ss.fff")) id)
-        actions.Add(id.ToString()))
-    log.Info(sprintf "[%s] Enqueue alerts for new actions [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Enqueue alerts for new actions ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        actionIdsRequiringAlert |> Seq.iter (fun id -> 
+            log.Info(sprintf "[%s]  Enqueuing action %d" (DateTime.Now.ToString("HH:mm:ss.fff")) id)
+            actions.Add(id.ToString()))
+        log.Info(sprintf "[%s] Enqueue alerts for new actions [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
 
-    log.Info(sprintf "[%s] Updating bill/committee assignments ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
-    cn.Execute(UpdateBillCommittees) |> ignore
-    log.Info(sprintf "[%s] Updating bill/committee assignments [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
-    
+        log.Info(sprintf "[%s] Updating bill/committee assignments ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        cn.Execute(UpdateBillCommittees) |> ignore
+        log.Info(sprintf "[%s] Updating bill/committee assignments [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
+    with
+    | ex -> log.Error(sprintf "Encountered error: %s" (ex.ToString())) 

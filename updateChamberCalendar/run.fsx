@@ -82,29 +82,31 @@ open Microsoft.Azure.WebJobs.Host
 
 let Run(myTimer: TimerInfo, scheduledActions: ICollector<string>, log: TraceWriter) =
     log.Info(sprintf "F# function executed at: %s" (DateTime.Now.ToString()))
+    try
+        let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
+        let sessionYear = (System.Environment.GetEnvironmentVariable("SessionYear"))
+        let date = DateTime.Now.AddDays(1.0).ToString("yyyy-MM-dd")
+        
+        let bills = cn |> dapperQuery<Bill> "SELECT Id,Name from Bill"
+        let links = cn |> dapperParametrizedQuery<string> "SELECT Link from ScheduledAction WHERE Date = @Date" {DateSelectArgs.Date=date}
 
-    let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
-    let sessionYear = (System.Environment.GetEnvironmentVariable("SessionYear"))
-    let date = DateTime.Now.AddDays(1.0).ToString("yyyy-MM-dd")
-    
-    let bills = cn |> dapperQuery<Bill> "SELECT Id,Name from Bill"
-    let links = cn |> dapperParametrizedQuery<string> "SELECT Link from ScheduledAction WHERE Date = @Date" {DateSelectArgs.Date=date}
+        log.Info(sprintf "[%s] Fetch chamber calendar from API ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        let houseScheduledActionModels = ("House", sessionYear, date, bills, links) |> generateScheduledActions 
+        let senateScheduledActionModels = ("Senate", sessionYear, date, bills, links) |> generateScheduledActions 
+        log.Info(sprintf "[%s] Fetch chamber calendar from API [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) )
 
-    log.Info(sprintf "[%s] Fetch chamber calendar from API ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
-    let houseScheduledActionModels = ("House", sessionYear, date, bills, links) |> generateScheduledActions 
-    let senateScheduledActionModels = ("Senate", sessionYear, date, bills, links) |> generateScheduledActions 
-    log.Info(sprintf "[%s] Fetch chamber calendar from API [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) )
+        log.Info(sprintf "[%s] Add scheduled actions to database ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        let houseScheduledActionIdsRequringAlert = houseScheduledActionModels |> addToDatabase cn
+        let senateScheduledActionIdsRequringAlert = senateScheduledActionModels |> addToDatabase cn
+        log.Info(sprintf "[%s] Add scheduled actions to database [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
 
-    log.Info(sprintf "[%s] Add scheduled actions to database ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
-    let houseScheduledActionIdsRequringAlert = houseScheduledActionModels |> addToDatabase cn
-    let senateScheduledActionIdsRequringAlert = senateScheduledActionModels |> addToDatabase cn
-    log.Info(sprintf "[%s] Add scheduled actions to database [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
-
-    log.Info(sprintf "[%s] Enqueue alerts for scheduled actions ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
-    houseScheduledActionIdsRequringAlert |> Seq.iter (fun id -> 
-        log.Info(sprintf "[%s]  Enqueuing scheduled action %d" (DateTime.Now.ToString("HH:mm:ss.fff")) id)
-        scheduledActions.Add(id.ToString()))
-    senateScheduledActionIdsRequringAlert |> Seq.iter (fun id -> 
-        log.Info(sprintf "[%s]  Enqueuing scheduled action %d" (DateTime.Now.ToString("HH:mm:ss.fff")) id)
-        scheduledActions.Add(id.ToString()))
-    log.Info(sprintf "[%s] Enqueue alerts for scheduled actions [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))    
+        log.Info(sprintf "[%s] Enqueue alerts for scheduled actions ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        houseScheduledActionIdsRequringAlert |> Seq.iter (fun id -> 
+            log.Info(sprintf "[%s]  Enqueuing scheduled action %d" (DateTime.Now.ToString("HH:mm:ss.fff")) id)
+            scheduledActions.Add(id.ToString()))
+        senateScheduledActionIdsRequringAlert |> Seq.iter (fun id -> 
+            log.Info(sprintf "[%s]  Enqueuing scheduled action %d" (DateTime.Now.ToString("HH:mm:ss.fff")) id)
+            scheduledActions.Add(id.ToString()))
+        log.Info(sprintf "[%s] Enqueue alerts for scheduled actions [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))   
+    with
+    | ex -> log.Error(sprintf "Encountered error: %s" (ex.ToString())) 

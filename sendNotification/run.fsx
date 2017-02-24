@@ -46,9 +46,14 @@ open Microsoft.Azure.WebJobs.Host
 
 let Run(message: string, log: TraceWriter) =
     log.Info(sprintf "F# function 'sendNotification' executed  at %s" (DateTime.Now.ToString()))
-    let body = JsonConvert.DeserializeObject<Message>(message)
-    log.Info(sprintf "Delivering %A message to '%s' re: '%s'" body.MessageType body.Recipient body.Subject)
-    match body.MessageType with
-    | MessageType.Email -> sendEmailNotification body
-    | MessageType.SMS -> sendSMSNotification body
-    | _ -> log.Error("unrecognized message type")
+    try
+        let body = JsonConvert.DeserializeObject<Message>(message)
+        log.Info(sprintf "Delivering %A message to '%s' re: '%s'" body.MessageType body.Recipient body.Subject)
+        match body.MessageType with
+        | MessageType.Email -> sendEmailNotification body
+        | MessageType.SMS -> sendSMSNotification body
+        | _ -> log.Error("unrecognized message type")
+    with
+    | ex -> 
+        log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
+        reraise()

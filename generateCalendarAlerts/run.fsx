@@ -74,18 +74,22 @@ open Microsoft.Azure.WebJobs.Host
 
 let Run(scheduledActionId: string, notifications: ICollector<string>, log: TraceWriter) =
     log.Info(sprintf "F# function executed for action %s at %s" scheduledActionId (DateTime.Now.ToString()))
-    let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
+    try
+        let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
 
-    log.Info(sprintf "[%s] Generating scheduled action alerts ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
-    let (emailMessages, smsMessages) = (Int32.Parse(scheduledActionId)) |> generateAlerts cn
-    log.Info(sprintf "[%s] Generating scheduled action alerts [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Generating scheduled action alerts ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        let (emailMessages, smsMessages) = (Int32.Parse(scheduledActionId)) |> generateAlerts cn
+        log.Info(sprintf "[%s] Generating scheduled action alerts [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
 
-    log.Info(sprintf "[%s] Enqueueing scheduled action alerts ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
-    emailMessages |> Seq.iter (fun m -> 
-        log.Info(sprintf "[%s]   Enqueuing email alert to '%s' re: '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) m.Recipient m.Subject )
-        notifications.Add(JsonConvert.SerializeObject(m)))
-    smsMessages |> Seq.iter (fun m -> 
-        log.Info(sprintf "[%s]   Enqueuing SMS alert to '%s' re: '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) m.Recipient m.Subject)
-        notifications.Add(JsonConvert.SerializeObject(m)))
-    log.Info(sprintf "[%s] Enqueueing scheduled action alerts [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
-    
+        log.Info(sprintf "[%s] Enqueueing scheduled action alerts ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        emailMessages |> Seq.iter (fun m -> 
+            log.Info(sprintf "[%s]   Enqueuing email alert to '%s' re: '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) m.Recipient m.Subject )
+            notifications.Add(JsonConvert.SerializeObject(m)))
+        smsMessages |> Seq.iter (fun m -> 
+            log.Info(sprintf "[%s]   Enqueuing SMS alert to '%s' re: '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) m.Recipient m.Subject)
+            notifications.Add(JsonConvert.SerializeObject(m)))
+        log.Info(sprintf "[%s] Enqueueing scheduled action alerts [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
+    with
+    | ex -> 
+        log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
+        reraise()
