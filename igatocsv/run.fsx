@@ -91,20 +91,19 @@ let describeCalendar (calendars:Calendars.Root) (chamber:string) =
         | ex -> sprintf "###No upcoming calendar available for the %s" chamber
 
 // AZURE STORAGE
-let storageContainer = 
-    let connStr = Environment.GetEnvironmentVariable("AzureStorage.ConnectionString")
+let storageContainer connStr = 
     let ref = CloudStorageAccount.Parse(connStr).CreateCloudBlobClient().GetContainerReference("artifacts")    
     ref.CreateIfNotExists() |> ignore
     ref
 
-let getLatestDocument path =
-    let container = storageContainer
+let getLatestDocument connStr path =
+    let container = storageContainer connStr
     let blobs = container.ListBlobs() 
     let blob = blobs |> Seq.sortByDescending (fun b -> b.Uri.ToString()) |> Seq.head :?> CloudBlockBlob
     blob.DownloadToFile(path, FileMode.OpenOrCreate) |> ignore
 
-let postDocument path =
-    let container = storageContainer
+let postDocument connStr path =
+    let container = storageContainer connStr
     let stream = File.OpenRead(path)
     let blob = container.GetBlockBlobReference(Path.GetFileName(path))
     blob.UploadFromStream(stream)
@@ -153,16 +152,16 @@ let updateAction (artifact:string[][]) (actions:Actions.Item list) =
     actions |> List.filter(fun a -> a.Description.StartsWith(secondReadingConst)) |> List.iter (fun a -> updateArtifact artifact (a.BillName.BillName) (a.Chamber.Name) Reading.Second a.Date (a.Description.Replace(secondReadingConst, "")) |> ignore)
     actions |> List.filter(fun a -> a.Description.StartsWith(thirdReadingConst)) |> List.iter (fun a -> updateArtifact artifact (a.BillName.BillName) (a.Chamber.Name) Reading.Third a.Date (a.Description.Replace(thirdReadingConst, "")) |> ignore)
 
-let update (outputPath:string) (actions:Actions.Item list) (calendars:Calendars.Root) =
+let update connStr (outputPath:string) (actions:Actions.Item list) (calendars:Calendars.Root) =
     let tempPath = Path.GetTempFileName()
-    getLatestDocument tempPath |> ignore
+    getLatestDocument connStr tempPath |> ignore
     let artifact = File.ReadAllLines(tempPath) |> Array.map (fun i -> i.Split([|"\",\""|], StringSplitOptions.None) |> Array.map (fun j -> j.Trim([|'"'|])) )
     updateAction artifact actions |> ignore
     updateCalendar artifact calendars "House" |> ignore
     updateCalendar artifact calendars "Senate" |> ignore 
     let content = artifact |> Array.map(fun r -> r |> Array.map(fun c -> sprintf "\"%s\"" c) |> String.concat ",")
     File.WriteAllLines(outputPath, content)
-    postDocument outputPath |> ignore
+    postDocument connStr outputPath |> ignore
     File.Delete(tempPath)
 
 
@@ -193,9 +192,9 @@ let describe (actions:Actions.Item list) (calendars:Calendars.Root) =
         describeCalendar calendars "Senate";
     ]    
 
-let emailResult (attachmentPath:string) (body:string) = 
-    let client = new StrongGrid.Client(Environment.GetEnvironmentVariable("SendGridApiKey"))
-    let recipients = Environment.GetEnvironmentVariable("EmailRecipients").Split([|';'|]) |> Array.map (fun r -> new Model.MailAddress(r,r))
+let emailResult (attachmentPath:string) (body:string) apiKey (recipients:string) = 
+    let client = new StrongGrid.Client(apiKey)
+    let recipients = recipients.Split([|';'|]) |> Array.map (fun r -> new Model.MailAddress(r,r))
     let toAddress = new Model.MailAddress("jhoerr@gmail.com", "John Hoerr")
     let fromAddress = new Model.MailAddress("jhoerr@gmail.edu", "John Hoerr")
     let attch = [ new Model.Attachment(FileName = Path.GetFileName(attachmentPath), Type="text/csv", Content = (encodeAttachmentContent attachmentPath)) ]
@@ -205,23 +204,26 @@ let emailResult (attachmentPath:string) (body:string) =
     client.Mail.SendToMultipleRecipientsAsync(recipients, fromAddress, subject, htmlContent, textContent, attachments=attch, trackOpens=false, trackClicks=false).Wait()
 
 
-let execute (log:TraceWriter) = 
-    try
-        log.Info("Execution started")
-        let today = DateTime.Now.ToString("yyyy-MM-dd") 
-        let tomorrow = DateTime.Now.AddDays(1.0).ToString("yyyy-MM-dd") 
-        let actions = fetchActions today
-        let calendars = get ("2017/calendars?minDate=" + tomorrow) |> Calendars.Parse
-        let outputPath = Path.Combine(Path.GetTempPath(), sprintf "iga-%s.csv" today)
-        update outputPath actions calendars |> ignore
-        let body = describe actions calendars |> String.concat "\n\n" 
-        emailResult outputPath body
-        log.Info("Execution completed successfully")
-    with
-    | ex -> log.Error(sprintf "Caught exception: %s" (ex.ToString()))
-
 // AZURE FUNCTION ENTRY POINT
 let Run(myTimer: TimerInfo, log: TraceWriter) =
     log.Info(sprintf "F# Timer trigger function executed at: %s" (DateTime.Now.ToString()))
-    let runAt = "19:30"
-    if (DateTime.Now.ToString("HH:mm") = runAt) then (execute log) else log.Info(sprintf "Function will execute once daily at %s" runAt)
+    try
+        log.Info("Execution started")
+        let today = DateTime.Now.ToString("yyyy-MM-dd")
+        let tomorrow = DateTime.Now.AddDays(1.0).ToString("yyyy-MM-dd")
+        let connStr = Environment.GetEnvironmentVariable("AzureStorage.ConnectionString")
+        let sendGridApiKey = Environment.GetEnvironmentVariable("SendGridApiKey")
+        let emailRecipients = Environment.GetEnvironmentVariable("EmailRecipients")
+
+        let actions = fetchActions today
+        let calendars = get ("2017/calendars?minDate=" + tomorrow) |> Calendars.Parse
+        let outputPath = Path.Combine(Path.GetTempPath(), sprintf "iga-%s.csv" today)
+        
+        update connStr outputPath actions calendars |> ignore
+
+        let body = describe actions calendars |> String.concat "\n\n" 
+        emailResult outputPath body sendGridApiKey emailRecipients
+
+        log.Info("Execution completed successfully")
+    with
+    | ex -> log.Error(sprintf "Caught exception: %s" (ex.ToString()))
