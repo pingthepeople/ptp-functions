@@ -83,13 +83,15 @@ let Run(myTimer: TimerInfo, log: TraceWriter) =
         log.Info(sprintf "[%s] Update bills ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
         (cn,sessionId,sessionYear) 
         |> updateBills 
-        |> List.iter (fun bill -> log.Info(sprintf "[%s] Added bill '%s' ('%s')" (DateTime.Now.ToString("HH:mm:ss.fff")) bill.Name bill.Title))
+        |> List.iter (fun bill -> log.Info(sprintf "[%s]   Added bill '%s' ('%s')" (DateTime.Now.ToString("HH:mm:ss.fff")) bill.Name bill.Title))
         log.Info(sprintf "[%s] Update bills [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) )
         
-        log.Info(sprintf "[%s] Update bills ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Update committees ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
         let (houseCommittees, senateCommittees) = (cn,sessionId,sessionYear) |> updateCommittees
-        houseCommittees |> List.iter (fun committee -> log.Info(sprintf "[%s] Added House committee '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) committee.Name))
-        senateCommittees |> List.iter (fun committee -> log.Info(sprintf "[%s] Added Senate committee '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) committee.Name))
-        log.Info(sprintf "[%s] Update bills [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) )
+        houseCommittees |> List.iter (fun committee -> log.Info(sprintf "[%s]   Added House committee '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) committee.Name))
+        senateCommittees |> List.iter (fun committee -> log.Info(sprintf "[%s]   Added Senate committee '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) committee.Name))
+        log.Info(sprintf "[%s] Update committees [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) )
+
+
     with
     | ex -> log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
