@@ -6,7 +6,6 @@
 #r "../packages/FSharp.Data/lib/portable-net45+sl50+netcore45/FSharp.Data.dll"
 #r "../packages/FSharp.Formatting/lib/net40/FSharp.Formatting.Common.dll"
 #r "../packages/FSharp.Formatting/lib/net40/FSharp.Markdown.dll"
-#r "../packages/StrongGrid/lib/net452/StrongGrid.dll"
 #r "../packages/Twilio/lib/net451/Twilio.dll"
 #r "../packages/Newtonsoft.Json/lib/net45/Newtonsoft.Json.dll"
 
@@ -17,12 +16,13 @@ open System.IO
 open System.Text
 open System.Net
 open System.Net.Http
+open System.Net.Mail
+open System.Net.Mime
 open System.Threading
 open System.Threading.Tasks
 open FSharp.Data
 open FSharp.Formatting.Common
 open FSharp.Markdown
-open StrongGrid
 open Twilio
 open Twilio.Rest.Api.V2010.Account
 open Twilio.Types
@@ -30,11 +30,21 @@ open IgaTracker.Model
 open Newtonsoft.Json
 
 let sendEmailNotification message= 
-    let client = new StrongGrid.Client(Environment.GetEnvironmentVariable("SendGridApiKey"))
-    let toAddress = new Model.MailAddress(message.Recipient, message.Recipient)
-    let fromAddress = new Model.MailAddress("jhoerr@gmail.edu", "John Hoerr")
-    let htmlContent = message.Body |> Markdown.Parse |> Markdown.WriteHtml
-    client.Mail.SendToSingleRecipientAsync(toAddress, fromAddress, message.Subject, htmlContent, message.Body, trackOpens=false, trackClicks=false).Wait()
+    let mailMsg = new MailMessage();
+    // To
+    mailMsg.To.Add(new MailAddress(message.Recipient, message.Recipient));
+    // From
+    mailMsg.From <- new MailAddress("jhoerr@gmail.edu", "John Hoerr");
+    // Subject and multipart/alternative Body
+    mailMsg.Subject <- message.Subject
+    let text = message.Body
+    let html = text |> Markdown.Parse |> Markdown.WriteHtml
+    mailMsg.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(text, null, MediaTypeNames.Text.Plain));
+    mailMsg.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(html, null, MediaTypeNames.Text.Html));
+    // Init SmtpClient and send
+    let smtpClient = new SmtpClient("smtp.sendgrid.net", Convert.ToInt32(587));
+    smtpClient.Credentials <- new System.Net.NetworkCredential("apikey", Environment.GetEnvironmentVariable("SendGridApiKey"))
+    smtpClient.Send(mailMsg);
 
 let sendSMSNotification message =
     let sid = Environment.GetEnvironmentVariable("Twilio.AccountSid")
