@@ -52,6 +52,17 @@ IF NOT DEFINED KUDU_SYNC_CMD (
 :: Deployment
 :: ----------
 
+
+echo Restoring packages via Paket.
+
+::    1a. Paket bootstrap
+call :ExecuteCmd ".paket\paket.bootstrapper.exe"
+IF !ERRORLEVEL! NEQ 0 goto error
+
+::    1b. Paket restore
+call :ExecuteCmd ".paket\paket.exe" restore --force
+IF !ERRORLEVEL! NEQ 0 goto error
+
 echo Handling Basic Web Site deployment.
 
 :: 1. KuduSync
@@ -60,23 +71,6 @@ IF /I "%IN_PLACE_DEPLOYMENT%" NEQ "1" (
   IF !ERRORLEVEL! NEQ 0 goto error
 )
 
-:: 2. Restore packages via Paket
-
-::    2a. change the working directory to /wwwroot
-call :ExecuteCmd pushd "%DEPLOYMENT_TARGET%"
-IF !ERRORLEVEL! NEQ 0 goto error
-
-::    2b. Paket bootstrap
-call :ExecuteCmd ".paket\paket.bootstrapper.exe"
-IF !ERRORLEVEL! NEQ 0 goto error
-
-::    2c. Paket restore
-call :ExecuteCmd ".paket\paket.exe" restore --force
-IF !ERRORLEVEL! NEQ 0 goto error
-
-::    2d. revert to the previous working directory
-call :ExecuteCmd popd
-IF !ERRORLEVEL! NEQ 0 goto error
 
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
