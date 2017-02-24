@@ -26,6 +26,15 @@ CREATE TABLE Committee
     SessionId int NOT NULL FOREIGN KEY REFERENCES [Session](Id)
 )
 
+CREATE TABLE Subject
+(
+    Id int IDENTITY(1,1) PRIMARY KEY,
+    Name nvarchar(256) NOT NULL,
+    Link nvarchar(256) NOT NULL,
+    Created DATETIME NOT NULL DEFAULT GetUtcDate(),
+    SessionId int NOT NULL FOREIGN KEY REFERENCES [Session](Id)
+)
+
 CREATE TABLE [User]
 (
     Id int IDENTITY(1,1) PRIMARY KEY,
@@ -43,7 +52,6 @@ CREATE TABLE Bill
     Link nvarchar(256) NOT NULL,
     Title nvarchar(256) NOT NULL,
     Description nvarchar(max),
-    Topics nvarchar(max),
     Authors nvarchar(256),
     Created DATETIME NOT NULL DEFAULT GetUtcDate(),
     SessionId int NOT NULL FOREIGN KEY REFERENCES [Session](Id)
@@ -93,4 +101,13 @@ CREATE TABLE BillCommittee
     Created DATETIME NOT NULL DEFAULT GetUtcDate(),
     BillId int FOREIGN KEY REFERENCES Bill(Id),
     CommitteeId int FOREIGN KEY REFERENCES Committee(Id),
+)
+
+CREATE TABLE BillSubject
+(
+    Id int IDENTITY(1,1) PRIMARY KEY,
+    Assigned DATETIME,
+    Created DATETIME NOT NULL DEFAULT GetUtcDate(),
+    BillId int FOREIGN KEY REFERENCES Bill(Id),
+    SubjectId int FOREIGN KEY REFERENCES [Subject](Id),
 )

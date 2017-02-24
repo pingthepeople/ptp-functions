@@ -21,6 +21,24 @@ open IgaTracker.Queries
 open IgaTracker.Http
 open IgaTracker.Db
 
+let updateSubjects (cn,sessionId,sessionYear) =
+    let toModel subject ={
+        Subject.Id=0; 
+        SessionId=1; 
+        Name=subject?entry.AsString(); 
+        Link=subject?link.AsString() }
+
+    // Find new subjects
+    let knownSubjects = cn |> dapperMapParametrizedQuery<string> "SELECT Link from Subject WHERE SessionId = @SessionId" (Map["SessionId",sessionId:>obj])
+    let newSubjects = 
+        fetchAll (sprintf "/%s/subjects" sessionYear)
+        |> List.filter (fun subject -> knownSubjects |> Seq.exists (fun knownSubject -> knownSubject = subject?link.AsString()) |> not)
+        |> List.map toModel
+
+    // Add them to the database
+    newSubjects |> List.iter (fun subject -> cn |> dapperParametrizedQuery<int> InsertSubject subject |> ignore)
+    newSubjects
+
 let updateBills (cn,sessionId,sessionYear) =
     let toModel bill = {
         Bill.Id=0; 
@@ -29,21 +47,30 @@ let updateBills (cn,sessionId,sessionYear) =
         Link=bill?link.AsString(); 
         Title=bill?latestVersion?shortDescription.AsString(); 
         Description= bill?latestVersion?digest.AsString();
-        Topics=bill?latestVersion?subjects.AsArray() |> Array.toList |> List.map (fun a -> a?entry.AsString()) |> String.concat ", "; 
         Authors=bill?latestVersion?authors.AsArray() |> Array.toList |> List.map (fun a -> a?lastName.AsString()) |> List.sort |> String.concat ", "; }
 
     // Find new bills
     let knownBills = cn |> dapperMapParametrizedQuery<string> "SELECT Name from Bill WHERE SessionId = @SessionId" (Map["SessionId",sessionId:>obj])
     let lastUpdate = cn |> dapperMapParametrizedQuery<DateTime> "SELECT MAX(Created) from Bill WHERE SessionId = @SessionId" (Map["SessionId",sessionId:>obj]) |> Seq.head
-    let newBills = 
-        fetchAll (sprintf "/%s/bills?minFiledDate=%s" sessionYear (lastUpdate.ToString("yyyy-MM-dd")))
+    let newBills = fetchAll (sprintf "/%s/bills?minFiledDate=%s" sessionYear (lastUpdate.ToString("yyyy-MM-dd")))
+    let billModels =
+        newBills
         |> List.filter (fun bill -> knownBills |> Seq.exists (fun knownBill -> knownBill = bill?billName.AsString()) |> not)
         |> List.map (fun bill -> get (bill?link.AsString()) |> toModel)
-
     // Add them to the database
-    newBills |> List.iter (fun bill -> cn |> dapperParametrizedQuery<int> InsertBill bill |> ignore)
-    
-    newBills
+    billModels |> List.iter (fun bill -> cn |> dapperParametrizedQuery<int> InsertBill bill |> ignore)
+
+    // Determine bill subjects
+    let insertedBills = cn |> dapperMapParametrizedQuery<Bill> "Select Id,Name from Bill where Created > @Created" (Map ["Created", lastUpdate:>obj])
+    let subjects = cn |> dapperMapParametrizedQuery "SELECT Id,Name,Link From [Subject] WHERE SessionId = @SessionId" (Map["Name",sessionYear:>obj])
+    let billSubjectModels = 
+        insertedBills
+        |> Seq.map (fun bill -> 
+            let billMetadata = newBills |> List.find(fun newBill -> bill.Name = (newBill?billName.AsString()))
+            (bill,billMetadata?latestVersion?))
+        |> Seq.collect (fun pair -> 
+            {BillSubject.BillId = bill}
+    billModels
 
 let updateCommittees (cn,sessionId,sessionYear) =
     let toModel chamber c ={
@@ -79,7 +106,13 @@ let Run(myTimer: TimerInfo, log: TraceWriter) =
         let sessionYear = (System.Environment.GetEnvironmentVariable("SessionYear"))
         let sessionId = cn |> dapperMapParametrizedQuery<int> "SELECT Id From [Session] WHERE Name = @Name" (Map["Name",sessionYear:>obj]) |> Seq.head
         let date = DateTime.Now.AddDays(-1.0).ToString("yyyy-MM-dd")
-        
+
+        log.Info(sprintf "[%s] Update subjects ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        (cn,sessionId,sessionYear) 
+        |> updateSubjects
+        |> List.iter (fun subject -> log.Info(sprintf "[%s]   Added subject '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) subject.Name))
+        log.Info(sprintf "[%s] Update subjects [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) )
+
         log.Info(sprintf "[%s] Update bills ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
         (cn,sessionId,sessionYear) 
         |> updateBills 

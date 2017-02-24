@@ -22,13 +22,20 @@ module Model =
     }
 
     [<CLIMutable>]
+    type Subject = { 
+        Id:int; 
+        Name:string; 
+        Link:string; 
+        SessionId:int; 
+    }
+
+    [<CLIMutable>]
     type Bill = { 
         Id:int; 
         Name:string; 
         Link:string; 
         Title:string; 
         Description:string; 
-        Topics:string; 
         Authors:string; 
         SessionId:int; 
     }
@@ -84,3 +91,9 @@ module Model =
         Body:string
     }
 
+    [<CLIMutable>]
+    type BillSubject = {
+        Id:int;
+        BillId:int;
+        SubjectId:int;
+    }
