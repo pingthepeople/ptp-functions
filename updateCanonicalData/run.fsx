@@ -72,7 +72,7 @@ let updateCommittees (cn,sessionId,sessionYear) =
 #r "../packages/Microsoft.Azure.WebJobs/lib/net45/Microsoft.Azure.WebJobs.Host.dll"
 open Microsoft.Azure.WebJobs.Host
 
-let Run(myTimer: TimerInfo, scheduledActions: ICollector<string>, log: TraceWriter) =
+let Run(myTimer: TimerInfo, log: TraceWriter) =
     log.Info(sprintf "F# function executed at: %s" (DateTime.Now.ToString()))
     try
         let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
