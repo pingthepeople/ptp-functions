@@ -7,7 +7,7 @@
 #r "../packages/FSharp.Formatting/lib/net40/FSharp.Formatting.Common.dll"
 #r "../packages/FSharp.Formatting/lib/net40/FSharp.Markdown.dll"
 #r "../packages/StrongGrid/lib/net452/StrongGrid.dll"
-#r "../packages/Twilio/lib/3.5/Twilio.Api.dll"
+#r "../packages/Twilio/lib/net451/Twilio.dll"
 #r "../packages/Newtonsoft.Json/lib/net45/Newtonsoft.Json.dll"
 
 #load "../shared/model.fs"
@@ -24,6 +24,8 @@ open FSharp.Formatting.Common
 open FSharp.Markdown
 open StrongGrid
 open Twilio
+open Twilio.Rest.Api.V2010.Account
+open Twilio.Types
 open IgaTracker.Model
 open Newtonsoft.Json
 
@@ -38,8 +40,10 @@ let sendSMSNotification message =
     let sid = Environment.GetEnvironmentVariable("Twilio.AccountSid")
     let token = Environment.GetEnvironmentVariable("Twilio.AuthToken")
     let phoneNumber = Environment.GetEnvironmentVariable("Twilio.PhoneNumber")
-    let twilio = new TwilioRestClient(sid, token)
-    twilio.SendMessage(phoneNumber, message.Recipient, message.Body) |> ignore
+    let fromNumber = new PhoneNumber(phoneNumber)
+    let toNumber = new PhoneNumber(message.Recipient)
+    TwilioClient.Init(sid, token)
+    MessageResource.Create(toNumber, from=fromNumber, body=message.Body) |> ignore
 
 #r "../packages/Microsoft.Azure.WebJobs/lib/net45/Microsoft.Azure.WebJobs.Host.dll"
 open Microsoft.Azure.WebJobs.Host
