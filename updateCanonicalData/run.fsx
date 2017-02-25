@@ -53,24 +53,34 @@ let updateBills (cn,sessionId,sessionYear) =
     let knownBills = cn |> dapperMapParametrizedQuery<string> "SELECT Name from Bill WHERE SessionId = @SessionId" (Map["SessionId",sessionId:>obj])
     let lastUpdate = cn |> dapperMapParametrizedQuery<DateTime> "SELECT MAX(Created) from Bill WHERE SessionId = @SessionId" (Map["SessionId",sessionId:>obj]) |> Seq.head
     let newBills = fetchAll (sprintf "/%s/bills?minFiledDate=%s" sessionYear (lastUpdate.ToString("yyyy-MM-dd")))
-    let billModels =
+    let newBillMetadata =
         newBills
         |> List.filter (fun bill -> knownBills |> Seq.exists (fun knownBill -> knownBill = bill?billName.AsString()) |> not)
-        |> List.map (fun bill -> get (bill?link.AsString()) |> toModel)
-    // Add them to the database
-    billModels |> List.iter (fun bill -> cn |> dapperParametrizedQuery<int> InsertBill bill |> ignore)
+        |> List.map (fun bill -> get (bill?link.AsString()))
+    // Add the bills to the database
+    let newBillModels = newBillMetadata |> List.map toModel
+    newBillModels |> List.iter (fun bill -> cn |> dapperParametrizedQuery<int> InsertBill bill |> ignore)
 
     // Determine bill subjects
-    let insertedBills = cn |> dapperMapParametrizedQuery<Bill> "Select Id,Name from Bill where Created > @Created" (Map ["Created", lastUpdate:>obj])
-    let subjects = cn |> dapperMapParametrizedQuery "SELECT Id,Name,Link From [Subject] WHERE SessionId = @SessionId" (Map["Name",sessionYear:>obj])
-    let billSubjectModels = 
-        insertedBills
+    let newBillRecords = cn |> dapperMapParametrizedQuery<Bill> "Select Id,Name from Bill where Created > @Created" (Map ["Created", lastUpdate:>obj])
+    let subjects = cn |> dapperMapParametrizedQuery<Subject> "SELECT Id,Name,Link From [Subject] WHERE SessionId = @SessionId" (Map["SessionId",sessionId:>obj])
+    newBillRecords
+        // pair the inserted bill with its API metadata
         |> Seq.map (fun bill -> 
-            let billMetadata = newBills |> List.find(fun newBill -> bill.Name = (newBill?billName.AsString()))
-            (bill,billMetadata?latestVersion?))
-        |> Seq.collect (fun pair -> 
-            {BillSubject.BillId = bill}
-    billModels
+            let billMetadatum = newBillMetadata |> List.find(fun newBill -> bill.Name = (newBill?billName.AsString()))
+            (bill,billMetadatum))
+        // map each bill to one or more subject records. 
+        // 'Seq.collect' will map multiple subjects per bill and concat them all together in a single collection. Handy!
+        |> Seq.collect (fun (bill,billMetadatum) -> 
+            billMetadatum?latestVersion?subjects.AsArray()
+            |> Array.map (fun subject ->
+                let subjectId =  subjects |> Seq.find (fun s -> s.Link = subject?link.AsString()) |> (fun subject -> subject.Id)
+                { BillSubject.Id = 0; BillId = bill.Id; SubjectId = subjectId; }
+            ))
+        // Add the bill/subject descriptor to the database
+        |> Seq.iter (fun subject -> cn |> dapperParametrizedQuery<int> InsertBillSubject subject |> ignore)
+
+    newBillModels
 
 let updateCommittees (cn,sessionId,sessionYear) =
     let toModel chamber c ={
