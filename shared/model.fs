@@ -36,7 +36,8 @@ module Model =
         Link:string; 
         Title:string; 
         Description:string; 
-        Authors:string; 
+        Authors:string;
+        Chamber:Chamber; 
         SessionId:int; 
     }
 
@@ -60,6 +61,7 @@ module Model =
         End:string;
         Location:string;
         ActionType:ActionType;
+        Chamber:Chamber;
         BillId:int;
     } 
 

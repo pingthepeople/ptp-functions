@@ -27,7 +27,8 @@ let toModel (bills:Bill seq) (billname,calendar,chamber,actionType) =
     Date = calendar?date.AsDateTime();
     Start = "";
     End = "";
-    Location = chamber;
+    Location = chamber.ToString();
+    Chamber = chamber;
     Link = calendar?link.AsString();
     BillId = bills |> Seq.find (fun b -> b.Name = billname) |> (fun b -> b.Id);}
 
@@ -49,7 +50,7 @@ let generateScheduledActions (chamber, sessionYear, date, (bills:Bill seq), link
     
     let calendarMetadata = 
         // fetch committees occurring after today
-        fetchAll (sprintf "/%s/chambers/%s/calendars?minDate=%s" sessionYear chamber date)
+        fetchAll (sprintf "/%s/chambers/%A/calendars?minDate=%s" sessionYear chamber date)
         // filter out 
         |> List.tryFind (fun calendarMetadata -> calendarMetadata?edition.AsString() = "First")
 
@@ -85,14 +86,15 @@ let Run(myTimer: TimerInfo, scheduledActions: ICollector<string>, log: TraceWrit
     try
         let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
         let sessionYear = (System.Environment.GetEnvironmentVariable("SessionYear"))
+        let sessionId = cn |> dapperMapParametrizedQuery<int> "SELECT Id From [Session] WHERE Name = @Name" (Map["Name",sessionYear:>obj]) |> Seq.head
         let date = DateTime.Now.AddDays(1.0).ToString("yyyy-MM-dd")
         
-        let bills = cn |> dapperQuery<Bill> "SELECT Id,Name from Bill"
+        let bills = cn |> dapperMapParametrizedQuery<Bill> "SELECT Id,Name from Bill WHERE SessionId = @SessionId" (Map["SessionId",sessionId:>obj])
         let links = cn |> dapperParametrizedQuery<string> "SELECT Link from ScheduledAction WHERE Date >= @Date" {DateSelectArgs.Date=date}
 
         log.Info(sprintf "[%s] Fetch chamber calendar from API ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
-        let houseScheduledActionModels = ("House", sessionYear, date, bills, links) |> generateScheduledActions 
-        let senateScheduledActionModels = ("Senate", sessionYear, date, bills, links) |> generateScheduledActions 
+        let houseScheduledActionModels = (Chamber.House, sessionYear, date, bills, links) |> generateScheduledActions 
+        let senateScheduledActionModels = (Chamber.Senate, sessionYear, date, bills, links) |> generateScheduledActions 
         log.Info(sprintf "[%s] Fetch chamber calendar from API [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) )
 
         log.Info(sprintf "[%s] Add scheduled actions to database ..." (DateTime.Now.ToString("HH:mm:ss.fff")))

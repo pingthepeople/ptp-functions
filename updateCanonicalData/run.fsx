@@ -40,13 +40,21 @@ let updateSubjects (cn,sessionId,sessionYear) =
     newSubjects
 
 let updateBills (cn,sessionId,sessionYear) =
-    let toModel bill = {
-        Bill.Id=0; 
+    let toModel bill = 
+        let name = bill?billName.AsString()
+        let chamber = 
+            match name.Substring(0,1) with
+            | "H" -> Chamber.House
+            | "S" -> Chamber.Senate
+            | _ -> raise(System.ArgumentException("unrecognized chamber for bill " + name))
+
+        { Bill.Id=0; 
         SessionId=1; 
-        Name=bill?billName.AsString(); 
+        Name=name; 
         Link=bill?link.AsString(); 
         Title=bill?latestVersion?shortDescription.AsString(); 
         Description= bill?latestVersion?digest.AsString();
+        Chamber=chamber;
         Authors=bill?latestVersion?authors.AsArray() |> Array.toList |> List.map (fun a -> a?lastName.AsString()) |> List.sort |> String.concat ", "; }
 
     // Find new bills
@@ -134,7 +142,5 @@ let Run(myTimer: TimerInfo, log: TraceWriter) =
         houseCommittees |> List.iter (fun committee -> log.Info(sprintf "[%s]   Added House committee '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) committee.Name))
         senateCommittees |> List.iter (fun committee -> log.Info(sprintf "[%s]   Added Senate committee '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) committee.Name))
         log.Info(sprintf "[%s] Update committees [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) )
-
-
     with
     | ex -> log.Error(sprintf "Encountered error: %s" (ex.ToString())) 

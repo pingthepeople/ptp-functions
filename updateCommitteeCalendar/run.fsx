@@ -21,7 +21,14 @@ open IgaTracker.Queries
 open IgaTracker.Http
 open IgaTracker.Db
 
-let toModel (bills:Bill seq) (billname,meeting) = 
+let toModel (bills:Bill seq) (committees:Committee seq) (billname,meeting) = 
+    let billId = bills |> Seq.find (fun b -> b.Name = billname) |> (fun b -> b.Id)
+    let committeeLink = meeting?committee?link.AsString().Replace("standing-","")
+    let chamber = 
+        committees 
+        |> Seq.find (fun committee -> committee.Link = committeeLink) 
+        |> (fun committee -> committee.Chamber)
+
     {ScheduledAction.Id = 0;
     ActionType = ActionType.CommitteeReading;
     Date = meeting?meetingDate.AsDateTime();
@@ -29,9 +36,10 @@ let toModel (bills:Bill seq) (billname,meeting) =
     End = meeting?endtime.AsString();
     Location = meeting?location.AsString();
     Link = meeting?link.AsString();
-    BillId = bills |> Seq.find (fun b -> b.Name = billname) |> (fun b -> b.Id);}
+    Chamber = chamber;
+    BillId = billId;}
 
-let generateScheduledActions (sessionYear, date, (bills:Bill seq), links) = 
+let generateScheduledActions (sessionYear, date, (bills:Bill seq), links, committees) = 
     // fetch committees occurring after today
     fetchAll (sprintf "/%s/meetings?minDate=%s" sessionYear date)
     // Filter out the meetings if they don't have an agenda with bills or we've already recorded it (based on the meeting link)
@@ -46,7 +54,7 @@ let generateScheduledActions (sessionYear, date, (bills:Bill seq), links) =
     // Filter out bills that we're not tracking
     |> List.filter (fun (billname,meeting) -> bills |> Seq.exists(fun b -> b.Name = billname))
     // Map each (meeting,bill) to a ScheduledAction model.
-    |> List.map (fun (billname,meeting) -> toModel bills (billname,meeting))
+    |> List.map (fun (billname,meeting) -> toModel bills committees (billname,meeting))
 
 let addToDatabase cn scheduledActions =
     scheduledActions 
@@ -62,14 +70,16 @@ let Run(myTimer: TimerInfo, scheduledActions: ICollector<string>, log: TraceWrit
     log.Info(sprintf "F# function executed at: %s" (DateTime.Now.ToString()))
     try
         let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
-        let sessionYear = (System.Environment.GetEnvironmentVariable("SessionYear"))
-        let date = DateTime.Now.AddDays(1.0).ToString("yyyy-MM-dd")
+        let sessionYear = System.Environment.GetEnvironmentVariable("SessionYear")
+        let sessionId = cn |> dapperMapParametrizedQuery<int> "SELECT Id From [Session] WHERE Name = @Name" (Map["Name",sessionYear:>obj])
+        let date = DateTime.Now.AddDays(-10.0).ToString("yyyy-MM-dd")
         
-        let bills = cn |> dapperQuery<Bill> "SELECT Id,Name from Bill "
+        let bills = cn |> dapperMapParametrizedQuery<Bill> "SELECT Id,Name from Bill WHERE SessionId = @SessionId" (Map["SessionId",sessionId:>obj])
+        let committees = cn |> dapperMapParametrizedQuery<Committee> "SELECT Name,Link,Chamber from Committee WHERE SessionId = @SessionId" (Map["SessionId",sessionId:>obj])
         let links = cn |> dapperParametrizedQuery<string> "SELECT Link from ScheduledAction WHERE Date >= @Date" {DateSelectArgs.Date=date}
 
         log.Info(sprintf "[%s] Fetch committee meetings from API ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
-        let scheduledActionModels = (sessionYear, date, bills, links) |> generateScheduledActions 
+        let scheduledActionModels = (sessionYear, date, bills, links, committees) |> generateScheduledActions 
         log.Info(sprintf "[%s] Fetch committee meetings from API [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) )
 
         log.Info(sprintf "[%s] Add scheduled actions to database ..." (DateTime.Now.ToString("HH:mm:ss.fff")))

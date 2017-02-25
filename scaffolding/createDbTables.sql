@@ -53,6 +53,7 @@ CREATE TABLE Bill
     Title nvarchar(256) NOT NULL,
     Description nvarchar(max),
     Authors nvarchar(256),
+    Chamber TINYINT NOT NULL,
     Created DATETIME NOT NULL DEFAULT GetUtcDate(),
     SessionId int NOT NULL FOREIGN KEY REFERENCES [Session](Id)
 )
@@ -73,6 +74,7 @@ CREATE TABLE ScheduledAction
 (
     Id int IDENTITY(1,1) PRIMARY KEY,
     Link nvarchar(256) NOT NULL,
+    Chamber TINYINT NOT NULL,
     ActionType TINYINT NOT NULL,
     Date DATETIME NOT NULL,
     [Start] nvarchar(16) NOT NULL,
