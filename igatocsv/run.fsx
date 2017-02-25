@@ -7,7 +7,6 @@
 #r "../packages/FSharp.Data/lib/portable-net45+sl50+netcore45/FSharp.Data.dll"
 #r "../packages/FSharp.Formatting/lib/net40/FSharp.Formatting.Common.dll"
 #r "../packages/FSharp.Formatting/lib/net40/FSharp.Markdown.dll"
-#r "../packages/StrongGrid/lib/net452/StrongGrid.dll"
 
 #if !COMPILED
 #r "../packages/Microsoft.Azure.WebJobs/lib/net45/Microsoft.Azure.WebJobs.Host.dll"
@@ -18,6 +17,8 @@ open System.IO
 open System.Text
 open System.Net
 open System.Net.Http
+open System.Net.Mail
+open System.Net.Mime
 open System.Threading
 open System.Threading.Tasks
 open FSharp.Data
@@ -26,7 +27,6 @@ open FSharp.Markdown
 open Microsoft.Azure.WebJobs.Host
 open Microsoft.WindowsAzure.Storage
 open Microsoft.WindowsAzure.Storage.Blob
-open StrongGrid
 
 let get endpoint = 
     let standardHeaders = [ "Accept", "application/json"; "Authorization", "Token " + Environment.GetEnvironmentVariable("IgaApiKey") ]
@@ -193,16 +193,25 @@ let describe (actions:Actions.Item list) (calendars:Calendars.Root) =
     ]    
 
 let emailResult (attachmentPath:string) (body:string) apiKey (recipients:string) = 
-    let client = new StrongGrid.Client(apiKey)
-    let recipients = recipients.Split([|';'|]) |> Array.map (fun r -> new Model.MailAddress(r,r))
-    let toAddress = new Model.MailAddress("jhoerr@gmail.com", "John Hoerr")
-    let fromAddress = new Model.MailAddress("jhoerr@gmail.edu", "John Hoerr")
-    let attch = [ new Model.Attachment(FileName = Path.GetFileName(attachmentPath), Type="text/csv", Content = (encodeAttachmentContent attachmentPath)) ]
-    let textContent = body 
-    let htmlContent = body |> Markdown.Parse |> Markdown.WriteHtml
-    let subject = sprintf "IGA legislative update for %s" (DateTime.Now.ToString("MM-dd-yyyy"))
-    client.Mail.SendToMultipleRecipientsAsync(recipients, fromAddress, subject, htmlContent, textContent, attachments=attch, trackOpens=false, trackClicks=false).Wait()
-
+    let mailMsg = new MailMessage();
+    // From
+    mailMsg.From <- new MailAddress("jhoerr@gmail.edu", "John Hoerr");
+    // To
+    recipients.Split([|';'|]) 
+    |> Array.map (fun r -> new MailAddress(r))
+    |> Array.iter mailMsg.To.Add
+    // Subject and multipart/alternative Body
+    mailMsg.Subject <- sprintf "IGA legislative update for %s" (DateTime.Now.ToString("MM-dd-yyyy"))
+    let text = body
+    let html = body |> Markdown.Parse |> Markdown.WriteHtml
+    mailMsg.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(text, null, MediaTypeNames.Text.Plain));
+    mailMsg.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(html, null, MediaTypeNames.Text.Html));
+    // Attachment
+    mailMsg.Attachments.Add (new Attachment(attachmentPath, "text/csv"))
+    // Init SmtpClient and send
+    let smtpClient = new SmtpClient("smtp.sendgrid.net", Convert.ToInt32(587));
+    smtpClient.Credentials <- new System.Net.NetworkCredential("apikey", Environment.GetEnvironmentVariable("SendGridApiKey"))
+    smtpClient.Send(mailMsg);
 
 // AZURE FUNCTION ENTRY POINT
 let Run(myTimer: TimerInfo, log: TraceWriter) =
