@@ -27,7 +27,7 @@ let addToDatabase date (cn:SqlConnection) allActions =
     // Determine the type of action this is. We only care about particular types.
     let determineActionType a = 
         match a?description.AsString() with
-        | StartsWith "First reading: referred to" rest -> ActionType.AssignedToCommittee
+        | StartsWith "First reading: referred to Committee on " rest -> ActionType.AssignedToCommittee
         | StartsWith "Committee report" rest -> ActionType.CommitteeReading
         | StartsWith "Second reading" rest -> ActionType.SecondReading
         | StartsWith "Third reading" rest -> ActionType.ThirdReading
@@ -35,7 +35,7 @@ let addToDatabase date (cn:SqlConnection) allActions =
     // Pare down the description of the action.
     let determineDescription a =
         match a?description.AsString() with
-        | StartsWith "First reading: referred to" rest -> rest
+        | StartsWith "First reading: referred to Committee on " rest -> rest
         | StartsWith "Committee report: " rest -> rest
         | StartsWith "Second reading: " rest -> rest
         | StartsWith "Third reading: " rest -> rest
