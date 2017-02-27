@@ -41,7 +41,7 @@ CREATE TABLE [User]
     Name nvarchar(256),
     Email nvarchar(256) NOT NULL,
     Mobile nvarchar(256),
-    ReceiveDigestEmail bit NOT NULL DEFAULT 1,
+    DigestType TINYINT NOT NULL DEFAULT 0,
     Created DATETIME NOT NULL DEFAULT GetUtcDate()
 )
 

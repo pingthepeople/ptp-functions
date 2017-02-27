@@ -4,6 +4,8 @@ module Model =
 
     type Chamber = House=1 | Senate=2
     type ActionType = Unknown=0 | CommitteeReading=1 | SecondReading=2 | ThirdReading=3 | AssignedToCommittee=4
+    type DigestType = None=0 | MyBills=1 | AllBills=2
+    type MessageType = Email=1 | SMS=2
 
     [<CLIMutable>]
     type Session = { 
@@ -80,10 +82,8 @@ module Model =
         Name:string;
         Email:string;
         Mobile:string;
-        ReceiveDigestEmail:bool;
+        DigestType:DigestType;
     }
-
-    type MessageType = Email=1 | SMS=2
 
     [<CLIMutable>]
     type Message = {

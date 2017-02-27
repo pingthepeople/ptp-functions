@@ -1,0 +1,21 @@
+{
+    "disabled": false,
+    "bindings": [
+        {
+            "queueName": "digest",
+            "connection": "ServiceBus.ConnectionString",
+            "name": "user",
+            "accessRights": "Listen",
+            "type": "serviceBusTrigger",
+            "direction": "in"
+        },
+        {
+            "queueName": "notification",
+            "connection": "ServiceBus.ConnectionString",
+            "name": "notifications",
+            "accessRights": "Listen",
+            "type": "serviceBus",
+            "direction": "out"
+        }
+    ]
+}

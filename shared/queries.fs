@@ -64,7 +64,8 @@ WHERE NOT EXISTS(
 		tbl.BillId = cte.BillId
 		AND tbl.CommitteeId = cte.CommitteeId
 		AND tbl.Assigned = cte.Assigned)"""
-    
+
+    [<Literal>]
     let GenerateSpreadSheetReport = """SELECT
 	b.Name as 'Topics'
 	, b.Title
@@ -105,3 +106,43 @@ outer apply (Select Top 1 CAST([Date] AS DATE) [Date] from [ScheduledAction] sa 
 outer apply (Select Top 1 CAST([Date] AS DATE) [Date] from [ScheduledAction] sa where sa.BillId = b.Id and ActionType = 1 and sa.Chamber <> b.Chamber) sccr
 outer apply (Select Top 1 CAST([Date] AS DATE) [Date] from [ScheduledAction] sa where sa.BillId = b.Id and ActionType = 2 and sa.Chamber <> b.Chamber) sc2r
 outer apply (Select Top 1 CAST([Date] AS DATE) [Date] from [ScheduledAction] sa where sa.BillId = b.Id and ActionType = 3 and sa.Chamber <> b.Chamber) sc3r"""
+
+    [<Literal>]
+    let GenerateSpreadSheetReportForBills = GenerateSpreadSheetReport + """ WHERE b.Id IN @Ids"""
+
+    [<Literal>]
+    let FetchAllActions = """SELECT 
+	s.Name as SessionName
+	,b.Name as BillName
+	,b.Chamber as BillChamber
+	,b.Title
+	,a.Chamber as ActionChamber
+	,a.ActionType
+	,a.Description
+FROM Action a
+JOIN Bill b ON a.BillId = b.Id
+JOIN Session s ON b.SessionId = s.Id
+WHERE a.Date BETWEEN @Today AND DateAdd(DAY,1,@Today)""" 
+
+    [<Literal>]
+    let FetchActionsForBills = FetchAllActions + """ AND b.Id IN @Ids""" 
+
+    [<Literal>]
+    let FetchAllScheduledActions = """SELECT
+	s.Name as SessionName
+	,b.Name as BillName
+	,b.Chamber as BillChamber
+	,b.Title
+	,sa.Chamber as ActionChamber
+	,sa.ActionType
+	,sa.Date
+	,sa.[Start]
+	,sa.[End]
+	,sa.Location
+FROM ScheduledAction sa
+JOIN Bill b ON sa.BillId = b.Id
+JOIN Session s ON b.SessionId = s.Id
+WHERE sa.Date >= @Today""" 
+    
+    [<Literal>]
+    let FetchScheduledActionsForBills = FetchAllScheduledActions + """ AND b.Id IN @Ids""" 
