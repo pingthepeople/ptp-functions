@@ -6,7 +6,6 @@
 #r "../packages/Microsoft.Azure.WebJobs/lib/net45/Microsoft.Azure.WebJobs.Host.dll"
 
 #load "../shared/queries.fs"
-#load "../shared/model.fs"
 #load "../shared/db.fsx"
 #load "../shared/csv.fsx"
 
@@ -47,8 +46,6 @@ type DigestScheduledAction = {
     Location:string;
 }
 
-type FetchArgs = { Today:DateTime }
-type FetchWithIdsArgs = { Today:DateTime; Ids:seq<int> }
 let printSectionTitle actionType = 
     match actionType with 
     | ActionType.CommitteeReading -> "Committee Hearings"
@@ -113,8 +110,7 @@ let describeScheduledActionsForDay (date:DateTime,scheduledActions) =
     let thirdReadings = scheduledActions |> describeScheduledActions ActionType.ThirdReading
     [header] @ committeReadings @ secondReadings @ thirdReadings
 
-let generateDigestMessage digestUser (actions,scheduledActions) filename =
-    let salutation = "Hello! Please find attached today's legislative update.  "
+let generateDigestMessage digestUser (salutation,actions,scheduledActions) filename =
     let houseActions = actions |> describeActionsForChamber Chamber.House
     let senateActions = actions |> describeActionsForChamber Chamber.Senate
     let upcomingActions = 
@@ -127,14 +123,16 @@ let generateDigestMessage digestUser (actions,scheduledActions) filename =
     {Message.Recipient=digestUser.Email; Subject = subject; Body=body; MessageType=MessageType.Email; Attachment=filename}
 
 let generateDigestMessageForAllBills (digestUser,today) filename cn =
-    let actions = cn |> dapperParametrizedQuery<DigestAction> FetchAllActions {FetchArgs.Today=today}
-    let scheduledActions = cn |> dapperParametrizedQuery<DigestScheduledAction> FetchAllScheduledActions {FetchArgs.Today=today}
-    generateDigestMessage digestUser (actions,scheduledActions) filename
+    let salutation = "Hello! Here are the day's legislative activity and upcoming schedules for all bills in this legislative session."
+    let actions = cn |> dapperMapParametrizedQuery<DigestAction> FetchAllActions (Map["Today", today:>obj])
+    let scheduledActions = cn |> dapperMapParametrizedQuery<DigestScheduledAction> FetchAllScheduledActions (Map["Today", today:>obj])
+    generateDigestMessage digestUser (salutation,actions,scheduledActions) filename
 
 let generateDigestMessageForBills (digestUser:User,today) filename billIds cn = 
-    let actions = cn |> dapperParametrizedQuery<DigestAction> FetchActionsForBills {Today=today; Ids=billIds}
-    let scheduledActions = cn |> dapperParametrizedQuery<DigestScheduledAction> FetchScheduledActionsForBills {Today=today; Ids=billIds}
-    generateDigestMessage digestUser (actions,scheduledActions) filename
+    let salutation = "Hello! Here are the day's legislative activity and upcoming schedules for the bills you are following in this legislative session."
+    let actions = cn |> dapperMapParametrizedQuery<DigestAction> FetchActionsForBills (Map["Today", today:>obj; "Ids", billIds:>obj])
+    let scheduledActions = cn |> dapperParametrizedQuery<DigestScheduledAction> FetchScheduledActionsForBills (Map["Today", today:>obj; "Ids", billIds:>obj])
+    generateDigestMessage digestUser (salutation,actions,scheduledActions) filename
 
 let generateSpreadsheetForBills (digestUser:User,today) storageConnStr billIds cn = 
     let userBillsSpreadsheetFilename = generateUserBillsSpreadsheetFilename today digestUser.Id
@@ -171,7 +169,7 @@ let Run(user: string, notifications: ICollector<string>, log: TraceWriter) =
             cn |> generateDigestMessageForAllBills (digestUser,today) filename |> JsonConvert.SerializeObject |> notifications.Add
         | _ -> raise (ArgumentException("Unrecognized digest type"))
 
-        log.Info(sprintf "[%s] Generating action alerts [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Generating %A digest for %s [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) digestUser.DigestType digestUser.Email)
     with
     | ex -> 
         log.Error(sprintf "Encountered error: %s" (ex.ToString())) 

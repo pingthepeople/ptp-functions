@@ -22,7 +22,10 @@ module Csv =
 
     let downloadBlob connStr path name =
         let container = connStr |> storageContainer
-        let blob = container.ListBlobs() |> Seq.sortByDescending (fun b -> b.Uri.ToString()) |> Seq.head :?> CloudBlockBlob
+        let blob = 
+            container.ListBlobs()
+            |> Seq.map (fun blob -> blob :?> CloudBlockBlob) 
+            |> Seq.find(fun blob -> blob.Name = name)
         blob.DownloadToFile(path, FileMode.OpenOrCreate) |> ignore
 
     let parse value =

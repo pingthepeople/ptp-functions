@@ -143,7 +143,7 @@ WHERE a.Date BETWEEN @Today AND DateAdd(DAY,1,@Today)"""
 FROM ScheduledAction sa
 JOIN Bill b ON sa.BillId = b.Id
 JOIN Session s ON b.SessionId = s.Id
-WHERE sa.Date >= @Today""" 
+WHERE sa.Date > @Today""" 
     
     [<Literal>]
     let FetchScheduledActionsForBills = FetchAllScheduledActions + """ AND b.Id IN @Ids""" 

@@ -32,7 +32,7 @@ open IgaTracker.Csv
 open Newtonsoft.Json
 
 let getAttachment filename = 
-    let path = System.IO.Path.GetTempPath()
+    let path = System.IO.Path.GetTempFileName()
     filename |> downloadBlob (Environment.GetEnvironmentVariable("AzureStorage.ConnectionString")) path
     path
 
