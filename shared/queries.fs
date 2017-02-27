@@ -146,3 +146,12 @@ WHERE sa.Date >= @Today"""
     
     [<Literal>]
     let FetchScheduledActionsForBills = FetchAllScheduledActions + """ AND b.Id IN @Ids""" 
+
+    [<Literal>]
+    let FetchDigestUsers = """SELECT u.Id, u.Name, u.DigestType, u.Email 
+FROM [User] u
+WHERE 
+	DigestType = 2 
+	OR (
+		DigestType = 1 
+		AND EXISTS (SELECT 1 FROM UserBill ub WHERE ub.UserId = u.Id))"""

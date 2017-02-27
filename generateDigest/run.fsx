@@ -137,26 +137,18 @@ let generateDigestMessageForBills (digestUser,today) billIds cn =
 let Run(user: string, notifications: ICollector<string>, log: TraceWriter) =
     log.Info(sprintf "F# function executed for '%s' at %s" user (DateTime.Now.ToString()))
     try
-        // let digestUser = JsonConvert.DeserializeObject<User>(user)
-        let digestUser = {User.Id=1;Name="John Hoerr";Email="jhoerr@gmail.com";Mobile="+15033606581";DigestType=DigestType.MyBills}
+        let digestUser = JsonConvert.DeserializeObject<User>(user)
         log.Info(sprintf "[%s] Generating %A digest for %s ..." (DateTime.Now.ToString("HH:mm:ss.fff")) digestUser.DigestType digestUser.Email)
         
-        // let today = DateTime.Now.Date
-        let today = DateTime(2017,2,20)
+        let today = DateTime.Now.Date
         let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
         let billIds = cn |> dapperMapParametrizedQuery<int> "SELECT BillId from UserBill WHERE UserId = @UserId" (Map["UserId", digestUser.Id:>obj])
         
-        let message = 
-            match digestUser.DigestType with 
-            | DigestType.MyBills when Seq.isEmpty billIds -> null
-            | DigestType.MyBills -> cn |> generateDigestMessageForBills (digestUser,today) billIds |> JsonConvert.SerializeObject
-            | DigestType.AllBills -> cn |> generateDigestMessageForAllBills (digestUser,today) |> JsonConvert.SerializeObject 
-            | _ -> raise (ArgumentException("Unrecognized digest type"))
-
-        match message with
-        | null -> ignore
-        | msg -> msg |> notifications.Add
-        |> ignore
+        match digestUser.DigestType with 
+        | DigestType.MyBills when Seq.isEmpty billIds -> printfn "User has not selected any bills "
+        | DigestType.MyBills -> cn |> generateDigestMessageForBills (digestUser,today) billIds |> JsonConvert.SerializeObject |> notifications.Add
+        | DigestType.AllBills -> cn |> generateDigestMessageForAllBills (digestUser,today) |> JsonConvert.SerializeObject |> notifications.Add
+        | _ -> raise (ArgumentException("Unrecognized digest type"))
 
         log.Info(sprintf "[%s] Generating action alerts [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
     with

@@ -5,6 +5,7 @@
 #r "../packages/Newtonsoft.Json/lib/net45/Newtonsoft.Json.dll"
 
 #load "../shared/model.fs"
+#load "../shared/queries.fs"
 #load "../shared/db.fsx"
 
 open System
@@ -13,6 +14,7 @@ open System.Dynamic
 open System.Collections.Generic
 open Dapper
 open IgaTracker.Model
+open IgaTracker.Queries
 open IgaTracker.Db
 open Newtonsoft.Json
 
@@ -24,7 +26,7 @@ let Run(myTimer: TimerInfo, digests: ICollector<string>, log: TraceWriter) =
     try
         log.Info(sprintf "[%s] Enqueue digest creation ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
         new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString")) 
-        |> dapperQuery<User> "SELECT * FROM User WHERE DigestType <> 0"
+        |> dapperQuery<User> FetchDigestUsers
         |> Seq.map JsonConvert.SerializeObject
         |> Seq.iter digests.Add
         log.Info(sprintf "[%s] Enqueue digest creation [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
