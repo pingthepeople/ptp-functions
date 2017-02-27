@@ -66,32 +66,33 @@ WHERE NOT EXISTS(
 		AND tbl.Assigned = cte.Assigned)"""
 
     [<Literal>]
-    let GenerateSpreadSheetReport = """SELECT
-	b.Name as 'Topics'
+    let FetchAllBillStatus = """SELECT
+	b.Name
 	, b.Title
 	, b.Description
 	, b.Authors
-	, (Select oc.Name from Committee oc Join BillCommittee obc on oc.Chamber = b.Chamber and b.Id = obc.BillID and oc.Id = obc.CommitteeId) as 'Origin Committee'
-	, (Select cc.Name from Committee cc Join BillCommittee cbc on cc.Chamber <> b.Chamber and b.Id = cbc.BillID and cc.Id = cbc.CommitteeId) as 'Crossover Committee'
+	, b.Chamber as 'OriginChamber'
+	, (Select oc.Name from Committee oc Join BillCommittee obc on oc.Chamber = b.Chamber and b.Id = obc.BillID and oc.Id = obc.CommitteeId) as 'OriginCommittee'
+	, (Select cc.Name from Committee cc Join BillCommittee cbc on cc.Chamber <> b.Chamber and b.Id = cbc.BillID and cc.Id = cbc.CommitteeId) as 'CrossoverCommittee'
 	, STUFF( (SELECT '; ' + s.Name
                              FROM [Subject] s
 							 Join [BillSubject] bs on s.Id = bs.SubjectId
 							 WHERE bs.BillId = b.Id
 							 --Order by s.Id
                              FOR XML PATH('')), 
-                            1, 1, '') as 'Topics'
-	, ISNULL(aocr.Date,socr.Date) as 'Origin Committee Reading'
-	, aocr.Description as 'Vote'
-	, ISNULL(ao2r.Date,so2r.Date) 'Second Reading'
-	, ao2r.Description as 'Vote'
-	, ISNULL(ao3r.Date,so3r.Date) 'Third Reading'
-	, ao3r.Description as 'Vote'
-	, ISNULL(accr.Date,sccr.Date) 'Crossover Committee Reading'
-	, accr.Description 'Vote'
-	, ISNULL(ac2r.Date,sc2r.Date) 'Second Reading'
-	, ac2r.Description 'Vote'
-	, ISNULL(ac3r.Date,sc3r.Date) 'Third Reading'
-	, ac3r.Description 'Vote'
+                            1, 1, '') as 'Subjects'
+	, replace(convert(varchar, ISNULL(aocr.Date,socr.Date), 102), '.', '-') as 'OriginCommitteeReading'
+	, aocr.Description as 'OriginCommitteeReadingVote'
+	, replace(convert(varchar, ISNULL(ao2r.Date,so2r.Date), 102), '.', '-') 'OriginSecondReading'
+	, ao2r.Description as 'OriginSecondReadingVote'
+	, replace(convert(varchar, ISNULL(ao3r.Date,so3r.Date), 102), '.', '-') 'OriginThirdReading'
+	, ao3r.Description as 'OriginThirdReadingVote'
+	, replace(convert(varchar, ISNULL(accr.Date,sccr.Date), 102), '.', '-') 'CrossoverCommitteeReading'
+	, accr.Description 'CrossoverCommitteeReadingVote'
+	, replace(convert(varchar, ISNULL(ac2r.Date,sc2r.Date), 102), '.', '-') 'CrossoverSecondReading'
+	, ac2r.Description 'CrossoverSecondReadingVote'
+	, replace(convert(varchar, ISNULL(ac3r.Date,sc3r.Date), 102), '.', '-') 'CrossoverThirdReading'
+	, ac3r.Description 'CrossoverThirdReadingVote'
 from Bill b
 outer apply (Select Top 1 CAST([Date] AS DATE) [Date], Description from [Action] a where a.BillId = b.Id and ActionType = 1 and a.Chamber = b.Chamber) aocr
 outer apply (Select Top 1 CAST([Date] AS DATE) [Date], Description from [Action] a where a.BillId = b.Id and ActionType = 2 and a.Chamber = b.Chamber) ao2r
@@ -108,7 +109,7 @@ outer apply (Select Top 1 CAST([Date] AS DATE) [Date] from [ScheduledAction] sa 
 outer apply (Select Top 1 CAST([Date] AS DATE) [Date] from [ScheduledAction] sa where sa.BillId = b.Id and ActionType = 3 and sa.Chamber <> b.Chamber) sc3r"""
 
     [<Literal>]
-    let GenerateSpreadSheetReportForBills = GenerateSpreadSheetReport + """ WHERE b.Id IN @Ids"""
+    let FetchBillStatusForBills = FetchAllBillStatus + """ WHERE b.Id IN @Ids"""
 
     [<Literal>]
     let FetchAllActions = """SELECT 

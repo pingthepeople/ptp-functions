@@ -5,17 +5,19 @@
 #r "../packages/Newtonsoft.Json/lib/net45/Newtonsoft.Json.dll"
 #r "../packages/Microsoft.Azure.WebJobs/lib/net45/Microsoft.Azure.WebJobs.Host.dll"
 
-#load "../shared/db.fsx"
 #load "../shared/queries.fs"
 #load "../shared/model.fs"
+#load "../shared/db.fsx"
+#load "../shared/csv.fsx"
 
 open System
 open System.Data.SqlClient
 open System.Dynamic
 open System.Collections.Generic
 open IgaTracker.Model
-open IgaTracker.Db
 open IgaTracker.Queries
+open IgaTracker.Db
+open IgaTracker.Csv
 open Newtonsoft.Json
 open Microsoft.Azure.WebJobs.Host
 
@@ -111,7 +113,7 @@ let describeScheduledActionsForDay (date:DateTime,scheduledActions) =
     let thirdReadings = scheduledActions |> describeScheduledActions ActionType.ThirdReading
     [header] @ committeReadings @ secondReadings @ thirdReadings
 
-let generateDigestMessage digestUser (actions,scheduledActions) =
+let generateDigestMessage digestUser (actions,scheduledActions) filename =
     let salutation = "Hello! Please find attached today's legislative update.  "
     let houseActions = actions |> describeActionsForChamber Chamber.House
     let senateActions = actions |> describeActionsForChamber Chamber.Senate
@@ -122,32 +124,51 @@ let generateDigestMessage digestUser (actions,scheduledActions) =
         |> Seq.toList
     let body = [salutation] @ houseActions @ senateActions @ upcomingActions |> String.concat "\n\n"
     let subject = sprintf "Legislative Update for %s" (DateTime.Now.ToString("D")) 
-    {Message.Recipient=digestUser.Email; Subject = subject; Body=body; MessageType=MessageType.Email}
+    {Message.Recipient=digestUser.Email; Subject = subject; Body=body; MessageType=MessageType.Email; Attachment=filename}
 
-let generateDigestMessageForAllBills (digestUser,today) cn =
+let generateDigestMessageForAllBills (digestUser,today) filename cn =
     let actions = cn |> dapperParametrizedQuery<DigestAction> FetchAllActions {FetchArgs.Today=today}
     let scheduledActions = cn |> dapperParametrizedQuery<DigestScheduledAction> FetchAllScheduledActions {FetchArgs.Today=today}
-    generateDigestMessage digestUser (actions,scheduledActions)
+    generateDigestMessage digestUser (actions,scheduledActions) filename
 
-let generateDigestMessageForBills (digestUser,today) billIds cn = 
+let generateDigestMessageForBills (digestUser:User,today) filename billIds cn = 
     let actions = cn |> dapperParametrizedQuery<DigestAction> FetchActionsForBills {Today=today; Ids=billIds}
     let scheduledActions = cn |> dapperParametrizedQuery<DigestScheduledAction> FetchScheduledActionsForBills {Today=today; Ids=billIds}
-    generateDigestMessage digestUser (actions,scheduledActions)
+    generateDigestMessage digestUser (actions,scheduledActions) filename
+
+let generateSpreadsheetForBills (digestUser:User,today) storageConnStr billIds cn = 
+    let userBillsSpreadsheetFilename = generateUserBillsSpreadsheetFilename today digestUser.Id
+    cn
+    |> dapperMapParametrizedQuery<BillStatus> FetchBillStatusForBills (Map["Ids", billIds:>obj])
+    |> postSpreadsheet storageConnStr userBillsSpreadsheetFilename
+    userBillsSpreadsheetFilename
 
 let Run(user: string, notifications: ICollector<string>, log: TraceWriter) =
     log.Info(sprintf "F# function executed for '%s' at %s" user (DateTime.Now.ToString()))
     try
-        let digestUser = JsonConvert.DeserializeObject<User>(user)
+        //let digestUser = JsonConvert.DeserializeObject<User>(user)
+        let digestUser = {User.Id=1;Name="John HOerr";Email="jhoerr@gmail.com";Mobile=null;DigestType=DigestType.MyBills}
         log.Info(sprintf "[%s] Generating %A digest for %s ..." (DateTime.Now.ToString("HH:mm:ss.fff")) digestUser.DigestType digestUser.Email)
         
         let today = DateTime.Now.Date
+        let storageConnStr = System.Environment.GetEnvironmentVariable("AzureStorage.ConnectionString")
         let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
         let billIds = cn |> dapperMapParametrizedQuery<int> "SELECT BillId from UserBill WHERE UserId = @UserId" (Map["UserId", digestUser.Id:>obj])
         
         match digestUser.DigestType with 
+        // nop: user has opted for a digest of 'my bills' but has not flagged any bills for tracking
         | DigestType.MyBills when Seq.isEmpty billIds -> printfn "User has not selected any bills "
-        | DigestType.MyBills -> cn |> generateDigestMessageForBills (digestUser,today) billIds |> JsonConvert.SerializeObject |> notifications.Add
-        | DigestType.AllBills -> cn |> generateDigestMessageForAllBills (digestUser,today) |> JsonConvert.SerializeObject |> notifications.Add
+        //  user has opted for a digest of 'my bills'
+        | DigestType.MyBills -> 
+            // generate a spreadsheet for the user and upload it to azure. save the filename.
+            let filename = cn |> generateSpreadsheetForBills (digestUser,today) storageConnStr billIds
+            // generate digest email message with attachment filename and queue for delivery
+            cn |> generateDigestMessageForBills (digestUser,today) filename billIds |> JsonConvert.SerializeObject |> notifications.Add
+        | DigestType.AllBills -> 
+            // resolve the name of the pre-existing 'all bills' spreadsheet
+            let filename = generateAllBillsSpreadsheetFilename today
+            // generate digest email message with attachment filename and queue for delivery
+            cn |> generateDigestMessageForAllBills (digestUser,today) filename |> JsonConvert.SerializeObject |> notifications.Add
         | _ -> raise (ArgumentException("Unrecognized digest type"))
 
         log.Info(sprintf "[%s] Generating action alerts [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))

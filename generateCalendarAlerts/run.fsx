@@ -44,13 +44,13 @@ let generateEmailMessages (bill:Bill) action users userBills =
     userBills 
     |> Seq.map (fun ub -> 
         locateUserToAlert users ub 
-        |> (fun u -> {MessageType=MessageType.Email; Recipient=u.Email; Subject=(subject bill); Body=(body bill action)}))
+        |> (fun u -> {MessageType=MessageType.Email; Recipient=u.Email; Subject=(subject bill); Body=(body bill action); Attachment=""}))
 // Generate SMS message models
 let generateSmsMessages (bill:Bill) action users userBills = 
     userBills 
     |> Seq.map (fun ub -> 
         locateUserToAlert users ub 
-        |> (fun u -> {MessageType=MessageType.SMS; Recipient=u.Mobile; Subject=(subject bill); Body=(body bill action)}))
+        |> (fun u -> {MessageType=MessageType.SMS; Recipient=u.Mobile; Subject=(subject bill); Body=(body bill action); Attachment=""}))
 
 // Fetch user/bill/action/ records from database to support message generation
 let fetchUserBills (cn:SqlConnection) id =

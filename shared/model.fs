@@ -2,10 +2,11 @@ namespace IgaTracker
 
 module Model =
 
+//  Database models
+
     type Chamber = House=1 | Senate=2
     type ActionType = Unknown=0 | CommitteeReading=1 | SecondReading=2 | ThirdReading=3 | AssignedToCommittee=4
     type DigestType = None=0 | MyBills=1 | AllBills=2
-    type MessageType = Email=1 | SMS=2
 
     [<CLIMutable>]
     type Session = { 
@@ -85,17 +86,48 @@ module Model =
         DigestType:DigestType;
     }
 
-    [<CLIMutable>]
-    type Message = {
-        MessageType:MessageType;
-        Recipient:string;
-        Subject:string;
-        Body:string
-    }
 
     [<CLIMutable>]
     type BillSubject = {
         Id:int;
         BillId:int;
         SubjectId:int;
+    }
+
+
+//  Messaging / Data Processing Models
+
+    type MessageType = Email=1 | SMS=2
+
+    [<CLIMutable>]
+    type Message = {
+        MessageType:MessageType;
+        Recipient:string;
+        Subject:string;
+        Body:string;
+        Attachment:string;
+    }
+
+    [<CLIMutable>]
+    type BillStatus = { 
+        Name:string;
+        Title:string;
+        Description:string;
+        Authors:string;
+        OriginChamber:Chamber;
+        OriginCommittee:string;
+        CrossoverCommittee:string;
+        Subjects:string;
+        OriginCommitteeReading:string;
+        OriginCommitteeReadingVote:string;
+        OriginSecondReading:string;
+        OriginSecondReadingVote:string;
+        OriginThirdReading:string;
+        OriginThirdReadingVote:string;
+        CrossoverCommitteeReading:string;
+        CrossoverCommitteeReadingVote:string;
+        CrossoverSecondReading:string;
+        CrossoverSecondReadingVote:string;
+        CrossoverThirdReading:string;
+        CrossoverThirdReadingVote:string;
     }

@@ -27,7 +27,7 @@ let locateUserToAlert (users:User seq) userBill =
 // Format a nice description of the action
 let prettyPrint actionType chamber =
     match actionType with
-    | ActionType.AssignedToCommittee -> sprintf "was assigned to the %A" chamber
+    | ActionType.AssignedToCommittee -> sprintf "was assigned to the %A Committee on" chamber
     | ActionType.CommitteeReading -> sprintf "was read in committee in the %A. The vote was:" chamber
     | ActionType.SecondReading -> sprintf "had a second reading in the %A. The vote was:" chamber
     | ActionType.ThirdReading -> sprintf "had a third reading in the %A. The vote was:" chamber
@@ -35,7 +35,7 @@ let prettyPrint actionType chamber =
 
 // Format a nice message body
 let body (bill:Bill) (action:Action) =
-    sprintf "%s ('%s') %s %s. (@ %s)" bill.Name (bill.Title.TrimEnd('.')) (prettyPrint action.ActionType action.Chamber) action.Description (action.Date.ToString())
+    sprintf "%s ('%s') %s %s." bill.Name (bill.Title.TrimEnd('.')) (prettyPrint action.ActionType action.Chamber) action.Description
 // Format a nice message subject
 let subject (bill:Bill) =
     sprintf "Update on %s" bill.Name
@@ -45,13 +45,13 @@ let generateEmailMessages (bill:Bill) action users userBills =
     userBills 
     |> Seq.map (fun ub -> 
         locateUserToAlert users ub 
-        |> (fun u -> {MessageType=MessageType.Email; Recipient=u.Email; Subject=(subject bill); Body=(body bill action)}))
+        |> (fun u -> {MessageType=MessageType.Email; Recipient=u.Email; Subject=(subject bill); Body=(body bill action); Attachment=""}))
 // Generate SMS message models
 let generateSmsMessages (bill:Bill) action users userBills = 
     userBills 
     |> Seq.map (fun ub -> 
         locateUserToAlert users ub 
-        |> (fun u -> {MessageType=MessageType.SMS; Recipient=u.Mobile; Subject=(subject bill); Body=(body bill action)}))
+        |> (fun u -> {MessageType=MessageType.SMS; Recipient=u.Mobile; Subject=(subject bill); Body=(body bill action); Attachment=""}))
 
 // Fetch user/bill/action/ records from database to support message generation
 let fetchUserBills (cn:SqlConnection) id =
@@ -88,10 +88,10 @@ let Run(actionId: string, notifications: ICollector<string>, log: TraceWriter) =
         log.Info(sprintf "[%s] Enqueueing action alerts ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
         emailMessages |> Seq.iter (fun m -> 
             log.Info(sprintf "[%s]   Enqueuing email action alert to '%s' re: '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) m.Recipient m.Subject )
-            notifications.Add(JsonConvert.SerializeObject(m)))
+            m |> JsonConvert.SerializeObject |> notifications.Add)
         smsMessages |> Seq.iter (fun m -> 
             log.Info(sprintf "[%s]   Enqueuing SMS action alert to '%s' re: '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) m.Recipient m.Subject)
-            notifications.Add(JsonConvert.SerializeObject(m)))
+            m |> JsonConvert.SerializeObject |> notifications.Add)
         log.Info(sprintf "[%s] Enqueueing action alerts [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
     with
     | ex -> 

@@ -10,6 +10,7 @@
 #r "../packages/Newtonsoft.Json/lib/net45/Newtonsoft.Json.dll"
 
 #load "../shared/model.fs"
+#load "../shared/csv.fsx"
 
 open System
 open System.IO
@@ -27,7 +28,13 @@ open Twilio
 open Twilio.Rest.Api.V2010.Account
 open Twilio.Types
 open IgaTracker.Model
+open IgaTracker.Csv
 open Newtonsoft.Json
+
+let getAttachment filename = 
+    let path = System.IO.Path.GetTempPath()
+    filename |> downloadBlob (Environment.GetEnvironmentVariable("AzureStorage.ConnectionString")) path
+    path
 
 let sendEmailNotification message= 
     let mailMsg = new MailMessage();
@@ -39,12 +46,24 @@ let sendEmailNotification message=
     mailMsg.Subject <- message.Subject
     let text = message.Body
     let html = text |> Markdown.Parse |> Markdown.WriteHtml
-    mailMsg.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(text, null, MediaTypeNames.Text.Plain));
-    mailMsg.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(html, null, MediaTypeNames.Text.Html));
-    // Init SmtpClient and send
+    AlternateView.CreateAlternateViewFromString(text, null, MediaTypeNames.Text.Plain) |> mailMsg.AlternateViews.Add;
+    AlternateView.CreateAlternateViewFromString(html, null, MediaTypeNames.Text.Html) |> mailMsg.AlternateViews.Add;
+
     let smtpClient = new SmtpClient("smtp.sendgrid.net", Convert.ToInt32(587));
     smtpClient.Credentials <- new System.Net.NetworkCredential("apikey", Environment.GetEnvironmentVariable("SendGridApiKey"))
-    smtpClient.Send(mailMsg);
+    
+    // Attachment
+    match message.Attachment with
+    | "" -> 
+        mailMsg |> smtpClient.Send
+    | filename ->
+        let path = getAttachment filename
+        let stream = File.OpenRead(path)
+        new Attachment(stream, filename, "text/csv") |> mailMsg.Attachments.Add
+        mailMsg |> smtpClient.Send
+        stream.Close()
+        path |> File.Delete
+
 
 let sendSMSNotification message =
     let sid = Environment.GetEnvironmentVariable("Twilio.AccountSid")
