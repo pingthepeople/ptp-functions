@@ -1,13 +1,3 @@
---DROP table [Session]
---Drop Table [Committee]
-
---DROP TABLE [UserBill]
---DROP TABLE [BillCommittee]
---DROP TABLE [Action]
---DROP TABLE [ScheduledAction]
---Drop TABLE [Bill]
---drop table [User]
-
 CREATE TABLE [Session]
 (
     Id int IDENTITY(1,1) PRIMARY KEY,
