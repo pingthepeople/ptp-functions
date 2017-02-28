@@ -27,31 +27,9 @@ let enqueueNotification message =
 
 let text = (sprintf "test message %s" (DateTime.Now.ToString()))
 
-[<Literal>]
-let body = """Hello! Please find attached today's legislative update.
-
-#Today's House Activity
-
-##Committee Hearings
-
-* [HB1383](https://iga.in.gov/legislative/2017/bills/House/HB1383) ('Elementary school teachers.'): amend do pass, adopted
-* [HB1449](https://iga.in.gov/legislative/2017/bills/House/HB1449) ('Teacher induction pilot program.'): amend do pass, adopted
-
-##Second Readings
-
-* [HB1130](https://iga.in.gov/legislative/2017/bills/House/HB1130) ('Protections for student journalists.'): ordered engrossed\n\n##Third Readings
-
-#Today's Senate Activity\n\n##CommitteeHearings
-
-* [SB0126](https://iga.in.gov/legislative/2017/bills/Senate/SB0126) ('Government ethics.'): amend do pass, adopted
-* [SB0309](https://iga.in.gov/legislative/2017/bills/Senate/SB0309) ('Distributed generation.'): amend do pass, adopted"""
-
-
-
 // Test sendNotification email handling by sending email message to 'notification' queue
-// enqueueNotification {MessageType=MessageType.Email; Recipient="jhoerr@gmail.com"; Subject=text; Body=body}
+enqueueNotification {MessageType=MessageType.Email; Recipient="CHANGEME"; Subject="test without attachment"; Body="test without attachment"; Attachment=""}
 
 // Test sendNotification SMS handling by sending SMS message to 'notification' queue
-// enqueueNotification {MessageType=MessageType.SMS; Recipient="+15033606581"; Subject=text; Body="test link ->  http://google.com <- link"}
+enqueueNotification {MessageType=MessageType.SMS; Recipient="+1CHANGEME"; Subject=text; Body="test"; Attachment=""}
 
-let html = body |> Markdown.Parse |> Markdown.WriteHtml
