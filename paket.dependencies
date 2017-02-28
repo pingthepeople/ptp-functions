@@ -1,6 +1,5 @@
 source https://www.nuget.org/api/v2
 nuget dapper
-nuget dapperextensions
 nuget FSharp.Data
 nuget fsharp.formatting
 nuget microsoft.azure.webjobs

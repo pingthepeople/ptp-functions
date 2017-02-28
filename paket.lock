@@ -19,8 +19,6 @@ NUGET
       System.Threading (>= 4.0.11) - framework: >= netstandard13
       System.Xml.XDocument (>= 4.0.11) - framework: >= netstandard13
       System.Xml.XmlDocument (>= 4.0.1) - framework: >= netstandard13
-    DapperExtensions (1.5)
-      Dapper (>= 1.12)
     FSharp.Compiler.Service (2.0.0.6)
     FSharp.Data (2.3.2)
       Zlib.Portable (>= 1.11) - framework: >= netstandard11, portable-net45+sl5+win8, portable-net45+win8, portable-net45+win8+wp8+wpa81
