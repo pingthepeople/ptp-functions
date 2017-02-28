@@ -33,24 +33,27 @@ let prettyPrint sa =
     | _ -> "(some other event type?)"
 
 // Format a nice message body
-let body (bill:Bill) (scheduledAction:ScheduledAction) =
+let emailBody (bill:Bill) (scheduledAction:ScheduledAction) =
+    let sessionYear = Environment.GetEnvironmentVariable("SessionYear")
+    sprintf "[%s](https://iga.in.gov/legislative/%s/bills/%s/%s) ('%s') %s." (Bill.PrettyPrintName bill.Name) sessionYear (bill.Chamber.ToString().ToLower()) (Bill.ParseNumber bill.Name) (bill.Title.TrimEnd('.')) (prettyPrint scheduledAction)
+let smsBody (bill:Bill) (scheduledAction:ScheduledAction) =
     sprintf "%s ('%s') %s." bill.Name (bill.Title.TrimEnd('.')) (prettyPrint scheduledAction)
 // Format a nice message subject
 let subject (bill:Bill) =
-    sprintf "Update on %s" bill.Name
+    sprintf "Update on %s" (Bill.PrettyPrintName bill.Name)
 
 // Generate email message models
 let generateEmailMessages (bill:Bill) action users userBills =
     userBills 
     |> Seq.map (fun ub -> 
         locateUserToAlert users ub 
-        |> (fun u -> {MessageType=MessageType.Email; Recipient=u.Email; Subject=(subject bill); Body=(body bill action); Attachment=""}))
+        |> (fun u -> {MessageType=MessageType.Email; Recipient=u.Email; Subject=(subject bill); Body=(emailBody bill action); Attachment=""}))
 // Generate SMS message models
 let generateSmsMessages (bill:Bill) action users userBills = 
     userBills 
     |> Seq.map (fun ub -> 
         locateUserToAlert users ub 
-        |> (fun u -> {MessageType=MessageType.SMS; Recipient=u.Mobile; Subject=(subject bill); Body=(body bill action); Attachment=""}))
+        |> (fun u -> {MessageType=MessageType.SMS; Recipient=u.Mobile; Subject=(subject bill); Body=(smsBody bill action); Attachment=""}))
 
 // Fetch user/bill/action/ records from database to support message generation
 let fetchUserBills (cn:SqlConnection) id =

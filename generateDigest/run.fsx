@@ -53,9 +53,10 @@ let printSectionTitle actionType =
     | ActionType.ThirdReading -> "Third Readings"
     | _ -> ""
 
+
 // ACTIONS
 let listAction (a:DigestAction) = 
-    sprintf "* [%s](https://iga.in.gov/legislative/%s/bills/%A/%s) ('%s'): %s" a.BillName a.SessionName a.BillChamber a.BillName a.Title a.Description
+    sprintf "* [%s](https://iga.in.gov/legislative/%s/bills/%s/%s) ('%s'): %s" (Bill.PrettyPrintName a.BillName) a.SessionName (a.BillChamber.ToString().ToLower()) (Bill.ParseNumber a.BillName) a.Title a.Description
 
 let listActions (actions:DigestAction seq) =
     match actions with 
@@ -83,7 +84,7 @@ let describeActionsForChamber chamber (actions:DigestAction seq) =
 
 // SCHEDULED ACTIONS
 let listScheduledAction sa =
-    let item = sprintf "* [%s](https://iga.in.gov/legislative/%s/bills/%A/%s) ('%s'); [%s](https://iga.in.gov/information/location_maps)" sa.BillName sa.SessionName sa.BillChamber sa.BillName sa.Title sa.Location
+    let item = sprintf "* [%s](https://iga.in.gov/legislative/%s/bills/%s/%s) ('%s'); [%s](https://iga.in.gov/information/location_maps)" (Bill.PrettyPrintName sa.BillName) sa.SessionName (sa.BillChamber.ToString().ToLower()) (Bill.ParseNumber sa.BillName) sa.Title sa.Location
     match sa.Start with
     | "" -> item
     | timed -> sprintf "%s, %s-%s" item (DateTime.Parse(sa.Start).ToString("t")) (DateTime.Parse(sa.End).ToString("t"))
@@ -144,8 +145,8 @@ let generateSpreadsheetForBills (digestUser:User,today) storageConnStr billIds c
 let Run(user: string, notifications: ICollector<string>, log: TraceWriter) =
     log.Info(sprintf "F# function executed for '%s' at %s" user (DateTime.Now.ToString()))
     try
-        //let digestUser = JsonConvert.DeserializeObject<User>(user)
-        let digestUser = {User.Id=1;Name="John HOerr";Email="jhoerr@gmail.com";Mobile=null;DigestType=DigestType.MyBills}
+        let digestUser = JsonConvert.DeserializeObject<User>(user)
+        // let digestUser = {User.Id=1;Name="John HOerr";Email="jhoerr@gmail.com";Mobile=null;DigestType=DigestType.MyBills}
         log.Info(sprintf "[%s] Generating %A digest for %s ..." (DateTime.Now.ToString("HH:mm:ss.fff")) digestUser.DigestType digestUser.Email)
         
         let today = DateTime.Now.Date
