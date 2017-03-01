@@ -42,9 +42,9 @@ module Model =
         Authors:string;
         Chamber:Chamber; 
         SessionId:int; 
-    }
-    let parseNumber (billName:string) = billName.Substring(2,4).TrimStart('0')        
-    let prettyPrintName (billName:string) = sprintf "%s %s" (billName.Substring(0,2)) (parseNumber billName)
+    } with
+        static member ParseNumber (billName:string) = billName.Substring(2,4).TrimStart('0')        
+        static member PrettyPrintName (billName:string) = sprintf "%s %s" (billName.Substring(0,2)) (Bill.ParseNumber billName)
 
     [<CLIMutable>]
     type Action = {
