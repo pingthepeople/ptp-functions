@@ -24,12 +24,15 @@ open Newtonsoft.Json
 let locateUserToAlert (users:User seq) userBill =
     users |> Seq.find (fun u -> u.Id = userBill.UserId)
 
+let formatTimeOfDay time = DateTime.Parse(time).ToString("h:mm tt")
+
 // Format a nice description of the action
 let prettyPrint sa =
     match sa.ActionType with
-    | ActionType.CommitteeReading -> sprintf "is scheduled for a committee reading on %s between %s and %s in %s" (sa.Date.ToString("MM/dd/yyyy")) sa.Start sa.End sa.Location
-    | ActionType.SecondReading -> sprintf "is scheduled for a second reading in the %s on %s" sa.Location (sa.Date.ToString("MM/dd/yyyy"))
-    | ActionType.ThirdReading -> sprintf "is scheduled for a third reading in the %s on %s" sa.Location (sa.Date.ToString("MM/dd/yyyy"))
+    | ActionType.CommitteeReading when sa.Start |> String.IsNullOrWhiteSpace -> sprintf "is scheduled for a committee reading on %s in %s" (sa.Date.ToString("M/d/yyyy")) sa.Location
+    | ActionType.CommitteeReading -> sprintf "is scheduled for a committee reading on %s between %s and %s in %s" (sa.Date.ToString("M/d/yyyy")) (formatTimeOfDay sa.Start) (formatTimeOfDay sa.End) sa.Location
+    | ActionType.SecondReading -> sprintf "is scheduled for a second reading in the %s on %s" sa.Location (sa.Date.ToString("M/d/yyyy"))
+    | ActionType.ThirdReading -> sprintf "is scheduled for a third reading in the %s on %s" sa.Location (sa.Date.ToString("M/d/yyyy"))
     | _ -> "(some other event type?)"
 
 // Format a nice message body
@@ -37,7 +40,7 @@ let emailBody (bill:Bill) (scheduledAction:ScheduledAction) =
     let sessionYear = Environment.GetEnvironmentVariable("SessionYear")
     sprintf "[%s](https://iga.in.gov/legislative/%s/bills/%s/%s) ('%s') %s." (Bill.PrettyPrintName bill.Name) sessionYear (bill.Chamber.ToString().ToLower()) (Bill.ParseNumber bill.Name) (bill.Title.TrimEnd('.')) (prettyPrint scheduledAction)
 let smsBody (bill:Bill) (scheduledAction:ScheduledAction) =
-    sprintf "%s ('%s') %s." bill.Name (bill.Title.TrimEnd('.')) (prettyPrint scheduledAction)
+    sprintf "%s ('%s') %s." (Bill.PrettyPrintName bill.Name) (bill.Title.TrimEnd('.')) (prettyPrint scheduledAction)
 // Format a nice message subject
 let subject (bill:Bill) =
     sprintf "Update on %s" (Bill.PrettyPrintName bill.Name)
