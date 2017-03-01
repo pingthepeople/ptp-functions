@@ -9,7 +9,6 @@
 #r "../packages/Twilio/lib/net451/Twilio.dll"
 #r "../packages/Newtonsoft.Json/lib/net45/Newtonsoft.Json.dll"
 
-#load "../shared/model.fs"
 #load "../shared/csv.fsx"
 
 open System

@@ -4,7 +4,6 @@
 #r "../packages/Dapper/lib/net45/Dapper.dll"
 #r "../packages/Newtonsoft.Json/lib/net45/Newtonsoft.Json.dll"
 
-#load "../shared/model.fs"
 #load "../shared/queries.fs"
 #load "../shared/db.fsx"
 #load "../shared/csv.fsx"
