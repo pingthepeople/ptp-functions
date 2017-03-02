@@ -117,6 +117,7 @@ let generateDigestMessage digestUser (salutation,actions,scheduledActions) filen
     let upcomingActions = 
         scheduledActions 
         |> Seq.groupBy (fun scheduledAction -> scheduledAction.Date)
+        |> Seq.sortBy (fun (date,scheduledActions) -> date)
         |> Seq.collect describeScheduledActionsForDay
         |> Seq.toList
     let body = [salutation] @ houseActions @ senateActions @ upcomingActions |> String.concat "\n\n"
