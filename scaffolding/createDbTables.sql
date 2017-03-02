@@ -103,3 +103,11 @@ CREATE TABLE BillSubject
     BillId int FOREIGN KEY REFERENCES Bill(Id),
     SubjectId int FOREIGN KEY REFERENCES [Subject](Id),
 )
+
+-- Laravel Migrations table
+
+CREATE TABLE migrations (
+  id INT IDENTITY(1,1) PRIMARY KEY,
+  migration varchar(255) NOT NULL,
+  batch INT NOT NULL,
+) 
