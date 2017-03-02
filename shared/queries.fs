@@ -150,7 +150,7 @@ WHERE sa.Date > @Today"""
 
     [<Literal>]
     let FetchDigestUsers = """SELECT u.Id, u.Name, u.DigestType, u.Email 
-FROM [User] u
+FROM [Users] u
 WHERE 
 	DigestType = 2 
 	OR (

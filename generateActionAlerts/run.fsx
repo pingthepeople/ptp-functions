@@ -63,7 +63,7 @@ let fetchUserBills (cn:SqlConnection) id =
     let bill = cn |> dapperParametrizedQuery<Bill> "SELECT * FROM Bill WHERE Id = @Id" {Id=action.BillId} |> Seq.head
     let userBills = cn |> dapperParametrizedQuery<UserBill> "SELECT * FROM UserBill WHERE BillId = @Id" {Id=action.BillId}
     let userIds = userBills |> Seq.map (fun ub -> ub.UserId)
-    let users = cn |> dapperMapParametrizedQuery<User> "SELECT * FROM [User] WHERE Id IN @Ids" (Map["Ids",userIds:>obj])
+    let users = cn |> dapperMapParametrizedQuery<User> "SELECT * FROM [Users] WHERE Id IN @Ids" (Map["Ids",userIds:>obj])
     cn.Close()
     (bill, action, users, userBills)
 
