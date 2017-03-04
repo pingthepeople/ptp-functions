@@ -30,9 +30,9 @@ let formatTimeOfDay time = DateTime.Parse(time).ToString("h:mm tt")
 let prettyPrint sa =
     match sa.ActionType with
     | ActionType.CommitteeReading when sa.Start |> String.IsNullOrWhiteSpace -> sprintf "is scheduled for a committee reading on %s in %s" (sa.Date.ToString("M/d/yyyy")) sa.Location
-    | ActionType.CommitteeReading -> sprintf "is scheduled for a committee reading on %s between %s and %s in %s" (sa.Date.ToString("M/d/yyyy")) (formatTimeOfDay sa.Start) (formatTimeOfDay sa.End) sa.Location
-    | ActionType.SecondReading -> sprintf "is scheduled for a second reading in the %s on %s" sa.Location (sa.Date.ToString("M/d/yyyy"))
-    | ActionType.ThirdReading -> sprintf "is scheduled for a third reading in the %s on %s" sa.Location (sa.Date.ToString("M/d/yyyy"))
+    | ActionType.CommitteeReading -> sprintf "is scheduled for a committee reading on %s between %s and %s in [%s](https://iga.in.gov/information/location_maps)" (sa.Date.ToString("M/d/yyyy")) (formatTimeOfDay sa.Start) (formatTimeOfDay sa.End) sa.Location
+    | ActionType.SecondReading -> sprintf "is scheduled for a second reading in the [%s](https://iga.in.gov/information/location_maps) on %s" sa.Location (sa.Date.ToString("M/d/yyyy"))
+    | ActionType.ThirdReading -> sprintf "is scheduled for a third reading in the [%s](https://iga.in.gov/information/location_maps) on %s" sa.Location (sa.Date.ToString("M/d/yyyy"))
     | _ -> "(some other event type?)"
 
 // Format a nice message body
