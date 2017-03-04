@@ -105,7 +105,7 @@ let describeScheduledActions actionType (actions:DigestScheduledAction seq) =
         [sectionTitle; section]
 
 let describeScheduledActionsForDay (date:DateTime,scheduledActions) = 
-    let header = sprintf "##Calendar for %s  " (date.ToString("D"))
+    let header = sprintf "##New Events for %s  " (date.ToString("D"))
     let committeReadings = scheduledActions |> describeScheduledActions ActionType.CommitteeReading
     let secondReadings = scheduledActions |> describeScheduledActions ActionType.SecondReading
     let thirdReadings = scheduledActions |> describeScheduledActions ActionType.ThirdReading
