@@ -60,7 +60,7 @@ call :ExecuteCmd ".paket\paket.bootstrapper.exe"
 IF !ERRORLEVEL! NEQ 0 goto error
 
 ::    1b. Paket restore
-call :ExecuteCmd ".paket\paket.exe" restore --force
+call :ExecuteCmd ".paket\paket.exe" restore
 IF !ERRORLEVEL! NEQ 0 goto error
 
 echo Handling Basic Web Site deployment.
