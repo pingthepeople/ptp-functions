@@ -45,6 +45,7 @@ module Model =
     } with
         static member ParseNumber (billName:string) = billName.Substring(2,4).TrimStart('0')        
         static member PrettyPrintName (billName:string) = sprintf "%s %s" (billName.Substring(0,2)) (Bill.ParseNumber billName)
+        member this.WebUrl session = sprintf "[%s](https://iga.in.gov/legislative/%s/bills/%s/%s)" (Bill.PrettyPrintName this.Name) session (this.Chamber.ToString().ToLower()) (Bill.ParseNumber this.Name)
 
     [<CLIMutable>]
     type Action = {
@@ -55,7 +56,15 @@ module Model =
         ActionType:ActionType;
         Chamber:Chamber;
         BillId:int;
-    } 
+    } with
+        member this.Describe = 
+            let desc = this.Description.TrimEnd(';')
+            match this.ActionType with
+            | ActionType.AssignedToCommittee -> sprintf "was assigned to the %A Committee on %s" this.Chamber desc
+            | ActionType.CommitteeReading -> sprintf "was read in committee in the %A. The vote was: %s" this.Chamber desc
+            | ActionType.SecondReading -> sprintf "had a second reading in the %A. The vote was: %s" this.Chamber desc
+            | ActionType.ThirdReading -> sprintf "had a third reading in the %A. The vote was: %s" this.Chamber desc
+            | _ -> "(some other event type?)"
 
     [<CLIMutable>]
     type ScheduledAction = {
@@ -68,7 +77,25 @@ module Model =
         ActionType:ActionType;
         Chamber:Chamber;
         BillId:int;
-    } 
+    } with
+        member this.Describe includeLink =
+            let formatTimeOfDay time = System.DateTime.Parse(time).ToString("h:mm tt")
+            let eventRoom = 
+                match this.Location with 
+                | "House Chamber" -> "the House Chamber"
+                | "Senate Chamber" -> "the Senate Chamber"
+                | other -> other
+            let eventLocation = 
+                match includeLink with
+                | true -> sprintf "[%s](https://iga.in.gov/information/location_maps)" eventRoom
+                | false -> eventRoom
+            let eventDate = this.Date.ToString("M/d/yyyy")
+            match this.ActionType with
+            | ActionType.CommitteeReading when this.Start |> System.String.IsNullOrWhiteSpace -> sprintf "is scheduled for a committee reading on %s in %s" eventDate eventLocation
+            | ActionType.CommitteeReading -> sprintf "is scheduled for a committee reading on %s from %s-%s in %s" eventDate (formatTimeOfDay this.Start) (formatTimeOfDay this.End) eventLocation
+            | ActionType.SecondReading -> sprintf "is scheduled for a second reading in the %s on %s" eventLocation eventDate
+            | ActionType.ThirdReading -> sprintf "is scheduled for a third reading in the %s on %s" eventLocation eventDate
+            | _ -> "(some other event type?)"
 
     [<CLIMutable>]
     type UserBill = {

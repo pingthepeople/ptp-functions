@@ -24,23 +24,15 @@ open Newtonsoft.Json
 let locateUserToAlert (users:User seq) userBill =
     users |> Seq.find (fun u -> u.Id = userBill.UserId)
 
-let formatTimeOfDay time = DateTime.Parse(time).ToString("h:mm tt")
-
 // Format a nice description of the action
-let prettyPrint sa =
-    match sa.ActionType with
-    | ActionType.CommitteeReading when sa.Start |> String.IsNullOrWhiteSpace -> sprintf "is scheduled for a committee reading on %s in %s" (sa.Date.ToString("M/d/yyyy")) sa.Location
-    | ActionType.CommitteeReading -> sprintf "is scheduled for a committee reading on %s between %s and %s in [%s](https://iga.in.gov/information/location_maps)" (sa.Date.ToString("M/d/yyyy")) (formatTimeOfDay sa.Start) (formatTimeOfDay sa.End) sa.Location
-    | ActionType.SecondReading -> sprintf "is scheduled for a second reading in the [%s](https://iga.in.gov/information/location_maps) on %s" sa.Location (sa.Date.ToString("M/d/yyyy"))
-    | ActionType.ThirdReading -> sprintf "is scheduled for a third reading in the [%s](https://iga.in.gov/information/location_maps) on %s" sa.Location (sa.Date.ToString("M/d/yyyy"))
-    | _ -> "(some other event type?)"
-
-// Format a nice message body
-let emailBody (bill:Bill) (scheduledAction:ScheduledAction) =
+let body (bill:Bill) (scheduledAction:ScheduledAction) includeLink =
     let sessionYear = Environment.GetEnvironmentVariable("SessionYear")
-    sprintf "[%s](https://iga.in.gov/legislative/%s/bills/%s/%s) ('%s') %s." (Bill.PrettyPrintName bill.Name) sessionYear (bill.Chamber.ToString().ToLower()) (Bill.ParseNumber bill.Name) (bill.Title.TrimEnd('.')) (prettyPrint scheduledAction)
-let smsBody (bill:Bill) (scheduledAction:ScheduledAction) =
-    sprintf "%s ('%s') %s." (Bill.PrettyPrintName bill.Name) (bill.Title.TrimEnd('.')) (prettyPrint scheduledAction)
+    let billName =
+        match includeLink with
+        | true ->  bill.Link sessionYear
+        | false -> Bill.PrettyPrintName bill.Name
+    sprintf "%s ('%s') %s." billName (bill.Title.TrimEnd('.')) (scheduledAction.Describe includeLink)
+
 // Format a nice message subject
 let subject (bill:Bill) =
     sprintf "Update on %s" (Bill.PrettyPrintName bill.Name)
@@ -50,13 +42,13 @@ let generateEmailMessages (bill:Bill) action users userBills =
     userBills 
     |> Seq.map (fun ub -> 
         locateUserToAlert users ub 
-        |> (fun u -> {MessageType=MessageType.Email; Recipient=u.Email; Subject=(subject bill); Body=(emailBody bill action); Attachment=""}))
+        |> (fun u -> {MessageType=MessageType.Email; Recipient=u.Email; Subject=(subject bill); Body=(body bill action true); Attachment=""}))
 // Generate SMS message models
 let generateSmsMessages (bill:Bill) action users userBills = 
     userBills 
     |> Seq.map (fun ub -> 
         locateUserToAlert users ub 
-        |> (fun u -> {MessageType=MessageType.SMS; Recipient=u.Mobile; Subject=(subject bill); Body=(smsBody bill action); Attachment=""}))
+        |> (fun u -> {MessageType=MessageType.SMS; Recipient=u.Mobile; Subject=(subject bill); Body=(body bill action false); Attachment=""}))
 
 // Fetch user/bill/action/ records from database to support message generation
 let fetchUserBills (cn:SqlConnection) id =
@@ -99,3 +91,4 @@ let Run(scheduledActionId: string, notifications: ICollector<string>, log: Trace
     | ex -> 
         log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
         reraise()
+

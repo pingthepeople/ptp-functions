@@ -25,20 +25,14 @@ let locateUserToAlert (users:User seq) userBill =
     users |> Seq.find (fun u -> u.Id = userBill.UserId)
 
 // Format a nice description of the action
-let prettyPrint actionType chamber =
-    match actionType with
-    | ActionType.AssignedToCommittee -> sprintf "was assigned to the %A Committee on" chamber
-    | ActionType.CommitteeReading -> sprintf "was read in committee in the %A. The vote was:" chamber
-    | ActionType.SecondReading -> sprintf "had a second reading in the %A. The vote was:" chamber
-    | ActionType.ThirdReading -> sprintf "had a third reading in the %A. The vote was:" chamber
-    | _ -> "(some other event type?)"
-
-// Format a nice message body
-let emailBody (bill:Bill) (action:Action) =
+let body (bill:Bill) (action:Action) includeLinks =
     let sessionYear = Environment.GetEnvironmentVariable("SessionYear")
-    sprintf "[%s](https://iga.in.gov/legislative/%s/bills/%s/%s) ('%s') %s %s." (Bill.PrettyPrintName bill.Name) sessionYear (bill.Chamber.ToString().ToLower()) (Bill.ParseNumber bill.Name) (bill.Title.TrimEnd('.')) (prettyPrint action.ActionType action.Chamber) action.Description
-let smsBody (bill:Bill) (action:Action) =
-    sprintf "[%s] ('%s') %s %s." (Bill.PrettyPrintName bill.Name) (bill.Title.TrimEnd('.')) (prettyPrint action.ActionType action.Chamber) action.Description
+    let billName =
+        match includeLinks with 
+        | true -> bill.WebUrl sessionYear
+        | false -> Bill.PrettyPrintName bill.Name
+    sprintf "%s ('%s') %s." billName (bill.Title.TrimEnd('.')) (action.Describe)
+
 // Format a nice message subject
 let subject (bill:Bill) =
     sprintf "Update on %s" (Bill.PrettyPrintName bill.Name)
@@ -48,13 +42,13 @@ let generateEmailMessages (bill:Bill) action users userBills =
     userBills 
     |> Seq.map (fun ub -> 
         locateUserToAlert users ub 
-        |> (fun u -> {MessageType=MessageType.Email; Recipient=u.Email; Subject=(subject bill); Body=(emailBody bill action); Attachment=""}))
+        |> (fun u -> {MessageType=MessageType.Email; Recipient=u.Email; Subject=(subject bill); Body=(body bill action true); Attachment=""}))
 // Generate SMS message models
 let generateSmsMessages (bill:Bill) action users userBills = 
     userBills 
     |> Seq.map (fun ub -> 
         locateUserToAlert users ub 
-        |> (fun u -> {MessageType=MessageType.SMS; Recipient=u.Mobile; Subject=(subject bill); Body=(smsBody bill action); Attachment=""}))
+        |> (fun u -> {MessageType=MessageType.SMS; Recipient=u.Mobile; Subject=(subject bill); Body=(body bill action false); Attachment=""}))
 
 // Fetch user/bill/action/ records from database to support message generation
 let fetchUserBills (cn:SqlConnection) id =
