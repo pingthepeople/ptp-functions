@@ -4,6 +4,12 @@ module Model =
 
 //  Database models
 
+    let (|StartsWith|_|) (p:string) (s:string) =
+        if s.StartsWith(p) then
+            Some(s.Substring(p.Length))
+        else
+            None
+
     type Chamber = House=1 | Senate=2
     type ActionType = Unknown=0 | CommitteeReading=1 | SecondReading=2 | ThirdReading=3 | AssignedToCommittee=4
     type DigestType = None=0 | MyBills=1 | AllBills=2
@@ -65,6 +71,20 @@ module Model =
             | ActionType.SecondReading -> sprintf "had a second reading in the %A. The vote was: %s" this.Chamber desc
             | ActionType.ThirdReading -> sprintf "had a third reading in the %A. The vote was: %s" this.Chamber desc
             | _ -> "(some other event type?)"
+        static member ParseType description =
+            match description with
+            | StartsWith "First reading: referred to Committee on " rest -> ActionType.AssignedToCommittee
+            | StartsWith "Committee report" rest -> ActionType.CommitteeReading
+            | StartsWith "Second reading" rest -> ActionType.SecondReading
+            | StartsWith "Third reading" rest -> ActionType.ThirdReading
+            | _ -> ActionType.Unknown
+        static member ParseDescription description =
+            match description with
+            | StartsWith "First reading: referred to Committee on " rest -> rest
+            | StartsWith "Committee report: " rest -> rest
+            | StartsWith "Second reading: " rest -> rest
+            | StartsWith "Third reading: " rest -> rest
+            | other -> other
 
     [<CLIMutable>]
     type ScheduledAction = {

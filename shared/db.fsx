@@ -25,3 +25,6 @@ module Db =
             expandoDictionary.Add(paramValue.Key, paramValue.Value :> obj)
     
         connection |> dapperParametrizedQuery query expando
+    
+    let currentSessionYear cn = 
+        cn |> dapperQuery<string> "SELECT TOP 1 Name FROM Session ORDER BY Name Desc" |> Seq.head

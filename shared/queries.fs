@@ -33,7 +33,8 @@ VALUES (@BillId,@SubjectId);
 SELECT CAST(SCOPE_IDENTITY() as int)"""
 
     [<Literal>]
-    let SelectActionsRequiringNotification = """SELECT DISTINCT (a.Id) From Action a
+    let SelectActionsRequiringNotification = """SELECT DISTINCT (a.Id, a.BillId, a.Description, a.ActionType, a.Chamber) 
+FROM Action a
 JOIN UserBill ub on a.BillId = ub.BillId
 WHERE a.Id in @Ids"""
 
@@ -41,6 +42,16 @@ WHERE a.Id in @Ids"""
     let SelectScheduledActionsRequiringNotification = """SELECT DISTINCT (a.Id) From ScheduledAction a
 JOIN UserBill ub on a.BillId = ub.BillId
 WHERE a.Id in @Ids"""
+
+    [<Literal>]
+    let SelectBillIdsAndNames = """SELECT Id, Name
+FROM Bill b
+WHERE b.SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)"""
+
+    [<Literal>]
+    let SelectActionLinksOccuringAfterDate = """SELECT Link
+FROM Action 
+WHERE Date > @Date"""
 
     [<Literal>]
     let UpdateBillCommittees = """With BillCommittee_CTE (BillId, CommitteeId, Assigned)
