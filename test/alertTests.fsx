@@ -15,7 +15,7 @@ let users =
 module ``Given a user that wants to receive both email and SMS alerts`` =
     let userBills = [ {UserBill.Id = 0; UserId=1; BillId=1; ReceiveAlertEmail=true; ReceiveAlertSms=true}]
     
-    let (actualEmails, actualSMSes) = generateUserAlerts  ("2017",bill,users,userBills) ("email body", "sms body")
+    let (actualEmails, actualSMSes) = generateUserAlerts  (bill,users,userBills) ("email body", "sms body")
 
     [<Test>]
     let ``It generates a single email`` = 
@@ -47,7 +47,7 @@ module ``Given a user that only wants to receive email alerts`` =
 
     let userBills = [ {UserId=1; BillId=1; ReceiveAlertEmail=true; ReceiveAlertSms=false; UserBill.Id = 0; }]
     
-    let (actualEmails, actualSMSes) = generateUserAlerts  ("2017",bill,users,userBills) ("email body", "sms body")
+    let (actualEmails, actualSMSes) = generateUserAlerts  (bill,users,userBills) ("email body", "sms body")
 
     [<Test>]
     let ``It generates a single email`` = 
@@ -60,7 +60,7 @@ module ``Given a user that only wants to receive email alerts`` =
 module ``Given a user that only wants to receive SMS alerts`` =
     let userBills = [ {UserId=1; BillId=1; ReceiveAlertEmail=false; ReceiveAlertSms=true; UserBill.Id = 0; }]
     
-    let (actualEmails, actualSMSes) = generateUserAlerts  ("2017",bill,users,userBills) ("email body", "sms body")
+    let (actualEmails, actualSMSes) = generateUserAlerts  (bill,users,userBills) ("email body", "sms body")
 
     [<Test>]
     let ``It does not generate an email`` = 
@@ -75,7 +75,7 @@ module ``Given two users that wish to receive both email and SMS alerts`` =
         {UserId=1; BillId=1; ReceiveAlertEmail=true; ReceiveAlertSms=true; UserBill.Id = 0; }
         {UserId=2; BillId=1; ReceiveAlertEmail=true; ReceiveAlertSms=true; UserBill.Id = 0; }]
     
-    let (actualEmails, actualSMSes) = generateUserAlerts  ("2017",bill,users,userBills) ("email body", "sms body")
+    let (actualEmails, actualSMSes) = generateUserAlerts  (bill,users,userBills) ("email body", "sms body")
 
     [<Test>]
     let ``It generates two emails`` = 
