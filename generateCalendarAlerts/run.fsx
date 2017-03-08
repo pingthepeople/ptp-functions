@@ -66,8 +66,10 @@ let generateAlerts (cn:SqlConnection) id =
     let smsMessages = userBills |> Seq.filter(fun ub -> ub.ReceiveAlertSms) |>  generateSmsMessages bill action users
     (emailMessages, smsMessages)
 
+#r "../packages/Microsoft.Azure.WebJobs.Core/lib/net45/Microsoft.Azure.WebJobs.dll"
 #r "../packages/Microsoft.Azure.WebJobs/lib/net45/Microsoft.Azure.WebJobs.Host.dll"
 
+open Microsoft.Azure.WebJobs
 open Microsoft.Azure.WebJobs.Host
 
 let Run(scheduledActionId: string, notifications: ICollector<string>, log: TraceWriter) =

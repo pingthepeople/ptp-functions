@@ -19,8 +19,13 @@ open IgaTracker.Db
 open IgaTracker.Csv
 open Newtonsoft.Json
 
+#r "../packages/Microsoft.Azure.WebJobs.Core/lib/net45/Microsoft.Azure.WebJobs.dll"
 #r "../packages/Microsoft.Azure.WebJobs/lib/net45/Microsoft.Azure.WebJobs.Host.dll"
+#r "../packages/Microsoft.Azure.WebJobs.Extensions/lib/net45/Microsoft.Azure.WebJobs.Extensions.dll"
+
+open Microsoft.Azure.WebJobs
 open Microsoft.Azure.WebJobs.Host
+open Microsoft.Azure.WebJobs.Extensions
 
 let Run(myTimer: TimerInfo, digests: ICollector<string>, log: TraceWriter) =
     log.Info(sprintf "F# function executed at: %s" (DateTime.Now.ToString()))

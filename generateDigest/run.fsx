@@ -143,6 +143,12 @@ let generateSpreadsheetForBills (digestUser:User,today) storageConnStr billIds c
     |> postSpreadsheet storageConnStr userBillsSpreadsheetFilename
     userBillsSpreadsheetFilename
 
+#r "../packages/Microsoft.Azure.WebJobs.Core/lib/net45/Microsoft.Azure.WebJobs.dll"
+#r "../packages/Microsoft.Azure.WebJobs/lib/net45/Microsoft.Azure.WebJobs.Host.dll"
+
+open Microsoft.Azure.WebJobs
+open Microsoft.Azure.WebJobs.Host
+
 let Run(user: string, notifications: ICollector<string>, log: TraceWriter) =
     log.Info(sprintf "F# function executed for '%s' at %s" user (DateTime.Now.ToString()))
     try
