@@ -29,7 +29,7 @@ let body (bill:Bill) (scheduledAction:ScheduledAction) includeLink =
     let sessionYear = Environment.GetEnvironmentVariable("SessionYear")
     let billName =
         match includeLink with
-        | true ->  bill.Link sessionYear
+        | true ->  bill.WebUrl sessionYear
         | false -> Bill.PrettyPrintName bill.Name
     sprintf "%s ('%s') %s." billName (bill.Title.TrimEnd('.')) (scheduledAction.Describe includeLink)
 

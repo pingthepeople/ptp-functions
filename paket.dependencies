@@ -2,7 +2,9 @@ source https://www.nuget.org/api/v2
 nuget dapper
 nuget FSharp.Data
 nuget fsharp.formatting
+nuget fsunit
 nuget microsoft.azure.webjobs
+nuget nunit
 nuget system.net.primitives
 nuget twilio
 nuget windowsazure.servicebus

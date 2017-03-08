@@ -45,7 +45,7 @@ module Model =
     } with
         static member ParseNumber (billName:string) = billName.Substring(2,4).TrimStart('0')        
         static member PrettyPrintName (billName:string) = sprintf "%s %s" (billName.Substring(0,2)) (Bill.ParseNumber billName)
-        member this.WebUrl session = sprintf "[%s](https://iga.in.gov/legislative/%s/bills/%s/%s)" (Bill.PrettyPrintName this.Name) session (this.Chamber.ToString().ToLower()) (Bill.ParseNumber this.Name)
+        member this.WebLink session = sprintf "[%s](https://iga.in.gov/legislative/%s/bills/%s/%s)" (Bill.PrettyPrintName this.Name) session (this.Chamber.ToString().ToLower()) (Bill.ParseNumber this.Name)
 
     [<CLIMutable>]
     type Action = {
@@ -92,9 +92,9 @@ module Model =
             let eventDate = this.Date.ToString("M/d/yyyy")
             match this.ActionType with
             | ActionType.CommitteeReading when this.Start |> System.String.IsNullOrWhiteSpace -> sprintf "is scheduled for a committee reading on %s in %s" eventDate eventLocation
-            | ActionType.CommitteeReading -> sprintf "is scheduled for a committee reading on %s from %s-%s in %s" eventDate (formatTimeOfDay this.Start) (formatTimeOfDay this.End) eventLocation
-            | ActionType.SecondReading -> sprintf "is scheduled for a second reading in the %s on %s" eventLocation eventDate
-            | ActionType.ThirdReading -> sprintf "is scheduled for a third reading in the %s on %s" eventLocation eventDate
+            | ActionType.CommitteeReading -> sprintf "is scheduled for a committee reading on %s from %s - %s in %s" eventDate (formatTimeOfDay this.Start) (formatTimeOfDay this.End) eventLocation
+            | ActionType.SecondReading -> sprintf "is scheduled for a second reading on %s in %s" eventDate eventLocation 
+            | ActionType.ThirdReading -> sprintf "is scheduled for a third reading on %s in %s" eventDate eventLocation
             | _ -> "(some other event type?)"
 
     [<CLIMutable>]
