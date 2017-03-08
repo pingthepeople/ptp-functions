@@ -1,10 +1,11 @@
-#load "../generateActionAlerts/run.fsx"
+#load "../generateActionAlerts/module.fsx"
 #r "../packages/Nunit/lib/net45/nunit.framework.dll"
 #r "../packages/FsUnit/lib/net45/FsUnit.NUnit.dll"
 
 open NUnit.Framework
 open FsUnit
 open IgaTracker.Model
+open IgaTracker.GenerateActionAlerts
 
 let bill = {Bill.Id=1; Name="HB1001"; Title="HB 1001 title"; Chamber=Chamber.House; Description="desc"; Authors="auth"; Link="link"; SessionId=0;}
 let action = {Action.Id=1; BillId=1; ActionType=ActionType.CommitteeReading; Description="passed"; Chamber=Chamber.House; Date=System.DateTime(2017,1,20); Link="link"}

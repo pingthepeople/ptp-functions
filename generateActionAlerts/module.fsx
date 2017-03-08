@@ -1,7 +1,9 @@
-
 #load "../shared/model.fs"
 #load "../shared/queries.fs"
 #load "../shared/db.fsx"
+
+#r "System.Data"
+#r "../packages/Dapper/lib/net45/Dapper.dll"
 
 namespace IgaTracker 
 
