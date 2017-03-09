@@ -25,7 +25,7 @@ let enqueueNotification message =
     let brokeredMessage = new BrokeredMessage(json)
     queueClient.Send(brokeredMessage)
 
-let text = (sprintf "test message %s" (DateTime.Now.ToString()))
+let text = (sprintf "test message %s" (timestamp()))
 
 // Test sendNotification email handling by sending email message to 'notification' queue
 enqueueNotification {MessageType=MessageType.Email; Recipient="CHANGEME"; Subject="test without attachment"; Body="test without attachment"; Attachment=""}

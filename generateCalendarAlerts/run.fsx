@@ -12,20 +12,20 @@ open IgaTracker.Model
 open IgaTracker.GenerateCalendarAlerts
 
 let Run(scheduledActionId: string, notifications: ICollector<string>, log: TraceWriter) =
-    log.Info(sprintf "F# function executed for action %s at %s" scheduledActionId (DateTime.Now.ToString()))
+    log.Info(sprintf "F# function executed for action %s at %s" scheduledActionId (timestamp()))
     try
-        log.Info(sprintf "[%s] Generating scheduled action alerts ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Generating scheduled action alerts ..." (timestamp()))
         let (emailMessages, smsMessages) = (Int32.Parse(scheduledActionId)) |> generateAlerts
-        log.Info(sprintf "[%s] Generating scheduled action alerts [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Generating scheduled action alerts [OK]" (timestamp()))
 
-        log.Info(sprintf "[%s] Enqueueing scheduled action alerts ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Enqueueing scheduled action alerts ..." (timestamp()))
         emailMessages |> Seq.iter (fun m -> 
-            log.Info(sprintf "[%s]   Enqueuing email alert to '%s' re: '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) m.Recipient m.Subject )
+            log.Info(sprintf "[%s]   Enqueuing email alert to '%s' re: '%s'" (timestamp()) m.Recipient m.Subject )
             notifications.Add(JsonConvert.SerializeObject(m)))
         smsMessages |> Seq.iter (fun m -> 
-            log.Info(sprintf "[%s]   Enqueuing SMS alert to '%s' re: '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) m.Recipient m.Subject)
+            log.Info(sprintf "[%s]   Enqueuing SMS alert to '%s' re: '%s'" (timestamp()) m.Recipient m.Subject)
             notifications.Add(JsonConvert.SerializeObject(m)))
-        log.Info(sprintf "[%s] Enqueueing scheduled action alerts [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Enqueueing scheduled action alerts [OK]" (timestamp()))
     with
     | ex -> 
         log.Error(sprintf "Encountered error: %s" (ex.ToString())) 

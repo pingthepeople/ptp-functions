@@ -124,20 +124,20 @@ let generateDigestMessage digestUser (salutation,actions,scheduledActions) filen
     let subject = sprintf "Legislative Update for %s" (DateTime.Now.ToString("D")) 
     {Message.Recipient=digestUser.Email; Subject = subject; Body=body; MessageType=MessageType.Email; Attachment=filename}
 
-let generateDigestMessageForAllBills (digestUser,today) filename cn =
+let generateDigestMessageForAllBills (digestUser) filename cn =
     let salutation = "Hello! Here are the day's legislative activity and upcoming schedules for all bills in this legislative session."
-    let actions = cn |> dapperMapParametrizedQuery<DigestAction> FetchAllActions (Map["Today", today:>obj])
-    let scheduledActions = cn |> dapperMapParametrizedQuery<DigestScheduledAction> FetchAllScheduledActions (Map["Today", today:>obj])
+    let actions = cn |> dapperMapParametrizedQuery<DigestAction> FetchAllActions (Map["Today", (datestamp()):>obj])
+    let scheduledActions = cn |> dapperMapParametrizedQuery<DigestScheduledAction> FetchAllScheduledActions (Map["Today", (datestamp()):>obj])
     generateDigestMessage digestUser (salutation,actions,scheduledActions) filename
 
-let generateDigestMessageForBills (digestUser:User,today) filename billIds cn = 
+let generateDigestMessageForBills (digestUser:User) filename billIds cn = 
     let salutation = "Hello! Here are the day's legislative activity and upcoming schedules for the bills you are following in this legislative session."
-    let actions = cn |> dapperMapParametrizedQuery<DigestAction> FetchActionsForBills (Map["Today", today:>obj; "Ids", billIds:>obj])
-    let scheduledActions = cn |> dapperParametrizedQuery<DigestScheduledAction> FetchScheduledActionsForBills (Map["Today", today:>obj; "Ids", billIds:>obj])
+    let actions = cn |> dapperMapParametrizedQuery<DigestAction> FetchActionsForBills (Map["Today", (datestamp()):>obj; "Ids", billIds:>obj])
+    let scheduledActions = cn |> dapperParametrizedQuery<DigestScheduledAction> FetchScheduledActionsForBills (Map["Today", (datestamp()):>obj; "Ids", billIds:>obj])
     generateDigestMessage digestUser (salutation,actions,scheduledActions) filename
 
-let generateSpreadsheetForBills (digestUser:User,today) storageConnStr billIds cn = 
-    let userBillsSpreadsheetFilename = generateUserBillsSpreadsheetFilename today digestUser.Id
+let generateSpreadsheetForBills (digestUser:User) storageConnStr billIds cn = 
+    let userBillsSpreadsheetFilename = generateUserBillsSpreadsheetFilename digestUser.Id
     cn
     |> dapperMapParametrizedQuery<BillStatus> FetchBillStatusForBills (Map["Ids", billIds:>obj])
     |> postSpreadsheet storageConnStr userBillsSpreadsheetFilename
@@ -150,13 +150,12 @@ open Microsoft.Azure.WebJobs
 open Microsoft.Azure.WebJobs.Host
 
 let Run(user: string, notifications: ICollector<string>, log: TraceWriter) =
-    log.Info(sprintf "F# function executed for '%s' at %s" user (DateTime.Now.ToString()))
+    log.Info(sprintf "F# function executed for '%s' at %s" user (timestamp()))
     try
         let digestUser = JsonConvert.DeserializeObject<User>(user)
         // let digestUser = {User.Id=1;Name="John HOerr";Email="jhoerr@gmail.com";Mobile=null;DigestType=DigestType.MyBills}
-        log.Info(sprintf "[%s] Generating %A digest for %s ..." (DateTime.Now.ToString("HH:mm:ss.fff")) digestUser.DigestType digestUser.Email)
+        log.Info(sprintf "[%s] Generating %A digest for %s ..." (timestamp()) digestUser.DigestType digestUser.Email)
         
-        let today = DateTime.Now.Date
         let storageConnStr = System.Environment.GetEnvironmentVariable("AzureStorage.ConnectionString")
         let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
         let billIds = cn |> dapperMapParametrizedQuery<int> "SELECT BillId from UserBill WHERE UserId = @UserId" (Map["UserId", digestUser.Id:>obj])
@@ -167,17 +166,17 @@ let Run(user: string, notifications: ICollector<string>, log: TraceWriter) =
         //  user has opted for a digest of 'my bills'
         | DigestType.MyBills -> 
             // generate a spreadsheet for the user and upload it to azure. save the filename.
-            let filename = cn |> generateSpreadsheetForBills (digestUser,today) storageConnStr billIds
+            let filename = cn |> generateSpreadsheetForBills (digestUser) storageConnStr billIds
             // generate digest email message with attachment filename and queue for delivery
-            cn |> generateDigestMessageForBills (digestUser,today) filename billIds |> JsonConvert.SerializeObject |> notifications.Add
+            cn |> generateDigestMessageForBills (digestUser) filename billIds |> JsonConvert.SerializeObject |> notifications.Add
         | DigestType.AllBills -> 
             // resolve the name of the pre-existing 'all bills' spreadsheet
-            let filename = generateAllBillsSpreadsheetFilename today
+            let filename = generateAllBillsSpreadsheetFilename()
             // generate digest email message with attachment filename and queue for delivery
-            cn |> generateDigestMessageForAllBills (digestUser,today) filename |> JsonConvert.SerializeObject |> notifications.Add
+            cn |> generateDigestMessageForAllBills (digestUser) filename |> JsonConvert.SerializeObject |> notifications.Add
         | _ -> raise (ArgumentException("Unrecognized digest type"))
 
-        log.Info(sprintf "[%s] Generating %A digest for %s [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) digestUser.DigestType digestUser.Email)
+        log.Info(sprintf "[%s] Generating %A digest for %s [OK]" (timestamp()) digestUser.DigestType digestUser.Email)
     with
     | ex -> 
         log.Error(sprintf "Encountered error: %s" (ex.ToString())) 

@@ -4,7 +4,7 @@
         {
             "queueName": "action",
             "connection": "ServiceBus.ConnectionString",
-            "name": "actionId",
+            "name": "action",
             "accessRights": "Listen",
             "type": "serviceBusTrigger",
             "direction": "in"

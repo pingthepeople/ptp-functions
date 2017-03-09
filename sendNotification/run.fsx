@@ -77,7 +77,7 @@ let sendSMSNotification message =
 open Microsoft.Azure.WebJobs.Host
 
 let Run(message: string, log: TraceWriter) =
-    log.Info(sprintf "F# function 'sendNotification' executed  at %s" (DateTime.Now.ToString()))
+    log.Info(sprintf "F# function 'sendNotification' executed  at %s" (timestamp()))
     try
         let body = JsonConvert.DeserializeObject<Message>(message)
         log.Info(sprintf "Delivering %A message to '%s' re: '%s'" body.MessageType body.Recipient body.Subject)

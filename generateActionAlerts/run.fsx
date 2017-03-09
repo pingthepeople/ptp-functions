@@ -11,21 +11,21 @@ open Newtonsoft.Json
 open IgaTracker.Model
 open IgaTracker.GenerateActionAlerts
 
-let Run(actionId: string, notifications: ICollector<string>, log: TraceWriter) =
-    log.Info(sprintf "F# function executed for action %s at %s" actionId (DateTime.Now.ToString()))
+let Run(action: string, notifications: ICollector<string>, log: TraceWriter) =
+    log.Info(sprintf "F# function executed for action %s at %s" action (timestamp()))
     try
-        log.Info(sprintf "[%s] Generating action alerts ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
-        let (emailMessages, smsMessages) = (Int32.Parse(actionId)) |> generateAlerts
-        log.Info(sprintf "[%s] Generating action alerts [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Generating action alerts ..." (timestamp()))
+        let (emailMessages, smsMessages) = JsonConvert.DeserializeObject<Action>(action) |> generateAlerts
+        log.Info(sprintf "[%s] Generating action alerts [OK]" (timestamp()))
 
-        log.Info(sprintf "[%s] Enqueueing action alerts ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Enqueueing action alerts ..." (timestamp()))
         emailMessages |> Seq.iter (fun m -> 
-            log.Info(sprintf "[%s]   Enqueuing email action alert to '%s' re: '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) m.Recipient m.Subject )
+            log.Info(sprintf "[%s]   Enqueuing email action alert to '%s' re: '%s'" (timestamp()) m.Recipient m.Subject )
             m |> JsonConvert.SerializeObject |> notifications.Add)
         smsMessages |> Seq.iter (fun m -> 
-            log.Info(sprintf "[%s]   Enqueuing SMS action alert to '%s' re: '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) m.Recipient m.Subject)
+            log.Info(sprintf "[%s]   Enqueuing SMS action alert to '%s' re: '%s'" (timestamp()) m.Recipient m.Subject)
             m |> JsonConvert.SerializeObject |> notifications.Add)
-        log.Info(sprintf "[%s] Enqueueing action alerts [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Enqueueing action alerts [OK]" (timestamp()))
     with
     | ex -> 
         log.Error(sprintf "Encountered error: %s" (ex.ToString())) 

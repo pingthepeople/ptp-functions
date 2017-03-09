@@ -2,14 +2,18 @@ namespace IgaTracker
 
 module Model =
 
-//  Database models
-
     let (|StartsWith|_|) (p:string) (s:string) =
         if s.StartsWith(p) then
             Some(s.Substring(p.Length))
         else
             None
 
+    let timestamp() = System.DateTime.Now.ToString("HH:mm:ss.fff")
+    let datestamp() = System.DateTime.Now.ToString("yyyy-MM-dd")
+    let sqlConStr() = System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString")
+    
+
+//  Database models
     type Chamber = House=1 | Senate=2
     type ActionType = Unknown=0 | CommitteeReading=1 | SecondReading=2 | ThirdReading=3 | AssignedToCommittee=4
     type DigestType = None=0 | MyBills=1 | AllBills=2

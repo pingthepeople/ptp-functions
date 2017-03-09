@@ -28,21 +28,21 @@ open Microsoft.Azure.WebJobs.Host
 open Microsoft.Azure.WebJobs.Extensions
 
 let Run(myTimer: TimerInfo, digests: ICollector<string>, log: TraceWriter) =
-    log.Info(sprintf "F# function executed at: %s" (DateTime.Now.ToString()))
+    log.Info(sprintf "F# function executed at: %s" (timestamp()))
     try
         let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString")) 
         let connStr = Environment.GetEnvironmentVariable("AzureStorage.ConnectionString")
-        let allBillsSpreadsheetFilename = generateAllBillsSpreadsheetFilename DateTime.Now
+        let allBillsSpreadsheetFilename = generateAllBillsSpreadsheetFilename()
 
-        log.Info(sprintf "[%s] Create today's spreadsheet for all bills ('%s') ..." (DateTime.Now.ToString("HH:mm:ss.fff")) allBillsSpreadsheetFilename)
+        log.Info(sprintf "[%s] Create today's spreadsheet for all bills ('%s') ..." (timestamp()) allBillsSpreadsheetFilename)
         cn
         // fetch the current status of all bills
         |> dapperQuery<BillStatus> FetchAllBillStatus
         // genereate a CSV file and upload it to a storage blob
         |> postSpreadsheet connStr allBillsSpreadsheetFilename
-        log.Info(sprintf "[%s] Create today's spreadsheet for all bills ('%s') [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) allBillsSpreadsheetFilename)
+        log.Info(sprintf "[%s] Create today's spreadsheet for all bills ('%s') [OK]" (timestamp()) allBillsSpreadsheetFilename)
 
-        log.Info(sprintf "[%s] Enqueue digest creation ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Enqueue digest creation ..." (timestamp()))
         cn
         // fetch all users requiring a digest email
         |> dapperQuery<User> FetchDigestUsers
@@ -50,6 +50,6 @@ let Run(myTimer: TimerInfo, digests: ICollector<string>, log: TraceWriter) =
         |> Seq.map JsonConvert.SerializeObject
         // enqueue the users for digest generation
         |> Seq.iter digests.Add
-        log.Info(sprintf "[%s] Enqueue digest creation [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Enqueue digest creation [OK]" (timestamp()))
     with
     | ex -> log.Error(sprintf "Encountered error: %s" (ex.ToString())) 

@@ -48,5 +48,5 @@ module Csv =
         uploadBlob connStr tempPath name
         File.Delete(tempPath)
 
-    let generateAllBillsSpreadsheetFilename (now:System.DateTime) = sprintf "leg-update-all-%s.csv" (now.ToString("yyyy-MM-dd"))
-    let generateUserBillsSpreadsheetFilename (now:System.DateTime) userId = sprintf "leg-update-%d-%s.csv" userId (now.ToString("yyyy-MM-dd"))
+    let generateAllBillsSpreadsheetFilename() = sprintf "leg-update-all-%s.csv" (datestamp())
+    let generateUserBillsSpreadsheetFilename userId = sprintf "leg-update-%d-%s.csv" userId (datestamp())

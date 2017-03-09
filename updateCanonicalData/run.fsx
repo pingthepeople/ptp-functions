@@ -123,29 +123,29 @@ open Microsoft.Azure.WebJobs.Host
 open Microsoft.Azure.WebJobs.Extensions
 
 let Run(myTimer: TimerInfo, log: TraceWriter) =
-    log.Info(sprintf "F# function executed at: %s" (DateTime.Now.ToString()))
+    log.Info(sprintf "F# function executed at: %s" (timestamp()))
     try
-        let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
-        let sessionYear = (System.Environment.GetEnvironmentVariable("SessionYear"))
+        let cn = new SqlConnection(sqlConStr())
+        let sessionYear = cn |> currentSessionYear
         let sessionId = cn |> dapperMapParametrizedQuery<int> "SELECT Id From [Session] WHERE Name = @Name" (Map["Name",sessionYear:>obj]) |> Seq.head
         let date = DateTime.Now.AddDays(-1.0).ToString("yyyy-MM-dd")
 
-        log.Info(sprintf "[%s] Update subjects ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Update subjects ..." (timestamp()))
         (cn,sessionId,sessionYear) 
         |> updateSubjects
-        |> List.iter (fun subject -> log.Info(sprintf "[%s]   Added subject '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) subject.Name))
-        log.Info(sprintf "[%s] Update subjects [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) )
+        |> List.iter (fun subject -> log.Info(sprintf "[%s]   Added subject '%s'" (timestamp()) subject.Name))
+        log.Info(sprintf "[%s] Update subjects [OK]" (timestamp()) )
 
-        log.Info(sprintf "[%s] Update bills ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Update bills ..." (timestamp()))
         (cn,sessionId,sessionYear) 
         |> updateBills 
-        |> List.iter (fun bill -> log.Info(sprintf "[%s]   Added bill '%s' ('%s')" (DateTime.Now.ToString("HH:mm:ss.fff")) bill.Name bill.Title))
-        log.Info(sprintf "[%s] Update bills [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) )
+        |> List.iter (fun bill -> log.Info(sprintf "[%s]   Added bill '%s' ('%s')" (timestamp()) bill.Name bill.Title))
+        log.Info(sprintf "[%s] Update bills [OK]" (timestamp()) )
         
-        log.Info(sprintf "[%s] Update committees ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Update committees ..." (timestamp()))
         let (houseCommittees, senateCommittees) = (cn,sessionId,sessionYear) |> updateCommittees
-        houseCommittees |> List.iter (fun committee -> log.Info(sprintf "[%s]   Added House committee '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) committee.Name))
-        senateCommittees |> List.iter (fun committee -> log.Info(sprintf "[%s]   Added Senate committee '%s'" (DateTime.Now.ToString("HH:mm:ss.fff")) committee.Name))
-        log.Info(sprintf "[%s] Update committees [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) )
+        houseCommittees |> List.iter (fun committee -> log.Info(sprintf "[%s]   Added House committee '%s'" (timestamp()) committee.Name))
+        senateCommittees |> List.iter (fun committee -> log.Info(sprintf "[%s]   Added Senate committee '%s'" (timestamp()) committee.Name))
+        log.Info(sprintf "[%s] Update committees [OK]" (timestamp()))
     with
     | ex -> log.Error(sprintf "Encountered error: %s" (ex.ToString())) 

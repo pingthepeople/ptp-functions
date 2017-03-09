@@ -28,3 +28,6 @@ module Db =
     
     let currentSessionYear cn = 
         cn |> dapperQuery<string> "SELECT TOP 1 Name FROM Session ORDER BY Name Desc" |> Seq.head
+
+    let currentSessionId cn = 
+        cn |> dapperQuery<int> "SELECT TOP 1 Id FROM Session ORDER BY Name Desc" |> Seq.head

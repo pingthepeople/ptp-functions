@@ -26,10 +26,9 @@ module GenerateActionAlerts =
         sprintf "%s ('%s') %s." billName (bill.Title.TrimEnd('.')) (action.Describe)
 
     // Create action alert messages for people that have opted-in to receiving them
-    let generateAlerts id =
-        let sessionYear = Environment.GetEnvironmentVariable("SessionYear")
+    let generateAlerts (action:Action) =
         let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
-        let action = cn |> dapperParametrizedQuery<Action> "SELECT * FROM Action WHERE Id = @Id" {Id=id} |> Seq.head
+        let sessionYear = cn |> currentSessionYear
         let bill = cn |> dapperParametrizedQuery<Bill> "SELECT * FROM Bill WHERE Id = @Id" {Id=action.BillId} |> Seq.head
         let emailBody = formatBody sessionYear bill action true
         let smsBody = formatBody sessionYear bill action false

@@ -72,10 +72,10 @@ open Microsoft.Azure.WebJobs.Host
 open Microsoft.Azure.WebJobs.Extensions
 
 let Run(myTimer: TimerInfo, scheduledActions: ICollector<string>, log: TraceWriter) =
-    log.Info(sprintf "F# function executed at: %s" (DateTime.Now.ToString()))
+    log.Info(sprintf "F# function executed at: %s" (timestamp()))
     try
-        let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
-        let sessionYear = System.Environment.GetEnvironmentVariable("SessionYear")
+        let cn = new SqlConnection(sqlConStr())
+        let sessionYear = cn |> currentSessionYear
         let sessionId = cn |> dapperMapParametrizedQuery<int> "SELECT Id From [Session] WHERE Name = @Name" (Map["Name",sessionYear:>obj])
         let date = DateTime.Now.AddDays(-10.0).ToString("yyyy-MM-dd")
         
@@ -83,18 +83,18 @@ let Run(myTimer: TimerInfo, scheduledActions: ICollector<string>, log: TraceWrit
         let committees = cn |> dapperMapParametrizedQuery<Committee> "SELECT Name,Link,Chamber from Committee WHERE SessionId = @SessionId" (Map["SessionId",sessionId:>obj])
         let links = cn |> dapperParametrizedQuery<string> "SELECT Link from ScheduledAction WHERE Date >= @Date" {DateSelectArgs.Date=date}
 
-        log.Info(sprintf "[%s] Fetch committee meetings from API ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Fetch committee meetings from API ..." (timestamp()))
         let scheduledActionModels = (sessionYear, date, bills, links, committees) |> generateScheduledActions 
-        log.Info(sprintf "[%s] Fetch committee meetings from API [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) )
+        log.Info(sprintf "[%s] Fetch committee meetings from API [OK]" (timestamp()) )
 
-        log.Info(sprintf "[%s] Add scheduled actions to database ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Add scheduled actions to database ..." (timestamp()))
         let scheduledActionIdsRequringAlert = scheduledActionModels |> addToDatabase cn
-        log.Info(sprintf "[%s] Add scheduled actions to database [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Add scheduled actions to database [OK]" (timestamp()))
 
-        log.Info(sprintf "[%s] Enqueue alerts for scheduled actions ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Enqueue alerts for scheduled actions ..." (timestamp()))
         scheduledActionIdsRequringAlert |> Seq.iter (fun id -> 
-            log.Info(sprintf "[%s]  Enqueuing scheduled action %d" (DateTime.Now.ToString("HH:mm:ss.fff")) id)
+            log.Info(sprintf "[%s]  Enqueuing scheduled action %d" (timestamp()) id)
             scheduledActions.Add(id.ToString()))
-        log.Info(sprintf "[%s] Enqueue alerts for scheduled actions [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))    
+        log.Info(sprintf "[%s] Enqueue alerts for scheduled actions [OK]" (timestamp()))    
     with
     | ex -> log.Error(sprintf "Encountered error: %s" (ex.ToString()))    

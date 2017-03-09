@@ -29,29 +29,28 @@ open Microsoft.Azure.WebJobs.Host
 open Microsoft.Azure.WebJobs.Extensions
 
 let Run(myTimer: TimerInfo, actions: ICollector<string>, log: TraceWriter) =
-    log.Info(sprintf "F# function executed at: %s" (DateTime.Now.ToString()))
+    log.Info(sprintf "F# function executed at: %s" (timestamp()))
     try
-        let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
-        let date = DateTime.Now.ToString("yyyy-MM-dd")
-        let sessionYear = cn |> currentSessionYear
+        let cn = new SqlConnection((sqlConStr()))
         
-        log.Info(sprintf "[%s] Fetching actions from API ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
-        let allActions = fetchAll (sprintf "/%s/bill-actions?minDate=%s" sessionYear date) 
-        log.Info(sprintf "[%s] Fetching actions from API [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")) )
+        log.Info(sprintf "[%s] Fetching actions from API ..." (timestamp()))
+        let sessionYear = cn |> currentSessionYear
+        let allActions = fetchAll (sprintf "/%s/bill-actions?minDate=%s" sessionYear (datestamp())) 
+        log.Info(sprintf "[%s] Fetching actions from API [OK]" (timestamp()))
 
-        log.Info(sprintf "[%s] Adding actions to database ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
-        let actionIdsRequiringAlert = allActions |> addToDatabase date cn
-        log.Info(sprintf "[%s] Adding actions to database [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Adding actions to database ..." (timestamp()))
+        let actionIdsRequiringAlert = allActions |> addToDatabase (datestamp()) cn
+        log.Info(sprintf "[%s] Adding actions to database [OK]" (timestamp()))
 
-        log.Info(sprintf "[%s] Enqueue alerts for new actions ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Enqueue alerts for new actions ..." (timestamp()))
         let enqueue json =
-            log.Info(sprintf "[%s]  Enqueuing action %s" (DateTime.Now.ToString("HH:mm:ss.fff")) json)
+            log.Info(sprintf "[%s]  Enqueuing action %s" (timestamp()) json)
             json |> actions.Add           
         actionIdsRequiringAlert |> Seq.map JsonConvert.SerializeObject |> Seq.iter enqueue
-        log.Info(sprintf "[%s] Enqueue alerts for new actions [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Enqueue alerts for new actions [OK]" (timestamp()))
 
-        log.Info(sprintf "[%s] Updating bill/committee assignments ..." (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Updating bill/committee assignments ..." (timestamp()))
         UpdateBillCommittees |> cn.Execute |> ignore
-        log.Info(sprintf "[%s] Updating bill/committee assignments [OK]" (DateTime.Now.ToString("HH:mm:ss.fff")))
+        log.Info(sprintf "[%s] Updating bill/committee assignments [OK]" (timestamp()))
     with
     | ex -> log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
