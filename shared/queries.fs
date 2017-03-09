@@ -33,10 +33,11 @@ VALUES (@BillId,@SubjectId);
 SELECT CAST(SCOPE_IDENTITY() as int)"""
 
     [<Literal>]
-    let SelectActionsRequiringNotification = """SELECT DISTINCT (a.Id, a.BillId, a.Description, a.ActionType, a.Chamber) 
-FROM Action a
+    let SelectActionsRequiringNotification = """SELECT a.Id, a.BillId, a.Description, a.ActionType, a.Chamber
+FROM [Action] a
 JOIN UserBill ub on a.BillId = ub.BillId
-WHERE a.Id in @Ids"""
+WHERE a.Id in @Ids
+GROUP BY a.Id, a.BillId, a.Description, a.ActionType, a.Chamber"""
 
     [<Literal>]
     let SelectScheduledActionsRequiringNotification = """SELECT DISTINCT (a.Id) From ScheduledAction a
