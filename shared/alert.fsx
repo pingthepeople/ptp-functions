@@ -39,9 +39,9 @@ module Alert =
             |> (fun u -> {MessageType=MessageType.SMS; Recipient=u.Mobile; Subject=(formatSubject bill); Body=body; Attachment=""}))
 
     let generateUserAlerts (bill,users,userBills) (emailBody,smsBody) =
-        let emailMessages = userBills |> Seq.filter(fun ub -> ub.ReceiveAlertEmail) |> generateEmailMessages bill emailBody users
-        let smsMessages = userBills |> Seq.filter(fun ub -> ub.ReceiveAlertSms) |>  generateSmsMessages bill smsBody users
-        (emailMessages, smsMessages)
+        let emailMessages = userBills |> Seq.filter(fun ub -> ub.ReceiveAlertEmail) |> generateEmailMessages bill emailBody users |> Seq.toList
+        let smsMessages = userBills |> Seq.filter(fun ub -> ub.ReceiveAlertSms) |>  generateSmsMessages bill smsBody users |> Seq.toList
+        emailMessages @ smsMessages
 
     let generateAlertsForBill (bill:Bill) (emailBody,smsBody) cn =
         let userBills = cn |> dapperParametrizedQuery<UserBill> "SELECT * FROM UserBill WHERE BillId = @Id" {Id=bill.Id}

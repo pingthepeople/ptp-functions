@@ -40,14 +40,21 @@ WHERE a.Id in @Ids
 GROUP BY a.Id, a.BillId, a.Description, a.ActionType, a.Chamber"""
 
     [<Literal>]
-    let SelectScheduledActionsRequiringNotification = """SELECT DISTINCT (a.Id) From ScheduledAction a
+    let SelectScheduledActionsRequiringNotification = """SELECT a.Id, a.BillId, a.ActionType, a.Chamber, a.Date, a.[Start], a.[End], a.Location
+FROM ScheduledAction a
 JOIN UserBill ub on a.BillId = ub.BillId
-WHERE a.Id in @Ids"""
+WHERE a.Id in @Ids
+a.Id, a.BillId, a.ActionType, a.Chamber, a.Date, a.[Start], a.[End], a.Location"""
 
     [<Literal>]
     let SelectBillIdsAndNames = """SELECT Id, Name
 FROM Bill b
 WHERE b.SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)"""
+
+    [<Literal>]
+    let SelectCommitteeChamberNamesAndLinks = """SELECT Name, Link, Chamber 
+FROM Committee 
+WHERE SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)"""
 
     [<Literal>]
     let SelectActionLinksOccuringAfterDate = """SELECT Link

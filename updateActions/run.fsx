@@ -1,7 +1,6 @@
 
 #r "System.Data"
 #r "../packages/Dapper/lib/net45/Dapper.dll"
-#r "../packages/Newtonsoft.Json/lib/net45/Newtonsoft.Json.dll"
 #r "../packages/FSharp.Data/lib/portable-net45+sl50+netcore45/FSharp.Data.dll"
 
 #load "../shared/model.fs"
@@ -20,7 +19,6 @@ open IgaTracker.Model
 open IgaTracker.Http
 open IgaTracker.Db
 open IgaTracker.Queries
-open Newtonsoft.Json
 
 let toActionModel (action,bill:Bill) = {
     Action.Id = 0;
@@ -53,15 +51,18 @@ let addToDatabase date (cn:SqlConnection) allActions =
         |> List.map addActionToDbAndGetId
         |> fetchActionsRequiringAlert 
 
+
 // Azure Function entry point
 
 #r "../packages/Microsoft.Azure.WebJobs.Core/lib/net45/Microsoft.Azure.WebJobs.dll"
 #r "../packages/Microsoft.Azure.WebJobs/lib/net45/Microsoft.Azure.WebJobs.Host.dll"
 #r "../packages/Microsoft.Azure.WebJobs.Extensions/lib/net45/Microsoft.Azure.WebJobs.Extensions.dll"
+#r "../packages/Newtonsoft.Json/lib/net45/Newtonsoft.Json.dll"
 
 open Microsoft.Azure.WebJobs
 open Microsoft.Azure.WebJobs.Host
 open Microsoft.Azure.WebJobs.Extensions
+open Newtonsoft.Json
 
 let Run(myTimer: TimerInfo, actions: ICollector<string>, log: TraceWriter) =
     log.Info(sprintf "F# function executed at: %s" (timestamp()))
