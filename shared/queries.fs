@@ -44,7 +44,7 @@ GROUP BY a.Id, a.BillId, a.Description, a.ActionType, a.Chamber"""
 FROM ScheduledAction a
 JOIN UserBill ub on a.BillId = ub.BillId
 WHERE a.Id in @Ids
-a.Id, a.BillId, a.ActionType, a.Chamber, a.Date, a.[Start], a.[End], a.Location"""
+GROUP BY a.Id, a.BillId, a.ActionType, a.Chamber, a.Date, a.[Start], a.[End], a.Location"""
 
     [<Literal>]
     let SelectBillIdsAndNames = """SELECT Id, Name
