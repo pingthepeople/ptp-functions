@@ -3,11 +3,13 @@
 #r "System.Data"
 #r "../packages/Dapper/lib/net45/Dapper.dll"
 #r "../packages/FSharp.Data/lib/portable-net45+sl50+netcore45/FSharp.Data.dll"
+#r "../packages/StackExchange.Redis/lib/net45/StackExchange.Redis.dll"
 
 #load "../shared/model.fs"
 #load "../shared/queries.fs"
 #load "../shared/http.fsx"
 #load "../shared/db.fsx"
+#load "../shared/cache.fsx"
 
 open System
 open System.Data.SqlClient
@@ -20,6 +22,9 @@ open IgaTracker.Model
 open IgaTracker.Queries
 open IgaTracker.Http
 open IgaTracker.Db
+open IgaTracker.Cache
+open StackExchange.Redis
+
 
 let updateSubjects (cn,sessionId,sessionYear) =
     let toModel subject ={
@@ -92,6 +97,7 @@ let updateBills (cn,sessionId,sessionYear) =
 
     newBillModels
 
+
 let updateCommittees (cn,sessionId,sessionYear) =
     let toModel chamber c ={
         Committee.Id=0; 
@@ -134,15 +140,17 @@ let Run(myTimer: TimerInfo, log: TraceWriter) =
         let date = DateTime.Now.AddDays(-1.0).ToString("yyyy-MM-dd")
 
         log.Info(sprintf "[%s] Update subjects ..." (timestamp()))
-        (cn,sessionId,sessionYear) 
-        |> updateSubjects
-        |> List.iter (fun subject -> log.Info(sprintf "[%s]   Added subject '%s'" (timestamp()) subject.Name))
+        let newSubjects = 
+            (cn,sessionId,sessionYear) 
+            |> updateSubjects
+        newSubjects |> List.iter (fun subject -> log.Info(sprintf "[%s]   Added subject '%s'" (timestamp()) subject.Name))
         log.Info(sprintf "[%s] Update subjects [OK]" (timestamp()) )
 
         log.Info(sprintf "[%s] Update bills ..." (timestamp()))
-        (cn,sessionId,sessionYear) 
-        |> updateBills 
-        |> List.iter (fun bill -> log.Info(sprintf "[%s]   Added bill '%s' ('%s')" (timestamp()) bill.Name bill.Title))
+        let newBills = 
+            (cn,sessionId,sessionYear) 
+            |> updateBills 
+        newBills |> List.iter (fun bill -> log.Info(sprintf "[%s]   Added bill '%s' ('%s')" (timestamp()) bill.Name bill.Title))
         log.Info(sprintf "[%s] Update bills [OK]" (timestamp()) )
         
         log.Info(sprintf "[%s] Update committees ..." (timestamp()))
@@ -150,5 +158,12 @@ let Run(myTimer: TimerInfo, log: TraceWriter) =
         houseCommittees |> List.iter (fun committee -> log.Info(sprintf "[%s]   Added House committee '%s'" (timestamp()) committee.Name))
         senateCommittees |> List.iter (fun committee -> log.Info(sprintf "[%s]   Added Senate committee '%s'" (timestamp()) committee.Name))
         log.Info(sprintf "[%s] Update committees [OK]" (timestamp()))
+
+        log.Info(sprintf "[%s] Invalidating caches ..." (timestamp()))
+        newSubjects |> invalidateCache SubjectsKey
+        newBills |> invalidateCache BillsKey
+        (houseCommittees @ senateCommittees) |> invalidateCache CommitteesKey
+        log.Info(sprintf "[%s] Invalidating caches [OK]" (timestamp()))
+
     with
     | ex -> log.Error(sprintf "Encountered error: %s" (ex.ToString())) 

@@ -2,11 +2,13 @@
 #r "System.Data"
 #r "../packages/Dapper/lib/net45/Dapper.dll"
 #r "../packages/FSharp.Data/lib/portable-net45+sl50+netcore45/FSharp.Data.dll"
+#r "../packages/StackExchange.Redis/lib/net45/StackExchange.Redis.dll"
 
 #load "../shared/model.fs"
 #load "../shared/queries.fs"
 #load "../shared/db.fsx"
 #load "../shared/http.fsx"
+#load "../shared/cache.fsx"
 
 open System
 open System.Data.SqlClient
@@ -19,6 +21,7 @@ open IgaTracker.Model
 open IgaTracker.Http
 open IgaTracker.Db
 open IgaTracker.Queries
+open IgaTracker.Cache
 
 let toActionModel (action,bill:Bill) = {
     Action.Id = 0;
@@ -30,13 +33,9 @@ let toActionModel (action,bill:Bill) = {
     BillId = bill.Id;
 }
 
-let addToDatabase date (cn:SqlConnection) allActions =
-
+let createNewActionModels (cn:SqlConnection) allActions =  
     let bills = cn |> dapperQuery<Bill> SelectBillIdsAndNames
-    let links = cn |> dapperParametrizedQuery<string> SelectActionLinksOccuringAfterDate {DateSelectArgs.Date=date}
-
-    let addActionToDbAndGetId (action:Action) = cn |> dapperParametrizedQuery<int> InsertAction action |> Seq.head
-    let fetchActionsRequiringAlert insertedIds = cn |> dapperMapParametrizedQuery<Action> SelectActionsRequiringNotification (Map ["Ids", insertedIds :> obj])
+    let links = cn |> dapperParametrizedQuery<string> SelectActionLinksOccuringAfterDate {DateSelectArgs.Date=(datestamp())}
 
     let toKnownBills action = bills |> Seq.exists (fun bill -> bill.Name = action?billName?billName.AsString())
     let toUnrecordedActions action = links |> Seq.exists (fun link -> link = action?link.AsString()) |> not
@@ -48,6 +47,12 @@ let addToDatabase date (cn:SqlConnection) allActions =
         |> List.filter toUnrecordedActions
         |> List.map (actionAndBill >> toActionModel)
         |> List.filter toKnownActionTypes
+
+let addToDatabase (cn:SqlConnection) models =
+    let addActionToDbAndGetId (action:Action) = cn |> dapperParametrizedQuery<int> InsertAction action |> Seq.head
+    let fetchActionsRequiringAlert insertedIds = cn |> dapperMapParametrizedQuery<Action> SelectActionsRequiringNotification (Map ["Ids", insertedIds :> obj])
+
+    models
         |> List.map addActionToDbAndGetId
         |> fetchActionsRequiringAlert 
 
@@ -71,11 +76,13 @@ let Run(myTimer: TimerInfo, actions: ICollector<string>, log: TraceWriter) =
         
         log.Info(sprintf "[%s] Fetching actions from API ..." (timestamp()))
         let sessionYear = cn |> currentSessionYear
-        let allActions = fetchAll (sprintf "/%s/bill-actions?minDate=%s" sessionYear (datestamp())) 
+        let actionModels = 
+            fetchAll (sprintf "/%s/bill-actions?minDate=%s" sessionYear (datestamp())) 
+            |> createNewActionModels cn
         log.Info(sprintf "[%s] Fetching actions from API [OK]" (timestamp()))
 
         log.Info(sprintf "[%s] Adding actions to database ..." (timestamp()))
-        let actionIdsRequiringAlert = allActions |> addToDatabase (datestamp()) cn
+        let actionIdsRequiringAlert = actionModels |> addToDatabase cn
         log.Info(sprintf "[%s] Adding actions to database [OK]" (timestamp()))
 
         log.Info(sprintf "[%s] Enqueue alerts for new actions ..." (timestamp()))
@@ -88,5 +95,10 @@ let Run(myTimer: TimerInfo, actions: ICollector<string>, log: TraceWriter) =
         log.Info(sprintf "[%s] Updating bill/committee assignments ..." (timestamp()))
         UpdateBillCommittees |> cn.Execute |> ignore
         log.Info(sprintf "[%s] Updating bill/committee assignments [OK]" (timestamp()))
+
+        log.Info(sprintf "[%s] Invalidating cache ..." (timestamp()))
+        actionModels |> invalidateCache ActionsKey
+        log.Info(sprintf "[%s] Invalidating cache [OK]" (timestamp()))
+
     with
     | ex -> log.Error(sprintf "Encountered error: %s" (ex.ToString())) 

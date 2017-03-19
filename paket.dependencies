@@ -6,6 +6,7 @@ nuget fsunit
 nuget microsoft.azure.webjobs
 nuget microsoft.azure.webjobs.extensions
 nuget nunit
+nuget stackexchange.redis
 nuget system.net.primitives
 nuget twilio
 nuget windowsazure.servicebus

@@ -3,11 +3,13 @@
 #r "System.Data"
 #r "../packages/Dapper/lib/net45/Dapper.dll"
 #r "../packages/FSharp.Data/lib/portable-net45+sl50+netcore45/FSharp.Data.dll"
+#r "../packages/StackExchange.Redis/lib/net45/StackExchange.Redis.dll"
 
 #load "../shared/model.fs"
 #load "../shared/queries.fs"
 #load "../shared/http.fsx"
 #load "../shared/db.fsx"
+#load "../shared/cache.fsx"
 
 open System
 open System.Data.SqlClient
@@ -20,6 +22,8 @@ open IgaTracker.Model
 open IgaTracker.Queries
 open IgaTracker.Http
 open IgaTracker.Db
+open IgaTracker.Cache
+open StackExchange.Redis
 
 let toModel (bills:Bill seq) (billname,calendar,chamber,actionType) = 
     {ScheduledAction.Id = 0;
@@ -126,6 +130,11 @@ let Run(myTimer: TimerInfo, scheduledActions: ICollector<string>, log: TraceWrit
             json |> scheduledActions.Add
         scheduledActionsRequiringAlerts |> Seq.iter enqueue
         log.Info(sprintf "[%s] Enqueue alerts for scheduled actions [OK]" (timestamp()))   
+
+        log.Info(sprintf "[%s] Invalidating cache ..." (timestamp()))
+        scheduledActionModels |> invalidateCache ScheduledActionsKey
+        log.Info(sprintf "[%s] Invalidating cache [OK]" (timestamp()))
+        
     with
     | ex -> 
         log.Error(sprintf "[%s] Encountered error: %s" (timestamp()) (ex.ToString())) 
