@@ -12,10 +12,15 @@ let users =
     [{User.Id=1; Name="johnny"; Email="johnny@gmail.com"; Mobile="+11112223333"; DigestType=DigestType.MyBills };
     {User.Id=2; Name="susie"; Email="jimmy@gmail.com"; Mobile="+12223334444"; DigestType=DigestType.MyBills };]
 
+let split messages = 
+    let actualEmails = messages |> Seq.filter (fun m -> m.MessageType = MessageType.Email)
+    let actualSMSes = messages |> Seq.filter (fun m -> m.MessageType = MessageType.SMS)
+    (actualEmails, actualSMSes)
+
 module ``Given a user that wants to receive both email and SMS alerts`` =
     let userBills = [ {UserBill.Id = 0; UserId=1; BillId=1; ReceiveAlertEmail=true; ReceiveAlertSms=true}]
     
-    let (actualEmails, actualSMSes) = generateUserAlerts  (bill,users,userBills) ("email body", "sms body")
+    let (actualEmails, actualSMSes) = generateUserAlerts  (bill,users,userBills) ("email body", "sms body") |> split
 
     [<Test>]
     let ``It generates a single email`` = 
@@ -47,7 +52,7 @@ module ``Given a user that only wants to receive email alerts`` =
 
     let userBills = [ {UserId=1; BillId=1; ReceiveAlertEmail=true; ReceiveAlertSms=false; UserBill.Id = 0; }]
     
-    let (actualEmails, actualSMSes) = generateUserAlerts  (bill,users,userBills) ("email body", "sms body")
+    let (actualEmails, actualSMSes) = generateUserAlerts  (bill,users,userBills) ("email body", "sms body") |> split
 
     [<Test>]
     let ``It generates a single email`` = 
@@ -60,7 +65,7 @@ module ``Given a user that only wants to receive email alerts`` =
 module ``Given a user that only wants to receive SMS alerts`` =
     let userBills = [ {UserId=1; BillId=1; ReceiveAlertEmail=false; ReceiveAlertSms=true; UserBill.Id = 0; }]
     
-    let (actualEmails, actualSMSes) = generateUserAlerts  (bill,users,userBills) ("email body", "sms body")
+    let (actualEmails, actualSMSes) = generateUserAlerts  (bill,users,userBills) ("email body", "sms body") |> split
 
     [<Test>]
     let ``It does not generate an email`` = 
@@ -75,7 +80,7 @@ module ``Given two users that wish to receive both email and SMS alerts`` =
         {UserId=1; BillId=1; ReceiveAlertEmail=true; ReceiveAlertSms=true; UserBill.Id = 0; }
         {UserId=2; BillId=1; ReceiveAlertEmail=true; ReceiveAlertSms=true; UserBill.Id = 0; }]
     
-    let (actualEmails, actualSMSes) = generateUserAlerts  (bill,users,userBills) ("email body", "sms body")
+    let (actualEmails, actualSMSes) = generateUserAlerts  (bill,users,userBills) ("email body", "sms body") |> split
 
     [<Test>]
     let ``It generates two emails`` = 
