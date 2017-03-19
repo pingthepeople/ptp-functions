@@ -131,6 +131,9 @@ outer apply (Select Top 1 CAST([Date] AS DATE) [Date] from [ScheduledAction] sa 
     let FetchBillStatusForBills = FetchAllBillStatus + """ WHERE b.Id IN @Ids"""
 
     [<Literal>]
+    let FetchBillStatusForUser = FetchAllBillStatus + """ WHERE b.Id IN (SELECT BillId FROM UserBill WHERE UserId = @Id)"""
+
+    [<Literal>]
     let FetchAllActions = """SELECT 
 	s.Name as SessionName
 	,b.Name as BillName
