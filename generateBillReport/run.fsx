@@ -1,3 +1,4 @@
+#r "System.Data"
 #r "System.Net"
 #r "System.Net.Http"
 #r "System.Net.Primitives"
@@ -35,23 +36,41 @@ open Microsoft.Azure.WebJobs
 open Microsoft.Azure.WebJobs.Host
 open Newtonsoft.Json
 
-let isAuthorized (req:HttpRequestMessage) =
-    true
+[<CLIMutable>]
+type Body  =
+    { Id : int
+      Secret : string }
+
+let isAuthorized body =
+    body.Secret = System.Environment.GetEnvironmentVariable("HttpTrigger.Secret")
+
+let generateReport body = 
+    new SqlConnection(sqlConStr()) 
+    |> dapperMapParametrizedQuery<BillStatus> FetchBillStatusForUser (Map["Id", body.Id :> obj]) 
+    |> JsonConvert.SerializeObject
 
 let Run(req: HttpRequestMessage, log: TraceWriter) =
-    async {
-        log.Info(sprintf "F# HTTP trigger function processed a request.")
-        match (req |> isAuthorized) with
-        | false -> 
-            return req.CreateResponse(HttpStatusCode.Unauthorized)
-        | true ->
-            let! reqContent = req.Content.ReadAsStringAsync() |> Async.AwaitTask
-            let user = JsonConvert.DeserializeObject<User>(reqContent)
-            let resContent = 
-                new SqlConnection(sqlConStr()) 
-                |> dapperMapParametrizedQuery<BillStatus> FetchBillStatusForUser (Map["Id", user.Id :> obj]) 
-                |> JsonConvert.SerializeObject
-            let res = req.CreateResponse(HttpStatusCode.OK)
-            res.Content <- new StringContent(resContent, Encoding.UTF8, "application/json")
-            return res
-    } |> Async.RunSynchronously
+    log.Info(sprintf "[%s] F# HTTP trigger function processed a request." (timestamp()))
+    try
+        async {
+
+            let! content = req.Content.ReadAsStringAsync() |> Async.AwaitTask
+            let body = JsonConvert.DeserializeObject<Body>(content)
+            let response = 
+                match (body |> isAuthorized) with
+                | false -> 
+                    log.Warning(sprintf "[%s] Request was not authorized" (timestamp()))
+                    req.CreateResponse(HttpStatusCode.Unauthorized)
+                | true ->
+                    log.Info(sprintf "[%s] Generating bill report for user with Id %d ..." (timestamp()) body.Id)
+                    let res = req.CreateResponse(HttpStatusCode.OK)
+                    let report = body |> generateReport
+                    res.Content <- new StringContent(report, Encoding.UTF8, "application/json")
+                    log.Info(sprintf "[%s] Generating bill report for user with Id %d [OK]" (timestamp()) body.Id)
+                    res
+            return response
+        } |> Async.RunSynchronously
+    with
+        | ex -> 
+            log.Error(sprintf "[%s] Encountered error: %s" (timestamp()) (ex.ToString())) 
+            reraise()
