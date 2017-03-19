@@ -40,21 +40,21 @@ let updateSubjects (cn,sessionId,sessionYear) =
     newSubjects
 
 let updateBills (cn,sessionId,sessionYear) =
+    let parseChamber (name:string) = 
+        match name.Substring(0,1) with
+        | "H" -> Chamber.House
+        | "S" -> Chamber.Senate
+        | _ -> raise(System.ArgumentException("unrecognized chamber for bill " + name))
+
     let toModel bill = 
         let name = bill?billName.AsString()
-        let chamber = 
-            match name.Substring(0,1) with
-            | "H" -> Chamber.House
-            | "S" -> Chamber.Senate
-            | _ -> raise(System.ArgumentException("unrecognized chamber for bill " + name))
-
         { Bill.Id=0; 
         SessionId=1; 
         Name=name; 
         Link=bill?link.AsString(); 
         Title=bill?latestVersion?shortDescription.AsString(); 
         Description= bill?latestVersion?digest.AsString();
-        Chamber=chamber;
+        Chamber=parseChamber name;
         Authors=bill?latestVersion?authors.AsArray() |> Array.toList |> List.map (fun a -> a?lastName.AsString()) |> List.sort |> String.concat ", "; }
 
     // Find new bills
@@ -65,6 +65,7 @@ let updateBills (cn,sessionId,sessionYear) =
         newBills
         |> List.filter (fun bill -> knownBills |> Seq.exists (fun knownBill -> knownBill = bill?billName.AsString()) |> not)
         |> List.map (fun bill -> get (bill?link.AsString()))
+    
     // Add the bills to the database
     let newBillModels = newBillMetadata |> List.map toModel
     newBillModels |> List.iter (fun bill -> cn |> dapperParametrizedQuery<int> InsertBill bill |> ignore)
@@ -72,20 +73,21 @@ let updateBills (cn,sessionId,sessionYear) =
     // Determine bill subjects
     let newBillRecords = cn |> dapperMapParametrizedQuery<Bill> "Select Id,Name from Bill where Created > @Created" (Map ["Created", lastUpdate:>obj])
     let subjects = cn |> dapperMapParametrizedQuery<Subject> "SELECT Id,Name,Link From [Subject] WHERE SessionId = @SessionId" (Map["SessionId",sessionId:>obj])
+    
+    let pairBillRecordWithMetadata (bill:Bill) =
+        let billMetadata = newBillMetadata |> List.find(fun newBill -> bill.Name = (newBill?billName.AsString()))
+        (bill,billMetadata)
+
+    let newBillSubjectRecords (bill:Bill, billMetadata) = 
+        let billSubjects = billMetadata?latestVersion?subjects.AsArray()
+        let toBillSubjectRecord subject =
+            let subjectId =  subjects |> Seq.find (fun s -> s.Link = subject?link.AsString()) |> (fun subject -> subject.Id)
+            { BillSubject.Id = 0; BillId = bill.Id; SubjectId = subjectId; }
+        billSubjects |> Array.map toBillSubjectRecord
+
     newBillRecords
-        // pair the inserted bill with its API metadata
-        |> Seq.map (fun bill -> 
-            let billMetadatum = newBillMetadata |> List.find(fun newBill -> bill.Name = (newBill?billName.AsString()))
-            (bill,billMetadatum))
-        // map each bill to one or more subject records. 
-        // 'Seq.collect' will map multiple subjects per bill and concat them all together in a single collection. Handy!
-        |> Seq.collect (fun (bill,billMetadatum) -> 
-            billMetadatum?latestVersion?subjects.AsArray()
-            |> Array.map (fun subject ->
-                let subjectId =  subjects |> Seq.find (fun s -> s.Link = subject?link.AsString()) |> (fun subject -> subject.Id)
-                { BillSubject.Id = 0; BillId = bill.Id; SubjectId = subjectId; }
-            ))
-        // Add the bill/subject descriptor to the database
+        |> Seq.map pairBillRecordWithMetadata
+        |> Seq.collect newBillSubjectRecords
         |> Seq.iter (fun subject -> cn |> dapperParametrizedQuery<int> InsertBillSubject subject |> ignore)
 
     newBillModels
@@ -98,16 +100,17 @@ let updateCommittees (cn,sessionId,sessionYear) =
         Name=c?name.AsString(); 
         Link=c?link.AsString().Replace("standing-","") }
 
+    let knownCommittees = 
+        cn |> dapperMapParametrizedQuery<string> "SELECT Link from Committee WHERE SessionId = @SessionId" (Map["SessionId",sessionId:>obj])
+
+    let fetchNewCommittees chamber =
+        fetchAll (sprintf "/%s/chambers/%s/committees" sessionYear (chamber.ToString().ToLower()))
+        |> List.map (fun committee -> committee |> toModel chamber)
+        |> List.filter (fun committee -> knownCommittees |> Seq.exists (fun knownCommittee -> knownCommittee = committee.Link) |> not)
+    
     // Find new committees
-    let knownCommittees = cn |> dapperMapParametrizedQuery<string> "SELECT Link from Committee WHERE SessionId = @SessionId" (Map["SessionId",sessionId:>obj])
-    let houseCommittees = 
-        fetchAll (sprintf "/%s/chambers/house/committees" sessionYear)
-        |> List.map (fun committee -> committee |> toModel Chamber.House)
-        |> List.filter (fun committee -> knownCommittees |> Seq.exists (fun knownCommittee -> knownCommittee = committee.Link) |> not)
-    let senateCommittees = 
-        fetchAll (sprintf "/%s/chambers/senate/committees" sessionYear)
-        |> List.map (fun committee -> committee |> toModel Chamber.Senate)
-        |> List.filter (fun committee -> knownCommittees |> Seq.exists (fun knownCommittee -> knownCommittee = committee.Link) |> not)
+    let houseCommittees = fetchNewCommittees Chamber.House
+    let senateCommittees = fetchNewCommittees Chamber.Senate
 
     // Add them to the database
     houseCommittees |> List.iter (fun committee -> cn |> dapperParametrizedQuery<int> InsertCommittee committee |> ignore)
