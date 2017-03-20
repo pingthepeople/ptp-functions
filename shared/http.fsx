@@ -23,8 +23,8 @@ module  Http =
         let standardHeaders = [ "Accept", "application/json"; "Authorization", "Token " + Environment.GetEnvironmentVariable("IgaApiKey") ]
         Http.RequestString("https://api.iga.in.gov" + endpoint, httpMethod = "GET", headers = standardHeaders) |> JsonValue.Parse
 
-    let fetchAll (endpoint:string) =
-        let rec fetchRec (link:string) =
+    let fetchAll endpoint =
+        let rec fetchRec link =
             let json = get link
             let items = json?items.AsArray() |> Array.toList
             try
@@ -33,22 +33,3 @@ module  Http =
             with
             | ex -> items
         fetchRec endpoint
-
-    let doByPage endpoint func =
-        let rec fetchRec link func =
-            let json = get link
-            func (json?items.AsArray())
-            try
-                let nextLink = json?nextLink.ToString().Trim('"')
-                fetchRec nextLink func
-            with
-            | ex -> 
-                printfn "no more pages"
-                ignore
-        fetchRec endpoint func
-
-    let (|StartsWith|_|) (p:string) (s:string) =
-        if s.StartsWith(p) then
-            Some(s.Substring(p.Length))
-        else
-            None

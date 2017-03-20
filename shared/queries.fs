@@ -36,14 +36,14 @@ SELECT CAST(SCOPE_IDENTITY() as int)"""
     let SelectActionsRequiringNotification = """SELECT a.Id, a.BillId, a.Description, a.ActionType, a.Chamber
 FROM [Action] a
 JOIN UserBill ub on a.BillId = ub.BillId
-WHERE a.Id in @Ids
+WHERE a.Id in @Ids and (ub.ReceiveAlertEmail = 1 or ub.ReceiveAlertSms = 1)
 GROUP BY a.Id, a.BillId, a.Description, a.ActionType, a.Chamber"""
 
     [<Literal>]
     let SelectScheduledActionsRequiringNotification = """SELECT a.Id, a.BillId, a.ActionType, a.Chamber, a.Date, a.[Start], a.[End], a.Location
 FROM ScheduledAction a
 JOIN UserBill ub on a.BillId = ub.BillId
-WHERE a.Id in @Ids
+WHERE a.Id in @Ids and (ub.ReceiveAlertEmail = 1 or ub.ReceiveAlertSms = 1)
 GROUP BY a.Id, a.BillId, a.ActionType, a.Chamber, a.Date, a.[Start], a.[End], a.Location"""
 
     [<Literal>]
@@ -129,6 +129,9 @@ outer apply (Select Top 1 CAST([Date] AS DATE) [Date] from [ScheduledAction] sa 
 
     [<Literal>]
     let FetchBillStatusForBills = FetchAllBillStatus + """ WHERE b.Id IN @Ids"""
+
+    [<Literal>]
+    let FetchBillStatusForUser = FetchAllBillStatus + """ WHERE b.Id IN (SELECT BillId FROM UserBill WHERE UserId = @Id)"""
 
     [<Literal>]
     let FetchAllActions = """SELECT 
