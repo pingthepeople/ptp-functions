@@ -26,15 +26,19 @@ open IgaTracker.Cache
 open StackExchange.Redis
 
 
-let updateSubjects (cn,sessionId,sessionYear) =
+let updateSubjects cn =
+
+    let sessionYear = cn |> currentSessionYear
+    let sessionId = cn |> dapperQuery<int> "SELECT TOP 1 Id FROM Session ORDER BY Name Desc" |> Seq.head
+
     let toModel subject ={
         Subject.Id=0; 
-        SessionId=1; 
+        SessionId=sessionId; 
         Name=subject?entry.AsString(); 
         Link=subject?link.AsString() }
 
     // Find new subjects
-    let knownSubjects = cn |> dapperMapParametrizedQuery<string> "SELECT Link from Subject WHERE SessionId = @SessionId" (Map["SessionId",sessionId:>obj])
+    let knownSubjects = cn |> dapperQuery<string> "SELECT Link from Subject WHERE SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)"
     let newSubjects = 
         fetchAll (sprintf "/%s/subjects" sessionYear)
         |> List.filter (fun subject -> knownSubjects |> Seq.exists (fun knownSubject -> knownSubject = subject?link.AsString()) |> not)
@@ -44,17 +48,20 @@ let updateSubjects (cn,sessionId,sessionYear) =
     newSubjects |> List.iter (fun subject -> cn |> dapperParametrizedQuery<int> InsertSubject subject |> ignore)
     newSubjects
 
-let updateBills (cn,sessionId,sessionYear) =
+let updateBills cn =
     let parseChamber (name:string) = 
         match name.Substring(0,1) with
         | "H" -> Chamber.House
         | "S" -> Chamber.Senate
         | _ -> raise(System.ArgumentException("unrecognized chamber for bill " + name))
 
+    let sessionYear = cn |> currentSessionYear
+    let sessionId = cn |> dapperQuery<int> "SELECT TOP 1 Id FROM Session ORDER BY Name Desc" |> Seq.head
+
     let toModel bill = 
         let name = bill?billName.AsString()
         { Bill.Id=0; 
-        SessionId=1; 
+        SessionId=sessionId; 
         Name=name; 
         Link=bill?link.AsString(); 
         Title=bill?latestVersion?shortDescription.AsString(); 
@@ -63,8 +70,8 @@ let updateBills (cn,sessionId,sessionYear) =
         Authors=bill?latestVersion?authors.AsArray() |> Array.toList |> List.map (fun a -> a?lastName.AsString()) |> List.sort |> String.concat ", "; }
 
     // Find new bills
-    let knownBills = cn |> dapperMapParametrizedQuery<string> "SELECT Name from Bill WHERE SessionId = @SessionId" (Map["SessionId",sessionId:>obj])
-    let lastUpdate = cn |> dapperMapParametrizedQuery<DateTime> "SELECT MAX(Created) from Bill WHERE SessionId = @SessionId" (Map["SessionId",sessionId:>obj]) |> Seq.head
+    let knownBills = cn |> dapperQuery<string> "SELECT Name from Bill WHERE SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)"
+    let lastUpdate = cn |> dapperQuery<DateTime> "SELECT MAX(Created) from Bill WHERE SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)" |> Seq.head
     let newBills = fetchAll (sprintf "/%s/bills?minFiledDate=%s" sessionYear (lastUpdate.ToString("yyyy-MM-dd")))
     let newBillMetadata =
         newBills
@@ -77,7 +84,7 @@ let updateBills (cn,sessionId,sessionYear) =
 
     // Determine bill subjects
     let newBillRecords = cn |> dapperMapParametrizedQuery<Bill> "Select Id,Name from Bill where Created > @Created" (Map ["Created", lastUpdate:>obj])
-    let subjects = cn |> dapperMapParametrizedQuery<Subject> "SELECT Id,Name,Link From [Subject] WHERE SessionId = @SessionId" (Map["SessionId",sessionId:>obj])
+    let subjects = cn |> dapperQuery<Subject> "SELECT Id,Name,Link From [Subject] WHERE SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)"
     
     let pairBillRecordWithMetadata (bill:Bill) =
         let billMetadata = newBillMetadata |> List.find(fun newBill -> bill.Name = (newBill?billName.AsString()))
@@ -97,17 +104,20 @@ let updateBills (cn,sessionId,sessionYear) =
 
     newBillModels
 
+let updateCommittees cn =
 
-let updateCommittees (cn,sessionId,sessionYear) =
+    let sessionYear = cn |> currentSessionYear
+    let sessionId = cn |> dapperQuery<int> "SELECT TOP 1 Id FROM Session ORDER BY Name Desc" |> Seq.head
+
     let toModel chamber c ={
         Committee.Id=0; 
-        SessionId=1; 
+        SessionId=sessionId; 
         Chamber=chamber; 
         Name=c?name.AsString(); 
         Link=c?link.AsString().Replace("standing-","") }
 
     let knownCommittees = 
-        cn |> dapperMapParametrizedQuery<string> "SELECT Link from Committee WHERE SessionId = @SessionId" (Map["SessionId",sessionId:>obj])
+        cn |> dapperQuery<string> "SELECT Link from Committee WHERE SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)"
 
     let fetchNewCommittees chamber =
         fetchAll (sprintf "/%s/chambers/%s/committees" sessionYear (chamber.ToString().ToLower()))
@@ -135,26 +145,20 @@ let Run(myTimer: TimerInfo, log: TraceWriter) =
     log.Info(sprintf "F# function executed at: %s" (timestamp()))
     try
         let cn = new SqlConnection(sqlConStr())
-        let sessionYear = cn |> currentSessionYear
-        let sessionId = cn |> dapperMapParametrizedQuery<int> "SELECT Id From [Session] WHERE Name = @Name" (Map["Name",sessionYear:>obj]) |> Seq.head
         let date = DateTime.Now.AddDays(-1.0).ToString("yyyy-MM-dd")
 
         log.Info(sprintf "[%s] Update subjects ..." (timestamp()))
-        let newSubjects = 
-            (cn,sessionId,sessionYear) 
-            |> updateSubjects
+        let newSubjects = cn |> updateSubjects
         newSubjects |> List.iter (fun subject -> log.Info(sprintf "[%s]   Added subject '%s'" (timestamp()) subject.Name))
         log.Info(sprintf "[%s] Update subjects [OK]" (timestamp()) )
 
         log.Info(sprintf "[%s] Update bills ..." (timestamp()))
-        let newBills = 
-            (cn,sessionId,sessionYear) 
-            |> updateBills 
+        let newBills = cn |> updateBills
         newBills |> List.iter (fun bill -> log.Info(sprintf "[%s]   Added bill '%s' ('%s')" (timestamp()) bill.Name bill.Title))
         log.Info(sprintf "[%s] Update bills [OK]" (timestamp()) )
         
         log.Info(sprintf "[%s] Update committees ..." (timestamp()))
-        let (houseCommittees, senateCommittees) = (cn,sessionId,sessionYear) |> updateCommittees
+        let (houseCommittees, senateCommittees) = cn |> updateCommittees
         houseCommittees |> List.iter (fun committee -> log.Info(sprintf "[%s]   Added House committee '%s'" (timestamp()) committee.Name))
         senateCommittees |> List.iter (fun committee -> log.Info(sprintf "[%s]   Added Senate committee '%s'" (timestamp()) committee.Name))
         log.Info(sprintf "[%s] Update committees [OK]" (timestamp()))
