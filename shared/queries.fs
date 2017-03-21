@@ -88,9 +88,9 @@ WHERE NOT EXISTS(
     let FetchAllBillStatus = """SELECT
 	b.Name
 	, b.Title
-	, b.Description
+	, CASE WHEN LEN(b.Description) < 256 THEN b.Description ELSE LEFT(b.Description,256) + '...' END as 'Description'
 	, b.Authors
-	, b.Chamber as 'OriginChamber'
+	, CASE WHEN b.Chamber = 1 THEN 'House' ELSE 'Senate' END as 'OriginChamber'
 	, (Select oc.Name from Committee oc Join BillCommittee obc on oc.Chamber = b.Chamber and b.Id = obc.BillID and oc.Id = obc.CommitteeId) as 'OriginCommittee'
 	, (Select cc.Name from Committee cc Join BillCommittee cbc on cc.Chamber <> b.Chamber and b.Id = cbc.BillID and cc.Id = cbc.CommitteeId) as 'CrossoverCommittee'
 	, STUFF( (SELECT '; ' + s.Name
