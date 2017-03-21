@@ -167,7 +167,7 @@ module Model =
         Title:string;
         Description:string;
         Authors:string;
-        OriginChamber:Chamber;
+        OriginChamber:string;
         OriginCommittee:string;
         CrossoverCommittee:string;
         Subjects:string;

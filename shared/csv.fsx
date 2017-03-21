@@ -34,7 +34,7 @@ module Csv =
         | str -> str.ToString().Replace("\"", "\"\"")
 
     let formatRow b =
-        let desc = sprintf "%s,\"%s\",\"%s\",\"%s\",\"%s\",%A" b.Name (parse b.Title) (parse b.Description) (parse b.Authors) (parse b.Subjects) b.OriginChamber
+        let desc = sprintf "%s,\"%s\",\"%s\",\"%s\",\"%s\",%s" b.Name (parse b.Title) (parse b.Description) (parse b.Authors) (parse b.Subjects) b.OriginChamber
         let origin = sprintf "\"%s\",%s,\"%s\",%s,\"%s\",%s,\"%s\"" (parse b.OriginCommittee) (parse b.OriginCommitteeReading) (parse b.OriginCommitteeReadingVote) (parse b.OriginSecondReading) (parse b.OriginSecondReadingVote) (parse b.OriginThirdReading) (parse b.OriginThirdReadingVote)
         let crossover = sprintf "\"%s\",%s,\"%s\",%s,\"%s\",%s,\"%s\"" (parse b.CrossoverCommittee) (parse b.CrossoverCommitteeReading) (parse b.CrossoverCommitteeReadingVote) (parse b.CrossoverSecondReading) (parse b.CrossoverSecondReadingVote) (parse b.CrossoverThirdReading) (parse b.CrossoverThirdReadingVote)
         sprintf "%s,%s,%s" desc origin crossover
