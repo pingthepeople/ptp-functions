@@ -179,8 +179,8 @@ WHERE
 		DigestType = 1 
 		AND EXISTS (SELECT 1 FROM UserBill ub WHERE ub.UserId = u.Id))"""
 
-	[<Literal>]
-	let FetchNewDeadBills = """DECLARE @date Date
+    [<Literal>]
+    let FetchNewDeadBills = """DECLARE @date Date
 SET @date = GetDate()
 SELECT b.Id
 FROM Bill b
@@ -210,5 +210,8 @@ WHERE
 			AND (@date < '2017-04-06' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 3 AND a.Description like '%passed%'))
 		)
 	)
-	AND LEFT(Name,2) IN ('HB', 'SB')
-	"""
+	AND LEFT(Name,2) IN ('HB', 'SB')"""
+
+    [<Literal>]
+    let UpdateDeadBills = """UPDATE Bill SET IsDead = 1 WHERE Id IN @Ids; 
+SELECT Id, Name FROM Bill WHERE Id IN @Ids"""
