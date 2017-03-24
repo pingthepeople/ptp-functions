@@ -178,3 +178,37 @@ WHERE
 	OR (
 		DigestType = 1 
 		AND EXISTS (SELECT 1 FROM UserBill ub WHERE ub.UserId = u.Id))"""
+
+	[<Literal>]
+	let FetchNewDeadBills = """DECLARE @date Date
+SET @date = GetDate()
+SELECT b.Id
+FROM Bill b
+WHERE
+	b.Dead = 0 
+	AND b.SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)
+	AND NOT ( 
+		b.Chamber = 1 AND
+		(
+				(@date < '2017-02-21' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 1 AND a.Description like '%adopted%'))
+			AND (@date < '2017-02-23' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 2 AND a.Description like '%engrossed%'))
+			AND (@date < '2017-02-27' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 3 AND a.Description like '%passed%'))
+			AND (@date < '2017-04-03' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 1 AND a.Description like '%adopted%'))
+			AND (@date < '2017-04-05' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 2 AND a.Description like '%engrossed%'))
+			AND (@date < '2017-04-06' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 3 AND a.Description like '%passed%'))
+		)
+	)
+	AND	NOT (
+		b.Chamber = 2 AND
+		(
+				(@date < '2017-01-19' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 4))
+			AND	(@date < '2017-02-23' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 1 AND a.Description like '%adopted%'))
+			AND (@date < '2017-02-27' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 2 AND a.Description like '%engrossed%'))
+			AND (@date < '2017-02-28' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 3 AND a.Description like '%passed%'))
+			AND (@date < '2017-04-03' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 1 AND a.Description like '%adopted%'))
+			AND (@date < '2017-04-05' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 2 AND a.Description like '%engrossed%'))
+			AND (@date < '2017-04-06' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 3 AND a.Description like '%passed%'))
+		)
+	)
+	AND LEFT(Name,2) IN ('HB', 'SB')
+	"""
