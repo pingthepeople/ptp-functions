@@ -40,7 +40,7 @@ let sendEmailNotification message=
     // To
     mailMsg.To.Add(new MailAddress(message.Recipient, message.Recipient));
     // From
-    mailMsg.From <- new MailAddress("jhoerr@gmail.edu", "John Hoerr");
+    mailMsg.From <- new MailAddress("notifications@pingthepeople.org", "Ping the People");
     // Subject and multipart/alternative Body
     mailMsg.Subject <- message.Subject
     let text = message.Body
