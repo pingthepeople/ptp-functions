@@ -15,11 +15,11 @@ open IgaTracker.Alert
 let deathChamber (action:Action) =
     match (action.ActionType) with
     | ActionType.AssignedToCommittee -> action.Chamber
-    | ActionType.CommitteeReading -> action.Chamber
-    | ActionType.SecondReading -> action.Chamber
-    | ActionType.ThirdReading ->
+    | ActionType.CommitteeReading    -> action.Chamber
+    | ActionType.SecondReading       -> action.Chamber
+    | ActionType.ThirdReading        ->
         match action.Chamber with
-        | Chamber.House -> Chamber.Senate
+        | Chamber.House  -> Chamber.Senate
         | Chamber.Senate -> Chamber.House
         | _ -> failwith ("Unrecognized chamber")
     | _ -> failwith ("Unrecognized action type")
@@ -27,9 +27,9 @@ let deathChamber (action:Action) =
 let deathReason (action:Action) = 
     match (action.ActionType) with
     | ActionType.AssignedToCommittee -> "committee reading"
-    | ActionType.CommitteeReading -> "second reading"
-    | ActionType.SecondReading -> "third reading"
-    | ActionType.ThirdReading -> "committee assignment"
+    | ActionType.CommitteeReading    -> "second reading"
+    | ActionType.SecondReading       -> "third reading"
+    | ActionType.ThirdReading        -> "committee assignment"
     | _ -> failwith ("Unrecognized action type")
 
 // Format a nice description of the action
@@ -37,17 +37,17 @@ let formatBody sessionYear (bill:Bill) action messageType =
     let billName =
         match messageType with 
         | MessageType.Email -> bill.WebLink sessionYear
-        | MessageType.SMS -> Bill.PrettyPrintName bill.Name
+        | MessageType.SMS   -> Bill.PrettyPrintName bill.Name
         | _ -> failwith ("Unknown message type")
 
     let diedInChamber = 
         match action with
-        | None -> bill.Chamber
+        | None    -> bill.Chamber
         | Some(x) -> x |> deathChamber
 
     let diedForReason = 
         match action with
-        | None -> "committee assignment"
+        | None    -> "committee assignment"
         | Some(x) -> x |> deathReason
 
     sprintf "%s ('%s') has died in the %A after failing to receive a %s." billName (bill.Title.TrimEnd('.')) diedInChamber diedForReason
