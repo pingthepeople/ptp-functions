@@ -7,7 +7,7 @@ open FsUnit
 open IgaTracker.Model
 open IgaTracker.Alert
 
-let bill = {Bill.Id=1; Name="HB1001"; Title="HB 1001 title"; Chamber=Chamber.House; Description="desc"; Authors="auth"; Link="link"; SessionId=0;}
+let bill = {Bill.Id=1; Name="HB1001"; Title="HB 1001 title"; Chamber=Chamber.House; Description="desc"; Authors="auth"; Link="link"; SessionId=0; IsDead=false;}
 let users = 
     [{User.Id=1; Name="johnny"; Email="johnny@gmail.com"; Mobile="+11112223333"; DigestType=DigestType.MyBills };
     {User.Id=2; Name="susie"; Email="jimmy@gmail.com"; Mobile="+12223334444"; DigestType=DigestType.MyBills };]
