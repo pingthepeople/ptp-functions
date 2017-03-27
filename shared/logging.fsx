@@ -7,23 +7,24 @@ module Logging =
     open System
     open Microsoft.ApplicationInsights
 
-    let getTelemetryClient () =
-        let client = TelemetryClient()
-        client.InstrumentationKey <- System.Environment.GetEnvironmentVariable("ApplicationInsights.InstrumentationKey")
-        client
+    let telemetryClient = 
+        lazy (
+            let client = TelemetryClient()
+            client.InstrumentationKey <- System.Environment.GetEnvironmentVariable("ApplicationInsights.InstrumentationKey")
+            client
+        )
 
     let trackException (ex:Exception) =
-        getTelemetryClient().TrackException(ex)
+        telemetryClient.Force().TrackException(ex)
 
     let trackTrace (trace:string) = 
-        getTelemetryClient().TrackTrace(trace)
+        telemetryClient.Force().TrackTrace(trace)
 
     let trackDependency name command func = 
         let start = System.DateTimeOffset(System.DateTime.UtcNow)
         let timer = System.Diagnostics.Stopwatch.StartNew()
         let trackDependency' success = 
-            let telemetryClient = getTelemetryClient()
-            telemetryClient.TrackDependency(name, command, start, timer.Elapsed, success)
+            telemetryClient.Force().TrackDependency(name, command, start, timer.Elapsed, success)
 
         try
             let result = func()
