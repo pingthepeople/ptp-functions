@@ -50,7 +50,7 @@ let formatBody sessionYear (bill:Bill) action messageType =
         | None    -> "committee assignment"
         | Some(x) -> x |> deathReason
 
-    sprintf "%s ('%s') has died in the %A after failing to receive a %s." billName (bill.Title.TrimEnd('.')) diedInChamber diedForReason
+    sprintf "%s ('%s') has died in the %A upon missing the deadline for a %s." billName (bill.Title.TrimEnd('.')) diedInChamber diedForReason
 
 // Create action alert messages for people that have opted-in to receiving them
 let generateAlerts (bill:Bill) =
