@@ -47,7 +47,7 @@ let Run(myTimer: TimerInfo, deadbills: ICollector<string>, log: TraceWriter) =
         deadBills 
             |> Seq.map JsonConvert.SerializeObject 
             |> Seq.iter (fun json ->
-                log.Info(sprintf "[%s]  Enqueuing action %s" (timestamp()) json)
+                log.Info(sprintf "[%s]  Enqueuing dead bill %s" (timestamp()) json)
                 json |> deadbills.Add)
         log.Info(sprintf "[%s] Enqueue alerts for newly dead bills [OK]" (timestamp()))
 

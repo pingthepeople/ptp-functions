@@ -185,7 +185,7 @@ SET @date = GetDate()
 SELECT b.Id
 FROM Bill b
 WHERE
-	b.Dead = 0 
+	b.IsDead = 0 
 	AND b.SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)
 	AND NOT ( 
 		b.Chamber = 1 AND
@@ -214,4 +214,4 @@ WHERE
 
     [<Literal>]
     let UpdateDeadBills = """UPDATE Bill SET IsDead = 1 WHERE Id IN @Ids; 
-SELECT Id, Name FROM Bill WHERE Id IN @Ids"""
+SELECT Id, Name, Title, Chamber, IsDead FROM Bill WHERE Id IN @Ids"""
