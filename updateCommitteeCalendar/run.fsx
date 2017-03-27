@@ -1,4 +1,5 @@
-// Configure Database 
+#load "../shared/logging.fsx"
+#r "../packages/Microsoft.ApplicationInsights/lib/net45/Microsoft.ApplicationInsights.dll"
 
 #r "System.Data"
 #r "../packages/Dapper/lib/net45/Dapper.dll"
@@ -23,6 +24,7 @@ open IgaTracker.Queries
 open IgaTracker.Http
 open IgaTracker.Db
 open IgaTracker.Cache
+open IgaTracker.Logging
 
 let toModel (bills:Bill seq) (committees:Committee seq) (billname,meeting) = 
     let billId = bills |> Seq.find (fun b -> b.Name = billname) |> (fun b -> b.Id)
@@ -108,5 +110,6 @@ let Run(myTimer: TimerInfo, scheduledActions: ICollector<string>, log: TraceWrit
 
     with
     | ex -> 
+        trackException ex
         log.Error(sprintf "{%s] Encountered error: %s" (timestamp()) (ex.ToString()))
         reraise()    

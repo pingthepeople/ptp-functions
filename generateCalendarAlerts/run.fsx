@@ -1,3 +1,6 @@
+#load "../shared/logging.fsx"
+#r "../packages/Microsoft.ApplicationInsights/lib/net45/Microsoft.ApplicationInsights.dll"
+
 #r "System.Data"
 #r "../packages/Dapper/lib/net45/Dapper.dll"
 
@@ -12,6 +15,7 @@ open Dapper
 open IgaTracker.Model
 open IgaTracker.Db
 open IgaTracker.Alert
+open IgaTracker.Logging
 
 // Format a nice description of the action
 let formatBody sessionYear (bill:Bill) (scheduledAction:ScheduledAction) includeLink =
@@ -57,5 +61,6 @@ let Run(scheduledAction: string, notifications: ICollector<string>, log: TraceWr
         log.Info(sprintf "[%s] Enqueueing scheduled action alerts [OK]" (timestamp()))
     with
     | ex -> 
+        trackException ex
         log.Error(sprintf "[%s] Encountered error: %s" (timestamp()) (ex.ToString())) 
         reraise()

@@ -1,4 +1,5 @@
-// Configure Database 
+#load "../shared/logging.fsx"
+#r "../packages/Microsoft.ApplicationInsights/lib/net45/Microsoft.ApplicationInsights.dll"
 
 #r "System.Data"
 #r "../packages/Dapper/lib/net45/Dapper.dll"
@@ -17,6 +18,7 @@ open IgaTracker.Model
 open IgaTracker.Queries
 open IgaTracker.Db
 open IgaTracker.Csv
+open IgaTracker.Logging
 open Newtonsoft.Json
 open Microsoft.Azure.WebJobs.Host
 
@@ -179,5 +181,6 @@ let Run(user: string, notifications: ICollector<string>, log: TraceWriter) =
         log.Info(sprintf "[%s] Generating %A digest for %s [OK]" (timestamp()) digestUser.DigestType digestUser.Email)
     with
     | ex -> 
+        trackException ex
         log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
         reraise()

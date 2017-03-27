@@ -1,3 +1,6 @@
+#load "../shared/logging.fsx"
+#r "../packages/Microsoft.ApplicationInsights/lib/net45/Microsoft.ApplicationInsights.dll"
+
 #r "System.Data"
 #r "System.Net"
 #r "System.Net.Http"
@@ -25,6 +28,7 @@ open Dapper
 open IgaTracker.Model
 open IgaTracker.Db
 open IgaTracker.Queries
+open IgaTracker.Logging
 
 // Azure function entry point
 
@@ -71,6 +75,7 @@ let Run(req: HttpRequestMessage, log: TraceWriter) =
             return response
         } |> Async.RunSynchronously
     with
-        | ex -> 
-            log.Error(sprintf "[%s] Encountered error: %s" (timestamp()) (ex.ToString())) 
-            reraise()
+    | ex ->
+        trackException ex
+        log.Error(sprintf "[%s] Encountered error: %s" (timestamp()) (ex.ToString())) 
+        reraise()

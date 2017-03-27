@@ -1,3 +1,5 @@
+#load "../shared/logging.fsx"
+#r "../packages/Microsoft.ApplicationInsights/lib/net45/Microsoft.ApplicationInsights.dll"
 
 #r "System.Data"
 #r "../packages/Dapper/lib/net45/Dapper.dll"
@@ -17,6 +19,7 @@ open IgaTracker.Model
 open IgaTracker.Db
 open IgaTracker.Queries
 open IgaTracker.Cache
+open IgaTracker.Logging
 
 let getNewDeadBills cn = 
     let deadBillIds = cn |> dapperQuery<int> FetchNewDeadBills
@@ -57,5 +60,6 @@ let Run(myTimer: TimerInfo, deadbills: ICollector<string>, log: TraceWriter) =
 
     with
     | ex -> 
+        trackException ex
         log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
         reraise()

@@ -95,5 +95,6 @@ let Run(message: string, log: TraceWriter) =
         | _ -> log.Error("unrecognized message type")
     with
     | ex -> 
+        trackException ex
         log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
         reraise()

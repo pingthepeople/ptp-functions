@@ -1,4 +1,5 @@
-// Configure Database 
+#load "../shared/logging.fsx"
+#r "../packages/Microsoft.ApplicationInsights/lib/net45/Microsoft.ApplicationInsights.dll"
 
 #r "System.Data"
 #r "../packages/Dapper/lib/net45/Dapper.dll"
@@ -23,6 +24,7 @@ open IgaTracker.Queries
 open IgaTracker.Http
 open IgaTracker.Db
 open IgaTracker.Cache
+open IgaTracker.Logging
 open StackExchange.Redis
 
 
@@ -171,4 +173,7 @@ let Run(myTimer: TimerInfo, log: TraceWriter) =
         log.Info(sprintf "[%s] Invalidating caches [OK]" (timestamp()))
 
     with
-    | ex -> log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
+    | ex -> 
+        trackException ex
+        log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
+        reraise()
