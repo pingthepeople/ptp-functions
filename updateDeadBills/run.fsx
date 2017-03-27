@@ -47,11 +47,16 @@ let Run(myTimer: TimerInfo, deadbills: ICollector<string>, log: TraceWriter) =
         log.Info(sprintf "[%s] Fetching newly dead bills [OK]" (timestamp()))
 
         log.Info(sprintf "[%s] Enqueue alerts for newly dead bills ..." (timestamp()))
+        let enqueue json =
+                let trace = sprintf "  Enqueuing dead bill %s" json
+                trace |> trackTrace "updateDeadBills"
+                trace |> log.Info
+                json |> deadbills.Add
+
         deadBills 
             |> Seq.map JsonConvert.SerializeObject 
-            |> Seq.iter (fun json ->
-                log.Info(sprintf "[%s]  Enqueuing dead bill %s" (timestamp()) json)
-                json |> deadbills.Add)
+            |> Seq.iter enqueue
+)
         log.Info(sprintf "[%s] Enqueue alerts for newly dead bills [OK]" (timestamp()))
 
         log.Info(sprintf "[%s] Invalidating cache ..." (timestamp()))
@@ -60,6 +65,6 @@ let Run(myTimer: TimerInfo, deadbills: ICollector<string>, log: TraceWriter) =
 
     with
     | ex -> 
-        trackException ex
+        ex |> trackException "updateDeadBills"
         log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
         reraise()

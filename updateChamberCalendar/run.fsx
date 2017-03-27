@@ -126,11 +126,14 @@ let Run(myTimer: TimerInfo, scheduledActions: ICollector<string>, log: TraceWrit
         log.Info(sprintf "[%s] Add scheduled actions to database [OK]" (timestamp()))
 
         log.Info(sprintf "[%s] Enqueue alerts for scheduled actions ..." (timestamp()))
-        let enqueue scheduledAction = 
-            let json = scheduledAction |> JsonConvert.SerializeObject
-            log.Info(sprintf "[%s]  Enqueuing scheduled action %s" (timestamp()) json)
+        let enqueue json = 
+            let trace = sprintf "  Enqueuing scheduled action %s" json
+            trace |> trackTrace "updateChamberCalendar"
+            trace |> log.Info
             json |> scheduledActions.Add
-        scheduledActionsRequiringAlerts |> Seq.iter enqueue
+        scheduledActionsRequiringAlerts 
+        |> Seq.map JsonConvert.SerializeObject
+        |> Seq.iter enqueue
         log.Info(sprintf "[%s] Enqueue alerts for scheduled actions [OK]" (timestamp()))   
 
         log.Info(sprintf "[%s] Invalidating cache ..." (timestamp()))
@@ -139,6 +142,6 @@ let Run(myTimer: TimerInfo, scheduledActions: ICollector<string>, log: TraceWrit
         
     with
     | ex -> 
-        trackException ex
+        ex |> trackException "updateChamberCalendar"
         log.Error(sprintf "[%s] Encountered error: %s" (timestamp()) (ex.ToString())) 
         reraise()

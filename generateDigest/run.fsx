@@ -156,8 +156,10 @@ let Run(user: string, notifications: ICollector<string>, log: TraceWriter) =
     try
         let digestUser = JsonConvert.DeserializeObject<User>(user)
         // let digestUser = {User.Id=1;Name="John HOerr";Email="jhoerr@gmail.com";Mobile=null;DigestType=DigestType.MyBills}
-        log.Info(sprintf "[%s] Generating %A digest for %s ..." (timestamp()) digestUser.DigestType digestUser.Email)
-        
+        let trace = sprintf "[%s] Generating %A digest for %s ..." (timestamp()) digestUser.DigestType digestUser.Email
+        trace |> trackTrace "generateDigest"
+        trace |> log.Info
+
         let storageConnStr = System.Environment.GetEnvironmentVariable("AzureStorage.ConnectionString")
         let cn = new SqlConnection(System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString"))
         let billIds = cn |> dapperMapParametrizedQuery<int> "SELECT BillId from UserBill WHERE UserId = @UserId" (Map["UserId", digestUser.Id:>obj])
@@ -181,6 +183,6 @@ let Run(user: string, notifications: ICollector<string>, log: TraceWriter) =
         log.Info(sprintf "[%s] Generating %A digest for %s [OK]" (timestamp()) digestUser.DigestType digestUser.Email)
     with
     | ex -> 
-        trackException ex
+        ex |> trackException "generateDigest"
         log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
         reraise()

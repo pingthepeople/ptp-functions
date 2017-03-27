@@ -55,6 +55,6 @@ let Run(myTimer: TimerInfo, digests: ICollector<string>, log: TraceWriter) =
         log.Info(sprintf "[%s] Enqueue digest creation [OK]" (timestamp()))
     with
     | ex -> 
-        trackException ex
+        ex |> trackException "generateDigestUser"
         log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
         reraise()

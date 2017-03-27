@@ -63,10 +63,14 @@ let Run(req: HttpRequestMessage, log: TraceWriter) =
             let response = 
                 match (body |> isAuthorized) with
                 | false -> 
-                    log.Warning(sprintf "[%s] Request was not authorized" (timestamp()))
+                    let trace = sprintf "[%s] Request to generate bill report for for user with Id %d was not authorized" (timestamp()) body.Id
+                    trace |> log.Info
+                    trace |> trackTrace "generateBillReport"
                     req.CreateResponse(HttpStatusCode.Unauthorized)
                 | true ->
-                    log.Info(sprintf "[%s] Generating bill report for user with Id %d ..." (timestamp()) body.Id)
+                    let trace = sprintf "[%s] Generating bill report for user with Id %d ..." (timestamp()) body.Id
+                    trace |> log.Info
+                    trace |> trackTrace "generateBillReport"
                     let res = req.CreateResponse(HttpStatusCode.OK)
                     let report = body |> generateReport
                     res.Content <- new StringContent(report, Encoding.UTF8, "application/json")
@@ -76,6 +80,6 @@ let Run(req: HttpRequestMessage, log: TraceWriter) =
         } |> Async.RunSynchronously
     with
     | ex ->
-        trackException ex
+        ex |> trackException "generateBillReport"
         log.Error(sprintf "[%s] Encountered error: %s" (timestamp()) (ex.ToString())) 
         reraise()

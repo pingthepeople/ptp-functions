@@ -150,20 +150,24 @@ let Run(myTimer: TimerInfo, log: TraceWriter) =
         let cn = new SqlConnection(sqlConStr())
         let date = DateTime.Now.AddDays(-1.0).ToString("yyyy-MM-dd")
 
+        let logTrace trace = 
+            trace |> trackTrace "updateCanonicalData"
+            trace |> log.Info
+
         log.Info(sprintf "[%s] Update subjects ..." (timestamp()))
         let newSubjects = cn |> updateSubjects
-        newSubjects |> List.iter (fun subject -> log.Info(sprintf "[%s]   Added subject '%s'" (timestamp()) subject.Name))
+        newSubjects |> List.iter (fun subject -> logTrace (sprintf "  Added subject '%s'" (subject.Name)))
         log.Info(sprintf "[%s] Update subjects [OK]" (timestamp()) )
 
         log.Info(sprintf "[%s] Update bills ..." (timestamp()))
         let newBills = cn |> updateBills
-        newBills |> List.iter (fun bill -> log.Info(sprintf "[%s]   Added bill '%s' ('%s')" (timestamp()) bill.Name bill.Title))
+        newBills |> List.iter (fun bill -> logTrace (sprintf "  Added bill '%s' ('%s')" bill.Name bill.Title))
         log.Info(sprintf "[%s] Update bills [OK]" (timestamp()) )
         
         log.Info(sprintf "[%s] Update committees ..." (timestamp()))
         let (houseCommittees, senateCommittees) = cn |> updateCommittees
-        houseCommittees |> List.iter (fun committee -> log.Info(sprintf "[%s]   Added House committee '%s'" (timestamp()) committee.Name))
-        senateCommittees |> List.iter (fun committee -> log.Info(sprintf "[%s]   Added Senate committee '%s'" (timestamp()) committee.Name))
+        houseCommittees |> List.iter (fun committee -> logTrace (sprintf "   Added House committee '%s'" committee.Name))
+        senateCommittees |> List.iter (fun committee -> logTrace (sprintf "   Added Senate committee '%s'" committee.Name))
         log.Info(sprintf "[%s] Update committees [OK]" (timestamp()))
 
         log.Info(sprintf "[%s] Invalidating caches ..." (timestamp()))
@@ -174,6 +178,6 @@ let Run(myTimer: TimerInfo, log: TraceWriter) =
 
     with
     | ex -> 
-        trackException ex
+        ex |> trackException "updateCanonicalData"
         log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
         reraise()

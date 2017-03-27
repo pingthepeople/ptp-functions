@@ -14,11 +14,13 @@ module Logging =
             client
         )
 
-    let trackException (ex:Exception) =
-        telemetryClient.Force().TrackException(ex)
+    let trackException source ex =
+        let props = dict["source",source]
+        telemetryClient.Force().TrackException(ex, props)
 
-    let trackTrace (trace:string) = 
-        telemetryClient.Force().TrackTrace(trace)
+    let trackTrace source trace = 
+        let props = dict["source",source]
+        telemetryClient.Force().TrackTrace(trace, props)
 
     let trackDependency name command func = 
         let start = System.DateTimeOffset(System.DateTime.UtcNow)

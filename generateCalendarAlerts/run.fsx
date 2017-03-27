@@ -53,14 +53,17 @@ let Run(scheduledAction: string, notifications: ICollector<string>, log: TraceWr
         log.Info(sprintf "[%s] Generating scheduled action alerts [OK]" (timestamp()))
 
         log.Info(sprintf "[%s] Enqueueing scheduled action alerts ..." (timestamp()))
-        let enqueue msg = 
-            let json = msg |> JsonConvert.SerializeObject
-            log.Info(sprintf "[%s]   Enqueuing scheduled action alert: %s" (timestamp()) json)
+        let enqueue json = 
+            let trace = sprintf "  Enqueuing scheduled action alert: %s" json
+            trace |> trackTrace "generateCalendarAlerts"
+            trace |> log.Info
             json |> notifications.Add
-        messages |> List.iter enqueue
+        messages 
+        |> List.map JsonConvert.SerializeObject
+        |> List.iter enqueue
         log.Info(sprintf "[%s] Enqueueing scheduled action alerts [OK]" (timestamp()))
     with
     | ex -> 
-        trackException ex
+        ex |> trackException "generateCalendarAlerts"
         log.Error(sprintf "[%s] Encountered error: %s" (timestamp()) (ex.ToString())) 
         reraise()

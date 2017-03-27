@@ -88,13 +88,16 @@ let Run(message: string, log: TraceWriter) =
     log.Info(sprintf "F# function 'sendNotification' executed  at %s" (timestamp()))
     try
         let body = JsonConvert.DeserializeObject<Message>(message)
-        log.Info(sprintf "Delivering %A message to '%s' re: '%s'" body.MessageType body.Recipient body.Subject)
+        let trace = sprintf "Delivering %A message to '%s' re: '%s'" body.MessageType body.Recipient body.Subject
+        trace |> log.Info
+        trace |> trackTrace "sendNotification"
+        
         match body.MessageType with
         | MessageType.Email -> sendEmailNotification body
         | MessageType.SMS -> sendSMSNotification body
         | _ -> log.Error("unrecognized message type")
     with
     | ex -> 
-        trackException ex
+        ex |> trackException "sendNotification"
         log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
         reraise()
