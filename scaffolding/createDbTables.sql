@@ -45,7 +45,8 @@ CREATE TABLE Bill
     Authors nvarchar(256),
     Chamber TINYINT NOT NULL,
     Created DATETIME NOT NULL DEFAULT GetUtcDate(),
-    SessionId int NOT NULL FOREIGN KEY REFERENCES [Session](Id)
+    SessionId int NOT NULL FOREIGN KEY REFERENCES [Session](Id),
+    IsDead bit NOT NULL DEFAULT 0
 )
 
 CREATE TABLE [Action]

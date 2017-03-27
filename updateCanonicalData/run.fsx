@@ -67,7 +67,8 @@ let updateBills cn =
         Title=bill?latestVersion?shortDescription.AsString(); 
         Description= bill?latestVersion?digest.AsString();
         Chamber=parseChamber name;
-        Authors=bill?latestVersion?authors.AsArray() |> Array.toList |> List.map (fun a -> a?lastName.AsString()) |> List.sort |> String.concat ", "; }
+        Authors=bill?latestVersion?authors.AsArray() |> Array.toList |> List.map (fun a -> a?lastName.AsString()) |> List.sort |> String.concat ", ";
+        IsDead = false }
 
     // Find new bills
     let knownBills = cn |> dapperQuery<string> "SELECT Name from Bill WHERE SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)"
