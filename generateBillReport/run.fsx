@@ -57,24 +57,23 @@ let Run(req: HttpRequestMessage, log: TraceWriter) =
     log.Info(sprintf "[%s] F# HTTP trigger function processed a request." (timestamp()))
     try
         async {
-
+            let start = DateTimeOffset(DateTime.Now)
+            let duration = System.Diagnostics.Stopwatch.StartNew()
             let! content = req.Content.ReadAsStringAsync() |> Async.AwaitTask
             let body = JsonConvert.DeserializeObject<Body>(content)
             let response = 
                 match (body |> isAuthorized) with
                 | false -> 
-                    let trace = sprintf "[%s] Request to generate bill report for for user with Id %d was not authorized" (timestamp()) body.Id
-                    trace |> log.Info
-                    trace |> trackTrace "generateBillReport"
+                    log.Info(sprintf "[%s] Request to generate bill report for for user with Id %d was not authorized" (timestamp()) body.Id)
+                    trackRequest "generateBillReport" start duration.Elapsed "401" false 
                     req.CreateResponse(HttpStatusCode.Unauthorized)
                 | true ->
-                    let trace = sprintf "[%s] Generating bill report for user with Id %d ..." (timestamp()) body.Id
-                    trace |> log.Info
-                    trace |> trackTrace "generateBillReport"
+                    log.Info(sprintf "[%s] Generating bill report for user with Id %d ..." (timestamp()) body.Id)
                     let res = req.CreateResponse(HttpStatusCode.OK)
                     let report = body |> generateReport
                     res.Content <- new StringContent(report, Encoding.UTF8, "application/json")
                     log.Info(sprintf "[%s] Generating bill report for user with Id %d [OK]" (timestamp()) body.Id)
+                    trackRequest "generateBillReport" start duration.Elapsed "200" true 
                     res
             return response
         } |> Async.RunSynchronously

@@ -54,7 +54,7 @@ let Run(action: string, notifications: ICollector<string>, log: TraceWriter) =
 
         log.Info(sprintf "[%s] Enqueueing action alerts ..." (timestamp()))
         let enqueue json = 
-            let trace = sprintf "Enqueuing scheduled action alert: %s" (timestamp()) json
+            let trace = sprintf "Enqueuing scheduled action alert: %s" json
             trace |> trackTrace "generateActionAlerts"
             trace |> log.Info
             json |> notifications.Add

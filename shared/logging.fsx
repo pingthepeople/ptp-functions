@@ -22,6 +22,9 @@ module Logging =
         let props = dict["source",source]
         telemetryClient.Force().TrackTrace(trace, props)
 
+    let trackRequest name start duration responseCode success = 
+        telemetryClient.Force().TrackRequest(name, start, duration, responseCode, success)
+
     let trackDependency name command func = 
         let start = System.DateTimeOffset(System.DateTime.UtcNow)
         let timer = System.Diagnostics.Stopwatch.StartNew()
@@ -36,3 +39,4 @@ module Logging =
         | ex -> 
             trackDependency' false
             reraise()
+

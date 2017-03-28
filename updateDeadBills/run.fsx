@@ -52,11 +52,9 @@ let Run(myTimer: TimerInfo, deadbills: ICollector<string>, log: TraceWriter) =
                 trace |> trackTrace "updateDeadBills"
                 trace |> log.Info
                 json |> deadbills.Add
-
         deadBills 
             |> Seq.map JsonConvert.SerializeObject 
             |> Seq.iter enqueue
-)
         log.Info(sprintf "[%s] Enqueue alerts for newly dead bills [OK]" (timestamp()))
 
         log.Info(sprintf "[%s] Invalidating cache ..." (timestamp()))
