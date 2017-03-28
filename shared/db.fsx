@@ -18,11 +18,11 @@ module Db =
 
     let dapperQuery<'Result> (query:string) (connection:SqlConnection) =
         let func() = connection.Query<'Result>(query)
-        trackDependency "database" "dapperQuery" func
+        trackDependency "database" query func
     
     let dapperParametrizedQuery<'Result> (query:string) (param:obj) (connection:SqlConnection) : 'Result seq =
         let func() = connection.Query<'Result>(query, param)
-        trackDependency "database" "dapperParametrizedQuery" func
+        trackDependency "database" query func
     
     let dapperMapParametrizedQuery<'Result> (query:string) (param : Map<string,_>) (connection:SqlConnection) : 'Result seq =
         let expando = ExpandoObject()
