@@ -1,3 +1,6 @@
+#load "../shared/logging.fsx"
+#r "../packages/Microsoft.ApplicationInsights/lib/net45/Microsoft.ApplicationInsights.dll"
+
 #r "System.Data"
 #r "../packages/Dapper/lib/net45/Dapper.dll"
 
@@ -11,6 +14,7 @@ open Dapper
 open IgaTracker.Model
 open IgaTracker.Db
 open IgaTracker.Alert
+open IgaTracker.Logging
 
 let deathChamber (action:Action) =
     match (action.ActionType) with
@@ -80,13 +84,17 @@ let Run(bill: string, notifications: ICollector<string>, log: TraceWriter) =
         log.Info(sprintf "[%s] Generating dead bill alerts [OK]" (timestamp()))
 
         log.Info(sprintf "[%s] Enqueueing dead bill alerts ..." (timestamp()))
-        let enqueue msg = 
-            let json = msg |> JsonConvert.SerializeObject
-            log.Info(sprintf "[%s]   Enqueuing dead bill alert: %s" (timestamp()) json )
+        let enqueue json = 
+            let trace = sprintf "  Enqueuing dead bill alert: %s" json 
+            trace |> trackTrace "generateDeadBillAlerts"
+            trace |> log.Info
             json |> notifications.Add
-        messages |> List.iter enqueue
+        messages 
+        |> List.map JsonConvert.SerializeObject
+        |> List.iter enqueue
         log.Info(sprintf "[%s] Enqueueing dead bill alerts [OK]" (timestamp()))
     with
     | ex -> 
+        ex |> trackException "generateDeadBillAlerts"
         log.Error(sprintf "[%s] Encountered error: %s" (timestamp()) (ex.ToString())) 
         reraise()

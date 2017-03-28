@@ -1,3 +1,6 @@
+#load "./logging.fsx"
+#r "../packages/Microsoft.ApplicationInsights/lib/net45/Microsoft.ApplicationInsights.dll"
+
 #r "System.Net"
 #r "System.Net.Http"
 #r "System.Net.Primitives"
@@ -18,10 +21,15 @@ module  Http =
     open System.Threading.Tasks
     open FSharp.Data
     open FSharp.Data.JsonExtensions
+    open IgaTracker.Logging
+
 
     let get endpoint = 
+        let uri = "https://api.iga.in.gov" + endpoint
         let standardHeaders = [ "Accept", "application/json"; "Authorization", "Token " + Environment.GetEnvironmentVariable("IgaApiKey") ]
-        Http.RequestString("https://api.iga.in.gov" + endpoint, httpMethod = "GET", headers = standardHeaders) |> JsonValue.Parse
+        let func() = Http.RequestString(uri, httpMethod = "GET", headers = standardHeaders) 
+        let result = trackDependency "http" uri func
+        result |> JsonValue.Parse
 
     let fetchAll endpoint =
         let rec fetchRec link =

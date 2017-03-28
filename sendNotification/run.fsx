@@ -1,3 +1,6 @@
+#load "../shared/logging.fsx"
+#r "../packages/Microsoft.ApplicationInsights/lib/net45/Microsoft.ApplicationInsights.dll"
+
 #r "System.Net"
 #r "System.Net.Http"
 #r "System.Net.Primitives"
@@ -28,6 +31,7 @@ open Twilio.Rest.Api.V2010.Account
 open Twilio.Types
 open IgaTracker.Model
 open IgaTracker.Csv
+open IgaTracker.Logging
 open Newtonsoft.Json
 
 let getAttachment filename = 
@@ -50,16 +54,18 @@ let sendEmailNotification message=
 
     let smtpClient = new SmtpClient("smtp.sendgrid.net", Convert.ToInt32(587));
     smtpClient.Credentials <- new System.Net.NetworkCredential("apikey", Environment.GetEnvironmentVariable("SendGridApiKey"))
+
+    let sendMessage() = mailMsg |> smtpClient.Send
     
     // Attachment
     match message.Attachment with
     | "" -> 
-        mailMsg |> smtpClient.Send
+        trackDependency "email" "message" sendMessage
     | filename ->
         let path = getAttachment filename
         let stream = File.OpenRead(path)
         new Attachment(stream, filename, "text/csv") |> mailMsg.Attachments.Add
-        mailMsg |> smtpClient.Send
+        trackDependency "email" "messageWithAttachment" sendMessage
         stream.Close()
         path |> File.Delete
 
@@ -70,8 +76,10 @@ let sendSMSNotification message =
     let phoneNumber = Environment.GetEnvironmentVariable("Twilio.PhoneNumber")
     let fromNumber = new PhoneNumber(phoneNumber)
     let toNumber = new PhoneNumber(message.Recipient)
-    TwilioClient.Init(sid, token)
-    MessageResource.Create(toNumber, from=fromNumber, body=message.Body) |> ignore
+    let sendMessage() =
+        TwilioClient.Init(sid, token)
+        MessageResource.Create(toNumber, from=fromNumber, body=message.Body) |> ignore
+    trackDependency "sms" "message" sendMessage
 
 #r "../packages/Microsoft.Azure.WebJobs/lib/net45/Microsoft.Azure.WebJobs.Host.dll"
 open Microsoft.Azure.WebJobs.Host
@@ -80,12 +88,16 @@ let Run(message: string, log: TraceWriter) =
     log.Info(sprintf "F# function 'sendNotification' executed  at %s" (timestamp()))
     try
         let body = JsonConvert.DeserializeObject<Message>(message)
-        log.Info(sprintf "Delivering %A message to '%s' re: '%s'" body.MessageType body.Recipient body.Subject)
+        let trace = sprintf "Delivering %A message to '%s' re: '%s'" body.MessageType body.Recipient body.Subject
+        trace |> log.Info
+        trace |> trackTrace "sendNotification"
+        
         match body.MessageType with
         | MessageType.Email -> sendEmailNotification body
         | MessageType.SMS -> sendSMSNotification body
         | _ -> log.Error("unrecognized message type")
     with
     | ex -> 
+        ex |> trackException "sendNotification"
         log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
         reraise()

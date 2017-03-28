@@ -1,3 +1,6 @@
+#load "../shared/logging.fsx"
+#r "../packages/Microsoft.ApplicationInsights/lib/net45/Microsoft.ApplicationInsights.dll"
+
 #r "System.Data"
 #r "System.Net"
 #r "System.Net.Http"
@@ -25,6 +28,7 @@ open Dapper
 open IgaTracker.Model
 open IgaTracker.Db
 open IgaTracker.Queries
+open IgaTracker.Logging
 
 // Azure function entry point
 
@@ -53,13 +57,15 @@ let Run(req: HttpRequestMessage, log: TraceWriter) =
     log.Info(sprintf "[%s] F# HTTP trigger function processed a request." (timestamp()))
     try
         async {
-
+            let start = DateTimeOffset(DateTime.Now)
+            let duration = System.Diagnostics.Stopwatch.StartNew()
             let! content = req.Content.ReadAsStringAsync() |> Async.AwaitTask
             let body = JsonConvert.DeserializeObject<Body>(content)
             let response = 
                 match (body |> isAuthorized) with
                 | false -> 
-                    log.Warning(sprintf "[%s] Request was not authorized" (timestamp()))
+                    log.Info(sprintf "[%s] Request to generate bill report for for user with Id %d was not authorized" (timestamp()) body.Id)
+                    trackRequest "generateBillReport" start duration.Elapsed "401" false 
                     req.CreateResponse(HttpStatusCode.Unauthorized)
                 | true ->
                     log.Info(sprintf "[%s] Generating bill report for user with Id %d ..." (timestamp()) body.Id)
@@ -67,10 +73,12 @@ let Run(req: HttpRequestMessage, log: TraceWriter) =
                     let report = body |> generateReport
                     res.Content <- new StringContent(report, Encoding.UTF8, "application/json")
                     log.Info(sprintf "[%s] Generating bill report for user with Id %d [OK]" (timestamp()) body.Id)
+                    trackRequest "generateBillReport" start duration.Elapsed "200" true 
                     res
             return response
         } |> Async.RunSynchronously
     with
-        | ex -> 
-            log.Error(sprintf "[%s] Encountered error: %s" (timestamp()) (ex.ToString())) 
-            reraise()
+    | ex ->
+        ex |> trackException "generateBillReport"
+        log.Error(sprintf "[%s] Encountered error: %s" (timestamp()) (ex.ToString())) 
+        reraise()

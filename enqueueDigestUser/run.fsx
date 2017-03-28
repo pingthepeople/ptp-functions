@@ -1,4 +1,5 @@
-// Configure Database 
+#load "../shared/logging.fsx"
+#r "../packages/Microsoft.ApplicationInsights/lib/net45/Microsoft.ApplicationInsights.dll"
 
 #r "System.Data"
 #r "../packages/Dapper/lib/net45/Dapper.dll"
@@ -17,6 +18,7 @@ open IgaTracker.Model
 open IgaTracker.Queries
 open IgaTracker.Db
 open IgaTracker.Csv
+open IgaTracker.Logging
 open Newtonsoft.Json
 
 #r "../packages/Microsoft.Azure.WebJobs.Core/lib/net45/Microsoft.Azure.WebJobs.dll"
@@ -52,4 +54,7 @@ let Run(myTimer: TimerInfo, digests: ICollector<string>, log: TraceWriter) =
         |> Seq.iter digests.Add
         log.Info(sprintf "[%s] Enqueue digest creation [OK]" (timestamp()))
     with
-    | ex -> log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
+    | ex -> 
+        ex |> trackException "generateDigestUser"
+        log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
+        reraise()
