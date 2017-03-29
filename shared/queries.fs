@@ -214,4 +214,7 @@ WHERE
 
     [<Literal>]
     let UpdateDeadBills = """UPDATE Bill SET IsDead = 1 WHERE Id IN @Ids; 
-SELECT Id, Name, Title, Chamber, IsDead FROM Bill WHERE Id IN @Ids"""
+SELECT b.Id, b.Name, b.Title, b.Chamber, b.IsDead 
+FROM Bill b
+JOIN UserBill ub ON ub.BillId = b.Id
+WHERE b.Id in @Ids and (ub.ReceiveAlertEmail = 1 or ub.ReceiveAlertSms = 1)"""
