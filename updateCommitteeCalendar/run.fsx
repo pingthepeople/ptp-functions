@@ -1,4 +1,5 @@
-// Configure Database 
+#load "../shared/logging.fsx"
+#r "../packages/Microsoft.ApplicationInsights/lib/net45/Microsoft.ApplicationInsights.dll"
 
 #r "System.Data"
 #r "../packages/Dapper/lib/net45/Dapper.dll"
@@ -23,6 +24,7 @@ open IgaTracker.Queries
 open IgaTracker.Http
 open IgaTracker.Db
 open IgaTracker.Cache
+open IgaTracker.Logging
 
 let toModel (bills:Bill seq) (committees:Committee seq) (billname,meeting) = 
     let billId = bills |> Seq.find (fun b -> b.Name = billname) |> (fun b -> b.Id)
@@ -95,11 +97,15 @@ let Run(myTimer: TimerInfo, scheduledActions: ICollector<string>, log: TraceWrit
         log.Info(sprintf "[%s] Add scheduled actions to database [OK]" (timestamp()))
 
         log.Info(sprintf "[%s] Enqueue alerts for scheduled actions ..." (timestamp()))
-        let enqueue scheduledAction = 
-            let json = scheduledAction |> JsonConvert.SerializeObject
-            log.Info(sprintf "[%s]  Enqueuing scheduled action %s" (timestamp()) json)
+        let enqueue json = 
+            let trace = sprintf "  Enqueuing scheduled action %s" json
+            trace |> trackTrace "updateCommitteeCalendar"
+            trace |> log.Info
             json |> scheduledActions.Add
-        scheduledActionsRequiringAlerts |> Seq.iter enqueue
+
+        scheduledActionsRequiringAlerts 
+        |> Seq.map JsonConvert.SerializeObject
+        |> Seq.iter enqueue
         log.Info(sprintf "[%s] Enqueue alerts for scheduled actions [OK]" (timestamp()))   
 
         log.Info(sprintf "[%s] Invalidating cache ..." (timestamp()))
@@ -108,5 +114,6 @@ let Run(myTimer: TimerInfo, scheduledActions: ICollector<string>, log: TraceWrit
 
     with
     | ex -> 
+        ex |> trackException "updateCommitteeCalendar"
         log.Error(sprintf "{%s] Encountered error: %s" (timestamp()) (ex.ToString()))
         reraise()    

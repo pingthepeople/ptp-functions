@@ -1,3 +1,6 @@
+#load "../shared/logging.fsx"
+#r "../packages/Microsoft.ApplicationInsights/lib/net45/Microsoft.ApplicationInsights.dll"
+
 #r "System.Data"
 #r "../packages/Dapper/lib/net45/Dapper.dll"
 
@@ -12,6 +15,7 @@ open Dapper
 open IgaTracker.Model
 open IgaTracker.Db
 open IgaTracker.Alert
+open IgaTracker.Logging
 
 // Format a nice description of the action
 let formatBody sessionYear (bill:Bill) (action:Action) includeLinks =
@@ -49,13 +53,17 @@ let Run(action: string, notifications: ICollector<string>, log: TraceWriter) =
         log.Info(sprintf "[%s] Generating action alerts [OK]" (timestamp()))
 
         log.Info(sprintf "[%s] Enqueueing action alerts ..." (timestamp()))
-        let enqueue msg = 
-            let json = msg |> JsonConvert.SerializeObject
-            log.Info(sprintf "[%s]   Enqueuing scheduled action alert: %s" (timestamp()) json )
+        let enqueue json = 
+            let trace = sprintf "Enqueuing scheduled action alert: %s" json
+            trace |> trackTrace "generateActionAlerts"
+            trace |> log.Info
             json |> notifications.Add
-        messages |> List.iter enqueue
+        messages 
+        |> List.map JsonConvert.SerializeObject
+        |> List.iter enqueue
         log.Info(sprintf "[%s] Enqueueing action alerts [OK]" (timestamp()))
     with
     | ex -> 
+        ex |> trackException "generateActionAlerts"
         log.Error(sprintf "[%s] Encountered error: %s" (timestamp()) (ex.ToString())) 
         reraise()

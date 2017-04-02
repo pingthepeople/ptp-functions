@@ -1,3 +1,5 @@
+#load "../shared/logging.fsx"
+#r "../packages/Microsoft.ApplicationInsights/lib/net45/Microsoft.ApplicationInsights.dll"
 
 #r "System.Data"
 #r "../packages/Dapper/lib/net45/Dapper.dll"
@@ -22,6 +24,7 @@ open IgaTracker.Http
 open IgaTracker.Db
 open IgaTracker.Queries
 open IgaTracker.Cache
+open IgaTracker.Logging
 
 let toActionModel (action,bill:Bill) = {
     Action.Id = 0;
@@ -87,7 +90,9 @@ let Run(myTimer: TimerInfo, actions: ICollector<string>, log: TraceWriter) =
 
         log.Info(sprintf "[%s] Enqueue alerts for new actions ..." (timestamp()))
         let enqueue json =
-            log.Info(sprintf "[%s]  Enqueuing action %s" (timestamp()) json)
+            let trace = sprintf "  Enqueuing action %s" json
+            trace |> trackTrace "updateActions"
+            trace |> log.Info
             json |> actions.Add           
         actionIdsRequiringAlert |> Seq.map JsonConvert.SerializeObject |> Seq.iter enqueue
         log.Info(sprintf "[%s] Enqueue alerts for new actions [OK]" (timestamp()))
@@ -101,4 +106,7 @@ let Run(myTimer: TimerInfo, actions: ICollector<string>, log: TraceWriter) =
         log.Info(sprintf "[%s] Invalidating cache [OK]" (timestamp()))
 
     with
-    | ex -> log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
+    | ex -> 
+        ex |> trackException "updateActions"
+        log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
+        reraise()

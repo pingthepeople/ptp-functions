@@ -3,6 +3,7 @@ nuget dapper
 nuget FSharp.Data
 nuget fsharp.formatting
 nuget fsunit
+nuget Microsoft.ApplicationInsights
 nuget microsoft.azure.webjobs
 nuget microsoft.azure.webjobs.extensions
 nuget nunit
