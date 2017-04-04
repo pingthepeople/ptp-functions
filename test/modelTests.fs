@@ -35,7 +35,7 @@ module ``Action model tests`` =
         action.Describe |> should equal "was assigned to the House Committee on Committee Name"
 
     [<Test>]    
-    let ``Committee reading is described properly`` =
+    let ``Committee hearing is described properly`` =
         let action = {  Action.ActionType=ActionType.CommitteeReading; Description="passed;"; Chamber=Chamber.House; Date=date; Id= 0; BillId=0; Link="link" }
         action.Describe |> should equal "was read in committee in the House. The vote was: passed"
 
@@ -54,9 +54,9 @@ module ``Scheduled Action model tests`` =
     let date = System.DateTime(2017,1,20)
 
     [<Test>]
-    let ``Committee reading is described properly`` =
+    let ``Committee hearing is described properly`` =
         let action = { ActionType=ActionType.CommitteeReading; Start=""; End=""; Location="location"; Chamber=Chamber.House; Date=date; Id=0; BillId=0; Link="link" }
-        action.Describe false |> should equal "is scheduled for a committee reading on 1/20/2017 in location"
+        action.Describe false |> should equal "is scheduled for a committee hearing on 1/20/2017 in location"
 
     [<Test>]
     let ``Second reading is described properly`` =
@@ -71,13 +71,13 @@ module ``Scheduled Action model tests`` =
     [<Test>]
     let ``Start/End times included when present`` =
         let action = { ActionType=ActionType.CommitteeReading; Start="09:30:00"; End="12:30:00"; Location="location"; Chamber=Chamber.House; Date=date; Id=0; BillId=0; Link="link" }
-        action.Describe false |> should equal "is scheduled for a committee reading on 1/20/2017 from 9:30 AM - 12:30 PM in location"
+        action.Describe false |> should equal "is scheduled for a committee hearing on 1/20/2017 from 9:30 AM - 12:30 PM in location"
 
     [<Test>]
     let ``'House Chamber' location formatted properly`` =
         let action = { ActionType=ActionType.CommitteeReading; Start=""; End=""; Location="House Chamber"; Chamber=Chamber.House; Date=date; Id=0; BillId=0; Link="link" }
-        action.Describe false |> should equal "is scheduled for a committee reading on 1/20/2017 in the House Chamber"
+        action.Describe false |> should equal "is scheduled for a committee hearing on 1/20/2017 in the House Chamber"
 
     let ``'Senate Chamber' location formatted properly`` =
         let action = { ActionType=ActionType.CommitteeReading; Start=""; End=""; Location="Senate Chamber"; Chamber=Chamber.Senate; Date=date; Id=0; BillId=0; Link="link" }
-        action.Describe false |> should equal "is scheduled for a committee reading on 1/20/2017 in the Senate Chamber"
+        action.Describe false |> should equal "is scheduled for a committee hearing on 1/20/2017 in the Senate Chamber"

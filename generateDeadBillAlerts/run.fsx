@@ -30,7 +30,7 @@ let deathChamber (action:Action) =
 
 let deathReason (action:Action) = 
     match (action.ActionType) with
-    | ActionType.AssignedToCommittee -> "committee reading"
+    | ActionType.AssignedToCommittee -> "committee hearing"
     | ActionType.CommitteeReading    -> "second reading"
     | ActionType.SecondReading       -> "third reading"
     | ActionType.ThirdReading        -> "committee assignment"
