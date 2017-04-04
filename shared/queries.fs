@@ -217,4 +217,5 @@ WHERE
 SELECT b.Id, b.Name, b.Title, b.Chamber, b.IsDead 
 FROM Bill b
 JOIN UserBill ub ON ub.BillId = b.Id
-WHERE b.Id in @Ids and (ub.ReceiveAlertEmail = 1 or ub.ReceiveAlertSms = 1)"""
+WHERE b.Id in @Ids and (ub.ReceiveAlertEmail = 1 or ub.ReceiveAlertSms = 1)
+GROUP BY b.Id, b.Name, b.Title, b.Chamber, b.IsDead"""

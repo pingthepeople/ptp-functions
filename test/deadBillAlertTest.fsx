@@ -16,9 +16,9 @@ let senateBill = {Bill.Chamber=Chamber.Senate; Name="SB0001"; Title="Title"; Des
 type ``died in the House``()=
 
     [<Test>] 
-    let ``because did not receive house committee reading``()=
+    let ``because did not receive house committee hearing``()=
         let mostRecentAction = Some({genericAction with ActionType=ActionType.AssignedToCommittee; Chamber=Chamber.House })
-        formatBody "2017" houseBill mostRecentAction MessageType.SMS |> should equal "HB 1000 ('Title') has died in the House upon missing the deadline for a committee reading."
+        formatBody "2017" houseBill mostRecentAction MessageType.SMS |> should equal "HB 1000 ('Title') has died in the House upon missing the deadline for a committee hearing."
 
     [<Test>] 
     let ``because did not receive house second reading``()=
@@ -44,9 +44,9 @@ type ``died in the House``()=
 type ``died in the Senate``()=
 
     [<Test>] 
-    let ``because did not receive senate committee reading``()=
+    let ``because did not receive senate committee hearing``()=
         let mostRecentAction = Some({genericAction with ActionType=ActionType.AssignedToCommittee; Chamber=Chamber.Senate})
-        formatBody "2017" senateBill mostRecentAction MessageType.SMS |> should equal "SB 1 ('Title') has died in the Senate upon missing the deadline for a committee reading."
+        formatBody "2017" senateBill mostRecentAction MessageType.SMS |> should equal "SB 1 ('Title') has died in the Senate upon missing the deadline for a committee hearing."
 
     [<Test>] 
     let ``because did not receive senate second reading``()=
