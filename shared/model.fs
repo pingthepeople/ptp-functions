@@ -72,7 +72,7 @@ module Model =
             let desc = this.Description.TrimEnd(';')
             match this.ActionType with
             | ActionType.AssignedToCommittee -> sprintf "was assigned to the %A Committee on %s" this.Chamber desc
-            | ActionType.CommitteeReading -> sprintf "was read in committee in the %A. The vote was: %s" this.Chamber desc
+            | ActionType.CommitteeReading -> sprintf "had a committee hearing in the %A. The vote was: %s" this.Chamber desc
             | ActionType.SecondReading -> sprintf "had a second reading in the %A. The vote was: %s" this.Chamber desc
             | ActionType.ThirdReading -> sprintf "had a third reading in the %A. The vote was: %s" this.Chamber desc
             | _ -> "(some other event type?)"
@@ -116,8 +116,8 @@ module Model =
                 | false -> eventRoom
             let eventDate = this.Date.ToString("M/d/yyyy")
             match this.ActionType with
-            | ActionType.CommitteeReading when this.Start |> System.String.IsNullOrWhiteSpace -> sprintf "is scheduled for a committee reading on %s in %s" eventDate eventLocation
-            | ActionType.CommitteeReading -> sprintf "is scheduled for a committee reading on %s from %s - %s in %s" eventDate (formatTimeOfDay this.Start) (formatTimeOfDay this.End) eventLocation
+            | ActionType.CommitteeReading when this.Start |> System.String.IsNullOrWhiteSpace -> sprintf "is scheduled for a committee hearing on %s in %s" eventDate eventLocation
+            | ActionType.CommitteeReading -> sprintf "is scheduled for a committee hearing on %s from %s - %s in %s" eventDate (formatTimeOfDay this.Start) (formatTimeOfDay this.End) eventLocation
             | ActionType.SecondReading -> sprintf "is scheduled for a second reading on %s in %s" eventDate eventLocation 
             | ActionType.ThirdReading -> sprintf "is scheduled for a third reading on %s in %s" eventDate eventLocation
             | _ -> "(some other event type?)"

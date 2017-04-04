@@ -4,7 +4,7 @@ There are several distinct processes that occur during the legislative session t
 
 * Canonical data, including bills, committess, and subjects, are pulled from the API once daily on weekday mornings.
 * Legislative activity is pulled from the API and alerts sent every 10 minutes on weekdays for:
-  + Legislative events (e.g. "a committee reading was held for HB 1234")
+  + Legislative events (e.g. "a committee hearing was held for HB 1234")
   + Upcoming committee hearings (e.g. "HB 1234 will read in committee on 3/1/2017")
   + Upcoming chamber readings (e.g. "HB 1234 will have a second reading in the House on 3/1/2017")
 * A daily digest with a rundown of that day's legislative activity, any upcoming activity, and a spreadsheet showing up-to-date legislation status is sent once daily on weekday evenings. Users can opt to see a rundown of all legislative activity, or just the activity on the bills they're tracking.

@@ -81,6 +81,12 @@ let sendSMSNotification message =
         MessageResource.Create(toNumber, from=fromNumber, body=message.Body) |> ignore
     trackDependency "sms" "message" sendMessage
 
+let sendNotification body = 
+    match body.MessageType with
+    | MessageType.Email -> sendEmailNotification body
+    | MessageType.SMS -> sendSMSNotification body
+    | _ -> failwith("unrecognized message type")
+
 #r "../packages/Microsoft.Azure.WebJobs/lib/net45/Microsoft.Azure.WebJobs.Host.dll"
 open Microsoft.Azure.WebJobs.Host
 
@@ -88,14 +94,17 @@ let Run(message: string, log: TraceWriter) =
     log.Info(sprintf "F# function 'sendNotification' executed  at %s" (timestamp()))
     try
         let body = JsonConvert.DeserializeObject<Message>(message)
-        let trace = sprintf "Delivering %A message to '%s' re: '%s'" body.MessageType body.Recipient body.Subject
-        trace |> log.Info
-        trace |> trackTrace "sendNotification"
         
-        match body.MessageType with
-        | MessageType.Email -> sendEmailNotification body
-        | MessageType.SMS -> sendSMSNotification body
-        | _ -> log.Error("unrecognized message type")
+        match String.IsNullOrWhiteSpace(body.Recipient) with
+        | true ->
+            let trace = sprintf "%A message re: '%s' has no recipient. No notification will be sent." body.MessageType body.Subject
+            trace |> log.Warning
+            trace |> trackTrace "sendNotification"
+        | false ->
+            let trace = sprintf "Delivering %A message to '%s' re: '%s'" body.MessageType body.Recipient body.Subject
+            trace |> log.Info
+            trace |> trackTrace "sendNotification"
+            body |> sendNotification
     with
     | ex -> 
         ex |> trackException "sendNotification"

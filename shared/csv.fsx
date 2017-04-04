@@ -40,7 +40,7 @@ module Csv =
         sprintf "%s,%s,%s" desc origin crossover
 
     let postSpreadsheet connStr name bills = 
-        let header = "Bill,Title,Description,Authors,Origin Chamber,Subjects,Origin Committee,Origin Committee Reading,Vote,Second Reading,Vote,Third Reading,Vote,Crossover Committee,Crossover Committee Reading,Vote,Second Reading,Vote,Third Reading,Vote"
+        let header = "Bill,Title,Description,Authors,Origin Chamber,Subjects,Origin Committee,Origin Committee Hearing,Vote,Second Reading,Vote,Third Reading,Vote,Crossover Committee,Crossover Committee Hearing,Vote,Second Reading,Vote,Third Reading,Vote"
         let rows = bills |> Seq.map formatRow |> Seq.toList
         let tempPath = Path.GetTempFileName()
         printfn "temp path: %s" tempPath
