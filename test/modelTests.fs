@@ -23,32 +23,112 @@ module ``Bill model tests`` =
 
     [<Test>]
     let ``A bill web url is formatted properly`` = 
-        let bill = { Bill.Name = "HB1001"; Chamber = Chamber.House; Id = 0; SessionId = 0; Link = "http://example.com"; Title = "test title"; Description = "test description"; Authors = "test authors";}
+        let bill = { Bill.Name = "HB1001"; Chamber = Chamber.House; Id = 0; SessionId = 0; Link = "http://example.com"; Title = "test title"; Description = "test description"; Authors = "test authors"; IsDead=false }
         bill.WebLink "2017" |> should equal "[HB 1001](https://iga.in.gov/legislative/2017/bills/house/1001)"
 
-module ``Action model tests`` =
+module ``Action description formatting`` =
+    let date = System.DateTime(2017,1,20)
+    let defaultAction = { Action.ActionType=ActionType.AssignedToCommittee; Description=""; Chamber=Chamber.House; Date=date; Id=0; BillId=0; Link="" }
+
+    [<Test>]
+    let ``Committee assignment`` =
+        let action = { defaultAction with Action.ActionType=ActionType.AssignedToCommittee; Description="Committee Name"; }
+        action |> Action.FormatDescription "title" |> should equal "title was assigned to the House Committee on Committee Name."
+
+    [<Test>]    
+    let ``Committee hearing`` =
+        let action = { defaultAction with Action.ActionType=ActionType.CommitteeReading; Description="passed;"; }
+        action |> Action.FormatDescription "title"  |> should equal "title had a committee hearing in the House. The vote was: passed."
+
+    [<Test>]    
+    let ``Second reading`` =
+        let action = { defaultAction with Action.ActionType=ActionType.SecondReading; Description="enrolled; ordered engrossed"; Chamber=Chamber.Senate;}
+        action |> Action.FormatDescription "title"  |> should equal "title had a second reading in the Senate. The vote was: enrolled; ordered engrossed."
+
+    [<Test>]    
+    let ``Third reading`` =
+        let action = { defaultAction with Action.ActionType=ActionType.ThirdReading; Description="passed; foo bar"; Chamber=Chamber.Senate;}
+        action |> Action.FormatDescription "title"  |> should equal "title had a third reading in the Senate. The vote was: passed; foo bar."
+
+    [<Test>]    
+    let ``Signed by president of Senate`` =
+        let action = { defaultAction with Action.ActionType=ActionType.SignedByPresidentOfSenate; Description=""; }
+        action |> Action.FormatDescription "title"  |> should equal "title has been signed by the President of the Senate. It will now be sent to the Governor to be signed into law or vetoed."
+
+    [<Test>]    
+    let ``Signed by governor`` =
+        let action = { defaultAction with Action.ActionType=ActionType.SignedByGovernor; Description=""; }
+        action |> Action.FormatDescription "title"  |> should equal "title has been signed into law by the Governor."
+
+    [<Test>]    
+    let ``Vetoed by governor`` =
+        let action = { defaultAction with Action.ActionType=ActionType.VetoedByGovernor; Description=""; Chamber=Chamber.House }
+        action |> Action.FormatDescription "title"  |> should equal "title has been vetoed by the Governor. The Assembly now has the option to override that veto."
+
+    [<Test>]    
+    let ``Vetoed override in House`` =
+        let action = { defaultAction with Action.ActionType=ActionType.VetoOverridden; Description="foo bar"; Chamber=Chamber.House }
+        action |> Action.FormatDescription "title" |> should equal "The veto on title has been overridden in the House. The vote was: foo bar."
+
+    [<Test>]    
+    let ``Vetoed override in Senate`` =
+        let action = { defaultAction with Action.ActionType=ActionType.VetoOverridden; Description="foo bar"; Chamber=Chamber.Senate }
+        action |> Action.FormatDescription "title" |> should equal "The veto on title has been overridden in the Senate. The vote was: foo bar."
+
+module ``Action type parsing`` =
     let date = System.DateTime(2017,1,20)
 
     [<Test>]
-    let ``Committee assignment is described properly`` =
-        let action = { Action.ActionType=ActionType.AssignedToCommittee; Description="Committee Name"; Chamber=Chamber.House; Date=date; Id=0; BillId=0; Link="link" }
-        action.Describe |> should equal "was assigned to the House Committee on Committee Name"
+    let ``Parse signing by president of Senate`` =
+        let actionText = "Signed by the President of the Senate"
+        actionText |> Action.ParseType |> should equal ActionType.SignedByPresidentOfSenate
 
-    [<Test>]    
-    let ``Committee hearing is described properly`` =
-        let action = {  Action.ActionType=ActionType.CommitteeReading; Description="passed;"; Chamber=Chamber.House; Date=date; Id= 0; BillId=0; Link="link" }
-        action.Describe |> should equal "was read in committee in the House. The vote was: passed"
+    [<Test>]
+    let ``Parse signing by Governor`` =
+        let actionText = "Signed by the Governor"
+        actionText |> Action.ParseType |> should equal ActionType.SignedByGovernor
 
-    [<Test>]    
-    let ``Second reading is described properly`` =
-        let action = {  Action.ActionType=ActionType.SecondReading; Description="enrolled; ordered engrossed"; Chamber=Chamber.Senate; Date=date; Id= 0; BillId=0; Link="link" }
-        action.Describe |> should equal "had a second reading in the Senate. The vote was: enrolled; ordered engrossed"
+    [<Test>]
+    let ``Parse veto by Governor`` =
+        let actionText = "Vetoed by the Governor"
+        actionText |> Action.ParseType |> should equal ActionType.VetoedByGovernor
 
-    [<Test>]    
-    let ``Third reading is described properly`` =
-        let action = {  Action.ActionType=ActionType.ThirdReading; Description="passed; foo bar"; Chamber=Chamber.Senate; Date=date; Id= 0; BillId=0; Link="link" }
-        action.Describe |> should equal "had a third reading in the Senate. The vote was: passed; foo bar"
+    [<Test>]
+    let ``Parse veto override in House`` =
+        let actionText = "Veto overridden by the House; Roll Call 90: yeas 65, nays 29"
+        actionText |> Action.ParseType |> should equal ActionType.VetoOverridden
 
+    [<Test>]
+    let ``Parse veto override in Senate`` =
+        let actionText = "Veto overridden by the Senate; Roll Call 105: yeas 49, nays 1"
+        actionText |> Action.ParseType |> should equal ActionType.VetoOverridden
+
+module ``Action description parsing`` =
+    
+    [<Test>]
+    let ``Parse signing by president of Senate`` =
+        let actionText = "Signed by the President of the Senate"
+        actionText |> Action.ParseDescription |> should equal ""
+
+    [<Test>]
+    let ``Parse signing by Governor`` =
+        let actionText = "Signed by the Governor"
+        actionText |> Action.ParseDescription |> should equal ""
+
+    [<Test>]
+    let ``Parse veto by Governor`` =
+        let actionText = "Vetoed by the Governor"
+        actionText |> Action.ParseDescription |> should equal ""
+
+    [<Test>]
+    let ``Parse veto override in House`` =
+        let actionText = "Veto overridden by the House; Roll Call 90: yeas 65, nays 29"
+        actionText |> Action.ParseDescription |> should equal "Roll Call 90: yeas 65, nays 29"
+
+    [<Test>]
+    let ``Parse veto override in Senate`` =
+        let actionText = "Veto overridden by the Senate; Roll Call 105: yeas 49, nays 1"
+        actionText |> Action.ParseDescription |> should equal "Roll Call 105: yeas 49, nays 1"
 
 module ``Scheduled Action model tests`` = 
     let date = System.DateTime(2017,1,20)
