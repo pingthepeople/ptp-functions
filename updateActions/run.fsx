@@ -44,14 +44,12 @@ let createNewActionModels (cn:SqlConnection) allActions =
 
     let toKnownBills action = bills |> Seq.exists (fun bill -> bill.Name = action?billName?billName.AsString())
     let toUnrecordedActions action = links |> Seq.exists (fun link -> link = action?link.AsString()) |> not
-    let toKnownActionTypes (action:Action) = action.ActionType <> ActionType.Unknown
     let actionAndBill action = (action, bills |> Seq.find (fun bill -> bill.Name = action?billName?billName.AsString()))
 
     allActions
         |> List.filter toKnownBills
         |> List.filter toUnrecordedActions
         |> List.map (actionAndBill >> toActionModel)
-        |> List.filter toKnownActionTypes
 
 let ensureLatestBillMetadata (actions:Action list) cn =
     actions 
@@ -59,10 +57,12 @@ let ensureLatestBillMetadata (actions:Action list) cn =
     |> ignore   
 
 let addToDatabase (cn:SqlConnection) models =
+    let toKnownActionTypes (action:Action) = action.ActionType <> ActionType.Unknown
     let addActionToDbAndGetId (action:Action) = cn |> dapperParameterizedQueryOne<int> InsertAction action
     let fetchActionsRequiringAlert insertedIds = cn |> dapperMapParametrizedQuery<Action> SelectActionsRequiringNotification (Map ["Ids", insertedIds :> obj])
 
     models
+    |> List.filter toKnownActionTypes
     |> List.map addActionToDbAndGetId
     |> fetchActionsRequiringAlert 
 
