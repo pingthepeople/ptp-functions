@@ -13,11 +13,6 @@ VALUES (@Link,@Date,@ActionType,@Start,@End,@Location,@Chamber,@BillId);
 SELECT CAST(SCOPE_IDENTITY() as int)"""
 
     [<Literal>]
-    let InsertBill= """INSERT INTO Bill(Name,Link,Title,Description,Authors,Chamber,SessionId) 
-VALUES (@Name,@Link,@Title,@Description,@Authors,@Chamber,@SessionId); 
-SELECT CAST(SCOPE_IDENTITY() as int)"""
-
-    [<Literal>]
     let InsertCommittee= """INSERT INTO Committee(Name,Link,Chamber,SessionId) 
 VALUES (@Name,@Link,@Chamber,@SessionId); 
 SELECT CAST(SCOPE_IDENTITY() as int)"""

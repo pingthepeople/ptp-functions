@@ -31,8 +31,14 @@ module Db =
             expandoDictionary.Add(paramValue.Key, paramValue.Value :> obj)
         connection |> dapperParametrizedQuery query expando
     
+    let dapperParameterizedQueryOne<'Result> (query:string) (param:obj) connection =
+        connection |> dapperParametrizedQuery<'Result> query param |> Seq.head
+
+    let dapperQueryOne<'Result> (query:string) connection =
+        connection |> dapperQuery<'Result> query |> Seq.head
+
     let currentSessionYear cn = 
-        cn |> dapperQuery<string> "SELECT TOP 1 Name FROM Session ORDER BY Name Desc" |> Seq.head
+        cn |> dapperQueryOne<string> "SELECT TOP 1 Name FROM Session ORDER BY Name Desc"
 
     let currentSessionId cn = 
-        cn |> dapperQuery<int> "SELECT TOP 1 Id FROM Session ORDER BY Name Desc" |> Seq.head
+        cn |> dapperQueryOne<int> "SELECT TOP 1 Id FROM Session ORDER BY Name Desc"
