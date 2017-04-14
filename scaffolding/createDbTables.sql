@@ -46,7 +46,8 @@ CREATE TABLE Bill
     Chamber TINYINT NOT NULL,
     Created DATETIME NOT NULL DEFAULT GetUtcDate(),
     SessionId int NOT NULL FOREIGN KEY REFERENCES [Session](Id),
-    IsDead bit NOT NULL DEFAULT 0
+    IsDead bit NOT NULL DEFAULT 0,
+    [Version] int NOT NULL Default 1
 )
 
 CREATE TABLE [Action]
