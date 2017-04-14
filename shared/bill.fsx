@@ -71,5 +71,6 @@ SELECT * FROM Bill WHERE Name = @Name AND SessionId = (SELECT TOP 1 Id FROM Sess
         | x when x = recordedBillModel.Version -> 
             recordedBillModel
         | _ -> 
+            trackTrace "Bill" (sprintf "Updating metadata for %s from version %d to version %d" billName recordedBillModel.Version latestBillModel.Version)
             delete BillsKey
             cn |> dapperParameterizedQueryOne<Bill> QueryUpdateBillByName latestBillModel
