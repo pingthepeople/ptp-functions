@@ -15,7 +15,17 @@ module Model =
 
 //  Database models
     type Chamber = House=1 | Senate=2
-    type ActionType = Unknown=0 | CommitteeReading=1 | SecondReading=2 | ThirdReading=3 | AssignedToCommittee=4
+    type ActionType = 
+        | Unknown=0 
+        | CommitteeReading=1 
+        | SecondReading=2 
+        | ThirdReading=3 
+        | AssignedToCommittee=4
+        | SignedByPresidentOfSenate=5
+        | SignedByGovernor=6
+        | VetoedByGovernor=7
+        | VetoOverridden=8
+        
     type DigestType = None=0 | MyBills=1 | AllBills=2
 
     [<CLIMutable>]
@@ -68,13 +78,17 @@ module Model =
         Chamber:Chamber;
         BillId:int;
     } with
-        member this.Describe = 
-            let desc = this.Description.TrimEnd(';')
-            match this.ActionType with
-            | ActionType.AssignedToCommittee -> sprintf "was assigned to the %A Committee on %s" this.Chamber desc
-            | ActionType.CommitteeReading -> sprintf "had a committee hearing in the %A. The vote was: %s" this.Chamber desc
-            | ActionType.SecondReading -> sprintf "had a second reading in the %A. The vote was: %s" this.Chamber desc
-            | ActionType.ThirdReading -> sprintf "had a third reading in the %A. The vote was: %s" this.Chamber desc
+        static member FormatDescription title action =
+            let desc = action.Description.TrimEnd(';')
+            match action.ActionType with
+            | ActionType.AssignedToCommittee -> sprintf "%s was assigned to the %A Committee on %s." title action.Chamber desc
+            | ActionType.CommitteeReading -> sprintf "%s had a committee hearing in the %A. The vote was: %s." title action.Chamber desc
+            | ActionType.SecondReading -> sprintf "%s had a second reading in the %A. The vote was: %s." title action.Chamber desc
+            | ActionType.ThirdReading -> sprintf "%s had a third reading in the %A. The vote was: %s." title action.Chamber desc
+            | ActionType.SignedByPresidentOfSenate -> sprintf "%s has been signed by the President of the Senate. It will now be sent to the Governor to be signed into law or vetoed." title
+            | ActionType.SignedByGovernor -> sprintf "%s has been signed into law by the Governor." title
+            | ActionType.VetoedByGovernor -> sprintf "%s has been vetoed by the Governor. The Assembly now has the option to override that veto." title
+            | ActionType.VetoOverridden -> sprintf "The veto on %s has been overridden in the %A. The vote was: %s." title action.Chamber desc
             | _ -> "(some other event type?)"
         static member ParseType description =
             match description with
@@ -82,6 +96,10 @@ module Model =
             | StartsWith "Committee report" rest -> ActionType.CommitteeReading
             | StartsWith "Second reading" rest -> ActionType.SecondReading
             | StartsWith "Third reading" rest -> ActionType.ThirdReading
+            | StartsWith "Signed by the President of the Senate" rest -> ActionType.SignedByPresidentOfSenate
+            | StartsWith "Signed by the Governor" rest -> ActionType.SignedByGovernor
+            | StartsWith "Vetoed by the Governor" rest -> ActionType.VetoedByGovernor
+            | StartsWith "Veto overridden" rest -> ActionType.VetoOverridden
             | _ -> ActionType.Unknown
         static member ParseDescription description =
             match description with
@@ -89,6 +107,11 @@ module Model =
             | StartsWith "Committee report: " rest -> rest
             | StartsWith "Second reading: " rest -> rest
             | StartsWith "Third reading: " rest -> rest
+            | StartsWith "Signed by the President of the Senate" rest -> rest
+            | StartsWith "Signed by the Governor" rest -> rest
+            | StartsWith "Vetoed by the Governor" rest -> rest
+            | StartsWith "Veto overridden by the House; " rest -> rest
+            | StartsWith "Veto overridden by the Senate; " rest -> rest
             | other -> other
 
     [<CLIMutable>]

@@ -23,7 +23,8 @@ let formatBody sessionYear (bill:Bill) (action:Action) includeLinks =
         match includeLinks with 
         | true -> bill.WebLink sessionYear
         | false -> Bill.PrettyPrintName bill.Name
-    sprintf "%s ('%s') %s." billName (bill.Title.TrimEnd('.')) (action.Describe)
+    let title = sprintf "%s ('%s')" billName (bill.Title.TrimEnd('.'))
+    action |> Action.FormatDescription title
 
 // Create action alert messages for people that have opted-in to receiving them
 let generateAlerts (action:Action) =
