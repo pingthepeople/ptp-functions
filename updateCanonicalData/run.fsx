@@ -11,6 +11,7 @@
 #load "../shared/http.fsx"
 #load "../shared/db.fsx"
 #load "../shared/cache.fsx"
+#load "../shared/bill.fsx"
 
 open System
 open System.Data.SqlClient
@@ -25,6 +26,7 @@ open IgaTracker.Http
 open IgaTracker.Db
 open IgaTracker.Cache
 open IgaTracker.Logging
+open IgaTracker.Bill
 open StackExchange.Redis
 
 
@@ -51,42 +53,21 @@ let updateSubjects cn =
     newSubjects
 
 let updateBills cn =
-    let parseChamber (name:string) = 
-        match name.Substring(0,1) with
-        | "H" -> Chamber.House
-        | "S" -> Chamber.Senate
-        | _ -> raise(System.ArgumentException("unrecognized chamber for bill " + name))
-
-    let sessionYear = cn |> currentSessionYear
-    let sessionId = cn |> dapperQuery<int> "SELECT TOP 1 Id FROM Session ORDER BY Name Desc" |> Seq.head
-
-    let toModel bill = 
-        let name = bill?billName.AsString()
-        { Bill.Id=0; 
-        SessionId=sessionId; 
-        Name=name; 
-        Link=bill?link.AsString(); 
-        Title=bill?latestVersion?shortDescription.AsString(); 
-        Description= bill?latestVersion?digest.AsString();
-        Chamber=parseChamber name;
-        Authors=bill?latestVersion?authors.AsArray() |> Array.toList |> List.map (fun a -> a?lastName.AsString()) |> List.sort |> String.concat ", ";
-        IsDead = false }
 
     // Find new bills
+    let sessionYear = cn |> currentSessionYear
     let knownBills = cn |> dapperQuery<string> "SELECT Name from Bill WHERE SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)"
-    let lastUpdate = cn |> dapperQuery<DateTime> "SELECT MAX(Created) from Bill WHERE SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)" |> Seq.head
+    let lastUpdate = cn |> dapperQueryOne<DateTime> "SELECT MAX(Created) from Bill WHERE SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)"
     let newBills = fetchAll (sprintf "/%s/bills?minFiledDate=%s" sessionYear (lastUpdate.ToString("yyyy-MM-dd")))
-    let newBillMetadata =
+    let newBillMetadata =   
         newBills
         |> List.filter (fun bill -> knownBills |> Seq.exists (fun knownBill -> knownBill = bill?billName.AsString()) |> not)
         |> List.map (fun bill -> get (bill?link.AsString()))
     
     // Add the bills to the database
-    let newBillModels = newBillMetadata |> List.map toModel
-    newBillModels |> List.iter (fun bill -> cn |> dapperParametrizedQuery<int> InsertBill bill |> ignore)
+    let newBillRecords = newBillMetadata |> List.map (fun bill -> cn |> insertBill bill)
 
     // Determine bill subjects
-    let newBillRecords = cn |> dapperMapParametrizedQuery<Bill> "Select Id,Name from Bill where Created > @Created" (Map ["Created", lastUpdate:>obj])
     let subjects = cn |> dapperQuery<Subject> "SELECT Id,Name,Link From [Subject] WHERE SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)"
     
     let pairBillRecordWithMetadata (bill:Bill) =
@@ -105,7 +86,7 @@ let updateBills cn =
         |> Seq.collect newBillSubjectRecords
         |> Seq.iter (fun subject -> cn |> dapperParametrizedQuery<int> InsertBillSubject subject |> ignore)
 
-    newBillModels
+    newBillRecords
 
 let updateCommittees cn =
 
