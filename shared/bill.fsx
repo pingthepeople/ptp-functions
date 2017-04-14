@@ -61,8 +61,9 @@ SELECT * FROM Bill WHERE Name = @Name AND SessionId = (SELECT TOP 1 Id FROM Sess
         let newBillModel = bill |> toModel
         cn |> dapperParameterizedQueryOne<Bill> QueryInsertBill newBillModel
 
-    let updateBillToLatest (billName:string) cn =
+    let updateBillToLatest id cn =
         let sessionYear = cn |> currentSessionYear
+        let billName = cn |> dapperParameterizedQueryOne<string> "SELECT Name FROM Bill where Id = @Id" {Id=id}
         let billMetadata = get (sprintf "/%s/bills/%s" sessionYear (billName.ToLower()))
         let latestBillModel = billMetadata |> toModel
         let recordedBillModel = cn |> dapperParameterizedQueryOne<Bill> QuerySelectBillByName latestBillModel

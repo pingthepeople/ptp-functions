@@ -11,6 +11,7 @@
 #load "../shared/db.fsx"
 #load "../shared/http.fsx"
 #load "../shared/cache.fsx"
+#load "../shared/bill.fsx"
 
 open System
 open System.Data.SqlClient
@@ -25,6 +26,7 @@ open IgaTracker.Db
 open IgaTracker.Queries
 open IgaTracker.Cache
 open IgaTracker.Logging
+open IgaTracker.Bill
 
 let toActionModel (action,bill:Bill) = {
     Action.Id = 0;
@@ -51,13 +53,18 @@ let createNewActionModels (cn:SqlConnection) allActions =
         |> List.map (actionAndBill >> toActionModel)
         |> List.filter toKnownActionTypes
 
+let ensureLatestBillMetadata (actions:Action list) cn =
+    actions 
+    |> Seq.map (fun a -> cn |> updateBillToLatest a.BillId) 
+    |> ignore   
+
 let addToDatabase (cn:SqlConnection) models =
-    let addActionToDbAndGetId (action:Action) = cn |> dapperParametrizedQuery<int> InsertAction action |> Seq.head
+    let addActionToDbAndGetId (action:Action) = cn |> dapperParameterizedQueryOne<int> InsertAction action
     let fetchActionsRequiringAlert insertedIds = cn |> dapperMapParametrizedQuery<Action> SelectActionsRequiringNotification (Map ["Ids", insertedIds :> obj])
 
     models
-        |> List.map addActionToDbAndGetId
-        |> fetchActionsRequiringAlert 
+    |> List.map addActionToDbAndGetId
+    |> fetchActionsRequiringAlert 
 
 
 // Azure Function entry point
@@ -87,6 +94,10 @@ let Run(myTimer: TimerInfo, actions: ICollector<string>, log: TraceWriter) =
         log.Info(sprintf "[%s] Adding actions to database ..." (timestamp()))
         let actionIdsRequiringAlert = actionModels |> addToDatabase cn
         log.Info(sprintf "[%s] Adding actions to database [OK]" (timestamp()))
+
+        log.Info(sprintf "[%s] Ensuring latest bill metadata in database ..." (timestamp()))
+        cn |> ensureLatestBillMetadata actionModels
+        log.Info(sprintf "[%s] Ensuring latest bill metadata in database [OK]" (timestamp()))
 
         log.Info(sprintf "[%s] Enqueue alerts for new actions ..." (timestamp()))
         let enqueue json =

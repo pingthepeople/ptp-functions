@@ -11,6 +11,7 @@
 #load "../shared/http.fsx"
 #load "../shared/db.fsx"
 #load "../shared/cache.fsx"
+#load "../shared/bill.fsx"
 
 open System
 open System.Data.SqlClient
@@ -25,6 +26,7 @@ open IgaTracker.Http
 open IgaTracker.Db
 open IgaTracker.Cache
 open IgaTracker.Logging
+open IgaTracker.Bill
 
 let toModel (bills:Bill seq) (committees:Committee seq) (billname,meeting) = 
     let billId = bills |> Seq.find (fun b -> b.Name = billname) |> (fun b -> b.Id)
@@ -64,12 +66,15 @@ let generateScheduledActions cn =
     |> List.filter toKnownBills
     |> List.map toModel'
 
+let ensureLatestBillMetadata (scheduledActions:ScheduledAction list) cn =
+    scheduledActions 
+    |> Seq.map (fun sa -> cn |> updateBillToLatest sa.BillId) 
+    |> ignore   
+
 let addToDatabase cn scheduledActions =
-
-    let insertAndFetchId scheduledAction = cn |> dapperParametrizedQuery<int> InsertScheduledAction scheduledAction |> Seq.head 
-    let ids = scheduledActions |> List.map insertAndFetchId
+    let insertAndFetchId scheduledAction = cn |> dapperParameterizedQueryOne<int> InsertScheduledAction scheduledAction
+    let ids = scheduledActions |> List.map insertAndFetchId 
     cn |> dapperMapParametrizedQuery<ScheduledAction> SelectScheduledActionsRequiringNotification (Map ["Ids", ids :> obj])
-
 
 // Azure function entry point
 
@@ -95,6 +100,10 @@ let Run(myTimer: TimerInfo, scheduledActions: ICollector<string>, log: TraceWrit
         log.Info(sprintf "[%s] Add scheduled actions to database ..." (timestamp()))
         let scheduledActionsRequiringAlerts = scheduledActionModels |> addToDatabase cn
         log.Info(sprintf "[%s] Add scheduled actions to database [OK]" (timestamp()))
+
+        log.Info(sprintf "[%s] Ensuring latest bill metadata in database ..." (timestamp()))
+        cn |> ensureLatestBillMetadata scheduledActionModels
+        log.Info(sprintf "[%s] Ensuring latest bill metadata in database [OK]" (timestamp()))
 
         log.Info(sprintf "[%s] Enqueue alerts for scheduled actions ..." (timestamp()))
         let enqueue json = 
