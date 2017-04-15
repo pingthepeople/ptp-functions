@@ -11,6 +11,7 @@
 #load "../shared/http.fsx"
 #load "../shared/db.fsx"
 #load "../shared/cache.fsx"
+#load "../shared/bill.fsx"
 
 open System
 open System.Data.SqlClient
@@ -25,6 +26,7 @@ open IgaTracker.Http
 open IgaTracker.Db
 open IgaTracker.Cache
 open IgaTracker.Logging
+open IgaTracker.Bill
 open StackExchange.Redis
 
 let toModel (bills:Bill seq) (billname,calendar,chamber,actionType) = 
@@ -93,8 +95,12 @@ let generateScheduledActionModels cn =
     let senateScheduledActionModels = (Chamber.Senate, sessionYear, date, bills, links) |> generateScheduledActionsForChamber 
     houseScheduledActionModels @ senateScheduledActionModels
 
-let addToDatabase cn scheduledActions =
-    
+let ensureLatestBillMetadata (scheduledActions:ScheduledAction list) cn =
+    scheduledActions 
+    |> Seq.map (fun sa -> cn |> updateBillToLatest sa.BillId) 
+    |> ignore   
+
+let addToDatabase cn (scheduledActions:ScheduledAction list) =
     let addToDatabaseAndFetchId scheduledAction = cn |> dapperParametrizedQuery<int> InsertScheduledAction scheduledAction |> Seq.head
     let ids = scheduledActions |> List.map addToDatabaseAndFetchId
     cn |> dapperMapParametrizedQuery<ScheduledAction> SelectScheduledActionsRequiringNotification (Map ["Ids", ids :> obj])
@@ -124,6 +130,10 @@ let Run(myTimer: TimerInfo, scheduledActions: ICollector<string>, log: TraceWrit
         log.Info(sprintf "[%s] Add scheduled actions to database ..." (timestamp()))
         let scheduledActionsRequiringAlerts = scheduledActionModels |> addToDatabase cn
         log.Info(sprintf "[%s] Add scheduled actions to database [OK]" (timestamp()))
+
+        log.Info(sprintf "[%s] Ensuring latest bill metadata in database ..." (timestamp()))
+        cn |> ensureLatestBillMetadata scheduledActionModels
+        log.Info(sprintf "[%s] Ensuring latest bill metadata in database [OK]" (timestamp()))
 
         log.Info(sprintf "[%s] Enqueue alerts for scheduled actions ..." (timestamp()))
         let enqueue json = 
