@@ -53,6 +53,10 @@ let printSectionTitle actionType =
     | ActionType.CommitteeReading -> "Committee Hearings"
     | ActionType.SecondReading -> "Second Readings"
     | ActionType.ThirdReading -> "Third Readings"
+    | ActionType.SignedByPresidentOfSenate -> "Bills Sent to Governor"
+    | ActionType.SignedByGovernor -> "Bills Signed by the Governor"
+    | ActionType.VetoedByGovernor -> "Bills Vetoed by the Governor"
+    | ActionType.VetoOverridden -> "Vetoes Overridden"
     | _ -> ""
 
 
@@ -79,10 +83,18 @@ let describeActions (chamber, actionType) (actions:DigestAction seq) =
 
 let describeActionsForChamber chamber (actions:DigestAction seq) = 
     let header = sprintf "##Today's %A Activity  " chamber
-    let committeReports = actions |> describeActions (chamber, ActionType.CommitteeReading)
-    let secondReadings = actions |> describeActions (chamber, ActionType.SecondReading)
-    let thirdReadings = actions |> describeActions (chamber, ActionType.ThirdReading)
-    [header] @ committeReports @ secondReadings @ thirdReadings
+    match actions with
+    | EmptySeq -> 
+        [header] @ ["(None)"]
+    | _ ->
+        [header] 
+        @ (actions |> describeActions chamber ActionType.CommitteeReading)
+        @ (actions |> describeActions chamber ActionType.SecondReading)
+        @ (actions |> describeActions chamber ActionType.ThirdReading)
+        @ (actions |> describeActions chamber ActionType.SignedByPresidentOfSenate)
+        @ (actions |> describeActions chamber ActionType.SignedByGovernor)
+        @ (actions |> describeActions chamber ActionType.VetoedByGovernor)
+        @ (actions |> describeActions chamber ActionType.VetoOverridden)
 
 // SCHEDULED ACTIONS
 let listScheduledAction sa =
