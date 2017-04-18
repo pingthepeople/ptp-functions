@@ -139,7 +139,7 @@ module Model =
                 | other -> other
             let eventLocation = 
                 match includeLink with
-                | true -> sprintf "[%s](https://iga.in.gov/information/location_maps)" eventRoom
+                | true -> sprintf "%s ([map](https://iga.in.gov/information/location_maps))" eventRoom
                 | false -> eventRoom
             let eventDate = this.Date.ToString("M/d/yyyy")
             match this.ActionType with

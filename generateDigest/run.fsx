@@ -97,7 +97,7 @@ let describeActionsForChamber chamber (actions:DigestAction seq) =
 
 // SCHEDULED ACTIONS
 let listScheduledAction sa =
-    let item = sprintf "* [%s](https://iga.in.gov/legislative/%s/bills/%s/%s) ('%s'); [%s](https://iga.in.gov/information/location_maps)" (Bill.PrettyPrintName sa.BillName) sa.SessionName (sa.BillChamber.ToString().ToLower()) (Bill.ParseNumber sa.BillName) sa.Title sa.Location
+    let item = sprintf "* [%s](https://iga.in.gov/legislative/%s/bills/%s/%s) ('%s'); %s ([map](https://iga.in.gov/information/location_maps))" (Bill.PrettyPrintName sa.BillName) sa.SessionName (sa.BillChamber.ToString().ToLower()) (Bill.ParseNumber sa.BillName) sa.Title sa.Location
     match sa.Start with
     | "" -> item
     | timed -> sprintf "%s, %s-%s" item (DateTime.Parse(sa.Start).ToString("t")) (DateTime.Parse(sa.End).ToString("t"))
