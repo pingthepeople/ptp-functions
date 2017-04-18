@@ -6,7 +6,6 @@
 #r "../packages/FSharp.Data/lib/portable-net45+sl50+netcore45/FSharp.Data.dll"
 #r "../packages/StackExchange.Redis/lib/net45/StackExchange.Redis.dll"
 
-#load "../shared/model.fs"
 #load "../shared/queries.fs"
 #load "../shared/http.fsx"
 #load "../shared/db.fsx"
@@ -54,8 +53,9 @@ let generateScheduledActions cn =
     let fetchMeetingMetdata meeting = meeting?link.AsString() |> get 
     let allBillNamesFromAllMeetings metadata = 
         metadata?agenda.AsArray() 
-        |> Array.map (fun a -> (a?bill.AsArray().[0]?billName.AsString(), metadata))
-        |> Array.toList 
+        |> Array.collect (fun a -> a?bill.AsArray())
+        |> Array.map (fun b -> (b?billName.AsString(), metadata))
+        |> Array.toList
     let toKnownBills (billname,meeting) = bills |> Seq.exists(fun b -> b.Name = billname)
     let toModel' (billname,meeting) = (billname,meeting) |> toModel bills committees
 
