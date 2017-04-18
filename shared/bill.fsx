@@ -35,7 +35,7 @@ WHERE Name = @Name AND SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name D
     [<Literal>]
     let QueryInsertBill = """INSERT INTO Bill(Name,Link,Title,Description,Authors,Chamber,SessionId) 
 VALUES (@Name,@Link,@Title,@Description,@Authors,@Chamber,(SELECT TOP 1 Id FROM Session ORDER BY Name Desc)); 
-SELECT * FROM Bill WHERE ID = (CAST(SCOPE_IDENTITY() as int);"""
+SELECT * FROM Bill WHERE Name = @Name and SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)"""
 
     [<Literal>]
     let QueryUpdateBillByName = """UPDATE Bill
