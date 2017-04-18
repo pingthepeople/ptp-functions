@@ -6,7 +6,6 @@
 #r "../packages/FSharp.Data/lib/portable-net45+sl50+netcore45/FSharp.Data.dll"
 #r "../packages/StackExchange.Redis/lib/net45/StackExchange.Redis.dll"
 
-#load "../shared/model.fs"
 #load "../shared/queries.fs"
 #load "../shared/db.fsx"
 #load "../shared/http.fsx"
