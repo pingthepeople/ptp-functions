@@ -54,7 +54,7 @@ WHERE SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)"""
     [<Literal>]
     let SelectActionLinksOccuringAfterDate = """SELECT Link
 FROM Action 
-WHERE Date > @Date"""
+WHERE Date >= @Date"""
 
     [<Literal>]
     let UpdateBillCommittees = """With BillCommittee_CTE (BillId, CommitteeId, Assigned)
