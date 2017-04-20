@@ -7,6 +7,9 @@ module Model =
             Some(s.Substring(p.Length))
         else
             None
+    
+    let (|EmptySeq|_|) a = 
+        if Seq.isEmpty a then Some () else None
 
     let timestamp() = System.DateTime.Now.ToString("HH:mm:ss.fff")
     let datestamp() = System.DateTime.Now.ToString("yyyy-MM-dd")
@@ -136,7 +139,7 @@ module Model =
                 | other -> other
             let eventLocation = 
                 match includeLink with
-                | true -> sprintf "[%s](https://iga.in.gov/information/location_maps)" eventRoom
+                | true -> sprintf "%s ([map](https://iga.in.gov/information/location_maps))" eventRoom
                 | false -> eventRoom
             let eventDate = this.Date.ToString("M/d/yyyy")
             match this.ActionType with

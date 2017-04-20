@@ -53,40 +53,51 @@ let printSectionTitle actionType =
     | ActionType.CommitteeReading -> "Committee Hearings"
     | ActionType.SecondReading -> "Second Readings"
     | ActionType.ThirdReading -> "Third Readings"
+    | ActionType.SignedByPresidentOfSenate -> "Bills Sent to Governor"
+    | ActionType.SignedByGovernor -> "Bills Signed by the Governor"
+    | ActionType.VetoedByGovernor -> "Bills Vetoed by the Governor"
+    | ActionType.VetoOverridden -> "Vetoes Overridden"
     | _ -> ""
-
 
 // ACTIONS
 let listAction (a:DigestAction) = 
     sprintf "* [%s](https://iga.in.gov/legislative/%s/bills/%s/%s) ('%s'): %s" (Bill.PrettyPrintName a.BillName) a.SessionName (a.BillChamber.ToString().ToLower()) (Bill.ParseNumber a.BillName) a.Title a.Description
 
 let listActions (actions:DigestAction seq) =
-    match actions with 
-    | seq when Seq.isEmpty seq -> "(None)"
-    | seq -> 
-        seq
-        |> Seq.sortBy (fun action -> action.BillName)
-        |> Seq.map listAction
-        |> String.concat "\n"
+    actions
+    |> Seq.sortBy (fun a -> a.BillName)
+    |> Seq.map listAction
+    |> String.concat "\n"
 
-let describeActions (chamber, actionType) (actions:DigestAction seq) = 
+let describeActions chamber actionType (actions:DigestAction seq) = 
     let sectionTitle = sprintf "###%s  " (printSectionTitle actionType)
     let section = 
         actions 
-        |> Seq.filter (fun action -> action.ActionChamber = chamber && action.ActionType = actionType) 
+        |> Seq.filter (fun a -> a.ActionChamber = chamber && a.ActionType = actionType) 
         |> listActions
-    [sectionTitle; section]
+
+    match section with
+    | EmptySeq -> []
+    | _ -> [sectionTitle; section]
 
 let describeActionsForChamber chamber (actions:DigestAction seq) = 
     let header = sprintf "##Today's %A Activity  " chamber
-    let committeReports = actions |> describeActions (chamber, ActionType.CommitteeReading)
-    let secondReadings = actions |> describeActions (chamber, ActionType.SecondReading)
-    let thirdReadings = actions |> describeActions (chamber, ActionType.ThirdReading)
-    [header] @ committeReports @ secondReadings @ thirdReadings
+    match actions with
+    | EmptySeq -> 
+        [header] @ ["(None)"]
+    | _ ->
+        [header] 
+        @ (actions |> describeActions chamber ActionType.CommitteeReading)
+        @ (actions |> describeActions chamber ActionType.SecondReading)
+        @ (actions |> describeActions chamber ActionType.ThirdReading)
+        @ (actions |> describeActions chamber ActionType.SignedByPresidentOfSenate)
+        @ (actions |> describeActions chamber ActionType.SignedByGovernor)
+        @ (actions |> describeActions chamber ActionType.VetoedByGovernor)
+        @ (actions |> describeActions chamber ActionType.VetoOverridden)
 
 // SCHEDULED ACTIONS
 let listScheduledAction sa =
-    let item = sprintf "* [%s](https://iga.in.gov/legislative/%s/bills/%s/%s) ('%s'); [%s](https://iga.in.gov/information/location_maps)" (Bill.PrettyPrintName sa.BillName) sa.SessionName (sa.BillChamber.ToString().ToLower()) (Bill.ParseNumber sa.BillName) sa.Title sa.Location
+    let item = sprintf "* [%s](https://iga.in.gov/legislative/%s/bills/%s/%s) ('%s'); %s ([map](https://iga.in.gov/information/location_maps))" (Bill.PrettyPrintName sa.BillName) sa.SessionName (sa.BillChamber.ToString().ToLower()) (Bill.ParseNumber sa.BillName) sa.Title sa.Location
     match sa.Start with
     | "" -> item
     | timed -> sprintf "%s, %s-%s" item (DateTime.Parse(sa.Start).ToString("t")) (DateTime.Parse(sa.End).ToString("t"))
@@ -100,10 +111,10 @@ let listScheduledActions (scheduledActions:DigestScheduledAction seq) =
 let describeScheduledActions actionType (actions:DigestScheduledAction seq) = 
     let actionsOfType = actions |> Seq.filter (fun action -> action.ActionType = actionType)
     match actionsOfType with
-    | sequence when Seq.isEmpty sequence -> []
-    | sequence ->
+    | EmptySeq -> []
+    | _ ->
         let sectionTitle = sprintf "###%s  " (printSectionTitle actionType)
-        let section = sequence |> listScheduledActions
+        let section = actionsOfType |> listScheduledActions
         [sectionTitle; section]
 
 let describeScheduledActionsForDay (date:DateTime,scheduledActions) = 
