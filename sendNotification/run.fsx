@@ -87,6 +87,32 @@ let sendNotification body =
     | MessageType.SMS -> sendSMSNotification body
     | _ -> failwith("unrecognized message type")
 
+
+let sendSurveyInvite address = 
+    let body = """Good morning!
+
+Thanks for using Ping the People during the 2017 IGA legislative session. As we look towards 2018 we've prepared a short (3 minute) survey to help us focus our efforts on improving the service. We would love to get your feedback on how we can make Ping the People work better for you. 
+
+You can find the survey here: [https://goo.gl/forms/wOClBsQYUPZdJX042](https://goo.gl/forms/wOClBsQYUPZdJX042)
+
+This year was a bit of a whirlwind for us -- we went from "wouldn't it be cool if..." to a working service in just about a month. We've got some great stuff in mind for 2018, and your participation in the survey will help keep us on the right track.
+
+Thanks again for your time, and for your work to make Indiana a better state. 
+
+John & Austin
+[pingthepeople.org](https://pingthepeople.org)"""
+
+    let message = {MessageType = MessageType.Email; Recipient=address; Body=body; Subject="Ping the People: 2017 Post-Session Survey"; Attachment=""}
+    try
+        sendEmailNotification message
+        trackTrace "sendNotification" (sprintf "sent email '%s' to %s" (message.Subject) address)
+        Console.Out.WriteLine(sprintf "[OK] %s" address)
+    with
+        | ex -> 
+            ex |> trackException "sendNotification"
+            Console.Out.WriteLine(sprintf "[ERROR] %s:  %s" address (ex.ToString())) 
+
+
 #r "../packages/Microsoft.Azure.WebJobs/lib/net45/Microsoft.Azure.WebJobs.Host.dll"
 open Microsoft.Azure.WebJobs.Host
 
