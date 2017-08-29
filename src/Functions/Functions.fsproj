@@ -63,6 +63,8 @@
     <None Include="GetLegislators\function.json" />
     <None Include="host.json" />
     <None Include="local.settings.json" />
+    <Compile Include="UpdateCanonicalData\UpdateCanonicalData.fs" />
+    <None Include="UpdateCanonicalData\function.json" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Dapper">
@@ -81,6 +83,9 @@
     <Reference Include="Microsoft.Azure.WebJobs">
       <HintPath>..\..\packages\Microsoft.Azure.WebJobs.Core.2.0.0\lib\net45\Microsoft.Azure.WebJobs.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Azure.WebJobs.Extensions">
+      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.Extensions.2.0.0\lib\net45\Microsoft.Azure.WebJobs.Extensions.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Azure.WebJobs.Host">
       <HintPath>..\..\packages\Microsoft.Azure.WebJobs.2.0.0\lib\net45\Microsoft.Azure.WebJobs.Host.dll</HintPath>
     </Reference>
@@ -98,6 +103,9 @@
       <HintPath>..\..\packages\WindowsAzure.Storage.7.2.1\lib\net40\Microsoft.WindowsAzure.Storage.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib" />
+    <Reference Include="NCrontab">
+      <HintPath>..\..\packages\ncrontab.3.3.0\lib\net35\NCrontab.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -118,6 +126,9 @@
     <Reference Include="System.Numerics" />
     <Reference Include="System.Spatial">
       <HintPath>..\..\packages\System.Spatial.5.6.4\lib\net40\System.Spatial.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Dataflow">
+      <HintPath>..\..\packages\Microsoft.Tpl.Dataflow.4.5.24\lib\portable-net45+win8+wpa81\System.Threading.Tasks.Dataflow.dll</HintPath>
     </Reference>
     <Reference Include="System.ValueTuple">
       <HintPath>..\..\packages\System.ValueTuple.4.4.0\lib\net461\System.ValueTuple.dll</HintPath>
