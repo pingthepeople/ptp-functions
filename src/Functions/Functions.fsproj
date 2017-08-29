@@ -10,7 +10,7 @@
     <RootNamespace>Functions</RootNamespace>
     <AssemblyName>Functions</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
-    <TargetFSharpCoreVersion>4.4.1.0</TargetFSharpCoreVersion>
+    <TargetFSharpCoreVersion>4.4.0.0</TargetFSharpCoreVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Name>Functions</Name>
   </PropertyGroup>
@@ -68,9 +68,7 @@
     <Reference Include="Dapper">
       <HintPath>..\..\packages\Dapper.1.50.2\lib\net451\Dapper.dll</HintPath>
     </Reference>
-    <Reference Include="FSharp.Core">
-      <HintPath>..\..\packages\FSharp.Core.4.0.0.1\lib\net40\FSharp.Core.dll</HintPath>
-    </Reference>
+    <Reference Include="FSharp.Core, Version=4.4.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
     <Reference Include="FSharp.Data">
       <HintPath>..\..\packages\FSharp.Data.2.3.3\lib\net40\FSharp.Data.dll</HintPath>
     </Reference>
