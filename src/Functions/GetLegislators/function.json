@@ -1,0 +1,18 @@
+﻿{
+  "disabled": false,
+  "scriptFile": "../bin/Functions.dll",
+  "entryPoint": "GetLegislators.Run",
+  "bindings": [
+    {
+      "authLevel": "function",
+      "name": "req",
+      "type": "httpTrigger",
+      "direction": "in"
+    },
+    {
+      "name": "res",
+      "type": "http",
+      "direction": "out"
+    }
+  ]
+}

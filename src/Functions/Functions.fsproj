@@ -59,6 +59,10 @@
     <Compile Include="Common\Database.fs" />
     <Compile Include="Common\Cache.fs" />
     <Compile Include="Common\Bill.fs" />
+    <Compile Include="GetLegislators\GetLegislators.fs" />
+    <None Include="GetLegislators\function.json" />
+    <None Include="host.json" />
+    <None Include="local.settings.json" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Dapper">
