@@ -1,5 +1,6 @@
 ﻿module Ptp.Http
 
+open Chessie.ErrorHandling
 open FSharp.Data
 open FSharp.Data.JsonExtensions
 open Newtonsoft.Json
@@ -34,9 +35,10 @@ let httpResponse status content =
     |> (fun j -> new StringContent(j, System.Text.Encoding.UTF8, "application/json"))
     |> (fun c -> new HttpResponseMessage(StatusCode = status, Content=c))
 
-let httpOk content =
-    httpResponse HttpStatusCode.OK content
-
-let httpError status message =
-    httpResponse status {Error=message}
-    
+let constructHttpResponse twoTrackInput =
+    let success(resp,msgs) = 
+        httpResponse HttpStatusCode.OK resp
+    let failure (msgs) = 
+        let (status,error) = msgs |> Seq.head
+        httpResponse status {Error=error}
+    either success failure twoTrackInput 

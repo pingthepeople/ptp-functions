@@ -231,4 +231,5 @@ type Location =
         Address:string;
         City:string;
         Zip:string;
+        Year:int;
     }

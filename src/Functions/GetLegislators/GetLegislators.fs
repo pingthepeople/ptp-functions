@@ -1,5 +1,6 @@
 ﻿module GetLegislators
 
+open Chessie.ErrorHandling
 open FSharp.Data
 open FSharp.Data.CssSelectorExtensions
 open Microsoft.Azure.WebJobs.Host
@@ -9,7 +10,6 @@ open Ptp.Http
 open System
 open System.Net
 open System.Net.Http
-open System.Net.Http.Formatting
 
 let detail side (node:HtmlNode) =
     node.CssSelect(sprintf ".legislator-lookup-details-%s" side)
@@ -42,38 +42,56 @@ let parse chamber (node:HtmlNode)  =
 
     {Id=0; Name=name; Url=url; Chamber=chamber; Image=image; Party=party; District=district}
 
-let lookup location = 
-    async {
-        let address = location.Address |> WebUtility.UrlEncode
-        let city = location.City |> WebUtility.UrlEncode
-        let zip = location.Zip |> WebUtility.UrlEncode  
+let isEmpty str = str |> String.IsNullOrWhiteSpace
 
-        let! document  = 
-            sprintf "http://iga.in.gov/legislative/%d/legislators/search/?txtAddress=%s&txtCity=%s&txtZip1=%s" 2017 address city zip
-            |> HtmlDocument.AsyncLoad
-        let legislators = 
-            document.CssSelect ("div.legislator-wrapper") 
-            |> Seq.toArray
+let validateBody (req:HttpRequestMessage) =
+    let emptyContent = (HttpStatusCode.BadRequest, "Please provide an Address, City, and Zip.")
+    if req.Content = null 
+    then fail emptyContent 
+    else
+        let content = req.Content.ReadAsStringAsync().Result
+        if isEmpty content      
+        then fail emptyContent 
+        else ok (content |> JsonConvert.DeserializeObject<Location>)
 
-        match (legislators |> Seq.isEmpty) with
-        | true -> 
-            return []
-        | false ->
-            return [ legislators.[0] |> parse Chamber.Senate;
-                     legislators.[1] |> parse Chamber.House ]
-    }
+let validateLocation loc =
+    let currentYear = System.DateTime.Now.Year
+    if   isEmpty loc.Address    then fail (HttpStatusCode.BadRequest, "Please provide an address")
+    elif isEmpty loc.City       then fail (HttpStatusCode.BadRequest, "Please provide a city")
+    elif isEmpty loc.Zip        then fail (HttpStatusCode.BadRequest, "Please provide a zip code")
+    elif loc.Year > currentYear then fail (HttpStatusCode.BadRequest, "The year cannot be in the future")
+    elif loc.Year = 0           then ok { loc with Year=currentYear }
+    else ok loc
+
+let fetchLegislatorsHtml location =
+    let year = DateTime.Now.Year
+    let address = location.Address |> WebUtility.UrlEncode
+    let city = location.City |> WebUtility.UrlEncode
+    let zip = location.Zip |> WebUtility.UrlEncode  
+    try 
+        sprintf "http://iga.in.gov/legislative/%d/legislators/search/?txtAddress=%s&txtCity=%s&txtZip1=%s" year address city zip
+        |> HtmlDocument.Load
+        |> ok
+    with
+    | ex -> 
+        fail (HttpStatusCode.InternalServerError, (sprintf "Failed to fetch legislators information from IGA: %s" ex.Message))
+
+let parseLegislators (document:HtmlDocument) =
+    let legislators = 
+        document.CssSelect ("div.legislator-wrapper") 
+        |> Seq.toArray
+    if legislators |> Seq.isEmpty 
+    then fail (HttpStatusCode.NotFound, "No legislators found for that address")
+    else ok [ legislators.[0] |> parse Chamber.Senate;
+              legislators.[1] |> parse Chamber.House ]
+
+let processRequest = 
+    validateBody
+    >> bind validateLocation
+    >> bind fetchLegislatorsHtml
+    >> bind parseLegislators
 
 let Run(req: HttpRequestMessage, log: TraceWriter) = 
-    async {
-        let! content = Async.AwaitTask(req.Content.ReadAsStringAsync())
-        match content |> String.IsNullOrWhiteSpace with
-        | true -> 
-            return httpError HttpStatusCode.BadRequest "Please provide an Address, City, and Zip."
-        | false ->
-            log.Info(sprintf "Fetching legislators for: %s" content)
-            let obj = content |> JsonConvert.DeserializeObject<Location>
-            let! legislators = lookup obj
-            match legislators |> Seq.isEmpty with
-            | true -> return httpError HttpStatusCode.BadRequest  "No legislators for that address"
-            | false -> return httpOk legislators
-    } |> Async.RunSynchronously
+    req
+    |> processRequest
+    |> constructHttpResponse
