@@ -1,6 +1,6 @@
 ﻿{
   "disabled": false,
-  "scriptFile": "../Functions.dll",
+  "scriptFile": "../bin/Functions.dll",
   "entryPoint": "UpdateCanonicalData.Run",
   "bindings": [
     {
