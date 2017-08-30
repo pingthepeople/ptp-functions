@@ -30,16 +30,16 @@ let ``get legislators`` () =
             }
         ]
 
-    test <@ GetLegislators.lookup TestLocation = expected @>
+    test <@ GetLegislators.lookup TestLocation |> Async.RunSynchronously = expected @>
 
 [<Fact>]
 let ``bad request from fake address`` () =
-    test <@ GetLegislators.lookup {TestLocation with Address = "1234 Foo St"} = [] @>
+    test <@ GetLegislators.lookup {TestLocation with Address = "1234 Foo St"} |> Async.RunSynchronously = [] @>
 
 [<Fact>]
 let ``bad request from fake city`` () =
-    test <@ GetLegislators.lookup {TestLocation with City = "Zoolander"} = [] @>
+    test <@ GetLegislators.lookup {TestLocation with City = "Zoolander"} |> Async.RunSynchronously = [] @>
 
 [<Fact>]
 let ``bad request from fake zip`` () =
-    test <@ GetLegislators.lookup {TestLocation with Zip = "12345"} = [] @>
+    test <@ GetLegislators.lookup {TestLocation with Zip = "12345"} |> Async.RunSynchronously= [] @>
