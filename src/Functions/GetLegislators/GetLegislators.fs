@@ -5,9 +5,11 @@ open FSharp.Data.CssSelectorExtensions
 open Microsoft.Azure.WebJobs.Host
 open Newtonsoft.Json
 open Ptp.Model
+open Ptp.Http
 open System
 open System.Net
 open System.Net.Http
+open System.Net.Http.Formatting
 
 let detail side (node:HtmlNode) =
     node.CssSelect(sprintf ".legislator-lookup-details-%s" side)
@@ -66,6 +68,6 @@ let Run(req: HttpRequestMessage, log: TraceWriter) =
             |> lookup
 
         match legislators |> Seq.isEmpty with
-        | true -> return req.CreateErrorResponse(HttpStatusCode.BadRequest, "No legislators for that address")
-        | false -> return req.CreateResponse(HttpStatusCode.OK, JsonConvert.SerializeObject(legislators), "application/json")
+        | true -> return httpError HttpStatusCode.BadRequest  "No legislators for that address"
+        | false -> return httpOk legislators
     } |> Async.RunSynchronously

@@ -2,8 +2,11 @@
 
 open FSharp.Data
 open FSharp.Data.JsonExtensions
+open Newtonsoft.Json
 open Ptp.Logging
 open System
+open System.Net
+open System.Net.Http
 
 let get endpoint = 
     let uri = "https://api.iga.in.gov" + endpoint
@@ -22,3 +25,18 @@ let fetchAll endpoint =
         with
         | ex -> items
     fetchRec endpoint
+
+type Error = { Error:string; }
+
+let httpResponse status content =
+    content
+    |> JsonConvert.SerializeObject 
+    |> (fun j -> new StringContent(j, System.Text.Encoding.UTF8, "application/json"))
+    |> (fun c -> new HttpResponseMessage(StatusCode = status, Content=c))
+
+let httpOk content =
+    httpResponse HttpStatusCode.OK content
+
+let httpError status message =
+    httpResponse status {Error=message}
+    
