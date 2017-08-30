@@ -1,5 +1,7 @@
 ﻿{
   "disabled": false,
+  "scriptFile": "../Functions.dll",
+  "entryPoint": "UpdateCanonicalData.Run",
   "bindings": [
     {
       "name": "myTimer",
