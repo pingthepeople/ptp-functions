@@ -12,6 +12,7 @@ open System
 open System.Net
 open System.Net.Http
 open System.Data.SqlClient
+open Ptp.Logging
 
 [<CLIMutable>]
 type Body  = { Id : int }
@@ -32,4 +33,5 @@ let processRequest =
 let Run(req: HttpRequestMessage, log: TraceWriter) =
     req
     |> processRequest
+    |> logResult log "GenerateBillReport"
     |> constructHttpResponse

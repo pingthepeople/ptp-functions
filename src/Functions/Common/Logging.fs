@@ -1,6 +1,8 @@
 ﻿module Ptp.Logging
 
+open Chessie.ErrorHandling
 open Microsoft.ApplicationInsights
+open Microsoft.Azure.WebJobs.Host
 open System
 
 let telemetryClient = 
@@ -35,3 +37,20 @@ let trackDependency name command func =
     | ex -> 
         trackDependency' false
         reraise()
+   
+let format msgs =
+    msgs 
+    |> Seq.collect (fun m -> m.ToString())
+    |> Seq.toArray
+    |> (fun a -> String.Join ("\n", a))
+
+let logResult (log:TraceWriter) source twoTrackInput =
+    let success(resp,msgs) = 
+        match msgs |> Seq.isEmpty with
+        | true -> 
+            log.Info (sprintf "%s succeeded" source)
+        | false -> 
+            log.Info (sprintf "%s succeeded with messages:\n%s" source (format msgs))
+    let failure (msgs) = 
+        log.Error (sprintf "%s failed:\n%s" source (format msgs))
+    eitherTee success failure twoTrackInput 

@@ -8,6 +8,7 @@ open Newtonsoft.Json
 open Ptp.Core
 open Ptp.Model
 open Ptp.Http
+open Ptp.Logging
 open System
 open System.Net
 open System.Net.Http
@@ -75,13 +76,18 @@ let parseLegislators (document:HtmlDocument) =
     else ok [ legislators.[0] |> parse Chamber.Senate;
               legislators.[1] |> parse Chamber.House ]
 
-let processRequest = 
+let deserializeLocation = 
     validateBody<Location> "Please provide a location in the form '{ Address:STRING, City:STRING, Zip:STRING, Year:INT (optional)}'"
+
+let processRequest = 
+    deserializeLocation
     >> bind validateLocation 
     >> bind fetchLegislatorsHtml
     >> bind parseLegislators
 
 let Run(req: HttpRequestMessage, log: TraceWriter) = 
+    log.Info("GetLegislators function triggered.")
     req
     |> processRequest
+    |> logResult log "GetLegislators"
     |> constructHttpResponse
