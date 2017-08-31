@@ -4,10 +4,13 @@
   "entryPoint": "GetLegislators.Run",
   "bindings": [
     {
-      "authLevel": "anonymous",
+      "authLevel": "admin",
       "name": "req",
       "type": "httpTrigger",
-      "direction": "in"
+      "direction": "in",
+      "methods": [
+        "POST"
+      ]
     },
     {
       "name": "res",
