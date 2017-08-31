@@ -9,18 +9,18 @@ open System.Net.Http
 open Newtonsoft.Json
 open System
 
-let TestLocation = {Address="1000 S Grant St"; City="Bloomington"; Zip="47071"; Year=2016} 
+let TestLocation = {Address="1000 S Grant St"; City="Bloomington"; Zip="47071"; Year=2017} 
 
 [<Fact>] 
-let ``request body is required (no content)`` ()=
+let ``Location is required (no content)`` ()=
     let req = new HttpRequestMessage()
-    let expected = Result.FailWith((HttpStatusCode.BadRequest, "Please provide an Address, City, and Zip."))
+    let expected = Result.FailWith((HttpStatusCode.BadRequest, "Please provide a location in the form '{ Address:STRING, City:STRING, Zip:STRING, Year:INT (optional)}'"))
     test <@ GetLegislators.processRequest req = expected @>
 
 [<Fact>] 
-let ``request body is required (empty content)`` ()=
+let ``Location is required (empty content)`` ()=
     let req = new HttpRequestMessage(Content=new StringContent(""))
-    let expected = Result.FailWith((HttpStatusCode.BadRequest, "Please provide an Address, City, and Zip."))
+    let expected = Result.FailWith((HttpStatusCode.BadRequest, "Please provide a location in the form '{ Address:STRING, City:STRING, Zip:STRING, Year:INT (optional)}'"))
     test <@ GetLegislators.processRequest req = expected @>
 
 [<Fact>] 
@@ -56,9 +56,14 @@ let ``Location respects explicit year`` ()=
     test <@ TestLocation |> GetLegislators.validateLocation = Ok(TestLocation, []) @>
 
 [<Fact>] 
-let ``Location year cannot be in then future`` ()=
+let ``Location year can be next year`` ()=
     let future = { TestLocation with Year=DateTime.Now.AddYears(1).Year }
-    let expected = Result.FailWith((HttpStatusCode.BadRequest, "The year cannot be in the future"))
+    test <@ future |> GetLegislators.validateLocation = Ok(future, []) @>
+
+[<Fact>] 
+let ``Location year cannot be past next year`` ()=
+    let future = { TestLocation with Year=DateTime.Now.AddYears(2).Year }
+    let expected = Result.FailWith((HttpStatusCode.BadRequest, "The year cannot be past next year"))
     test <@ future |> GetLegislators.validateLocation = expected @>
     
 [<Fact>]    

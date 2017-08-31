@@ -44,16 +44,17 @@ let parse chamber (node:HtmlNode)  =
     {Id=0; Name=name; Url=url; Chamber=chamber; Image=image; Party=party; District=district}
 
 let validateLocation loc =
-    let currentYear = System.DateTime.Now.Year
+    let thisYear = System.DateTime.Now.Year
+    let nextYear = thisYear + 1
     if   isEmpty loc.Address    then fail (HttpStatusCode.BadRequest, "Please provide an address")
     elif isEmpty loc.City       then fail (HttpStatusCode.BadRequest, "Please provide a city")
     elif isEmpty loc.Zip        then fail (HttpStatusCode.BadRequest, "Please provide a zip code")
-    elif loc.Year > currentYear then fail (HttpStatusCode.BadRequest, "The year cannot be in the future")
-    elif loc.Year = 0           then ok { loc with Year=currentYear }
+    elif loc.Year > nextYear    then fail (HttpStatusCode.BadRequest, "The year cannot be past next year")
+    elif loc.Year = 0           then ok { loc with Year=thisYear }
     else ok loc
 
 let fetchLegislatorsHtml location =
-    let year = DateTime.Now.Year
+    let year = location.Year
     let address = location.Address |> WebUtility.UrlEncode
     let city = location.City |> WebUtility.UrlEncode
     let zip = location.Zip |> WebUtility.UrlEncode  
@@ -75,8 +76,8 @@ let parseLegislators (document:HtmlDocument) =
               legislators.[1] |> parse Chamber.House ]
 
 let processRequest = 
-    validateBody
-    >> bind validateLocation
+    validateBody<Location> "Please provide a location in the form '{ Address:STRING, City:STRING, Zip:STRING, Year:INT (optional)}'"
+    >> bind validateLocation 
     >> bind fetchLegislatorsHtml
     >> bind parseLegislators
 
