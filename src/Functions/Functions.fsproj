@@ -66,6 +66,8 @@
     <None Include="local.settings.json" />
     <Compile Include="UpdateCanonicalData\UpdateCanonicalData.fs" />
     <None Include="UpdateCanonicalData\function.json" />
+    <Compile Include="GenerateBillReport\GenerateBillReport.fs" />
+    <None Include="GenerateBillReport\function.json" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Chessie">

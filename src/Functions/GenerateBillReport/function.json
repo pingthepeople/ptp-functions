@@ -1,0 +1,21 @@
+{
+  "disabled": true,
+  "scriptFile": "../bin/Functions.dll",
+  "entryPoint": "GenerateBillReport.Run",
+  "bindings": [
+    {
+      "authLevel": "admin",
+      "name": "req",
+      "type": "httpTrigger",
+      "direction": "in",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "name": "res",
+      "type": "http",
+      "direction": "out"
+    }
+  ]
+}
