@@ -5,6 +5,7 @@ open FSharp.Data
 open FSharp.Data.CssSelectorExtensions
 open Microsoft.Azure.WebJobs.Host
 open Newtonsoft.Json
+open Ptp.Core
 open Ptp.Model
 open Ptp.Http
 open System
@@ -41,18 +42,6 @@ let parse chamber (node:HtmlNode)  =
         |> Int32.Parse
 
     {Id=0; Name=name; Url=url; Chamber=chamber; Image=image; Party=party; District=district}
-
-let isEmpty str = str |> String.IsNullOrWhiteSpace
-
-let validateBody (req:HttpRequestMessage) =
-    let emptyContent = (HttpStatusCode.BadRequest, "Please provide an Address, City, and Zip.")
-    if req.Content = null 
-    then fail emptyContent 
-    else
-        let content = req.Content.ReadAsStringAsync().Result
-        if isEmpty content      
-        then fail emptyContent 
-        else ok (content |> JsonConvert.DeserializeObject<Location>)
 
 let validateLocation loc =
     let currentYear = System.DateTime.Now.Year

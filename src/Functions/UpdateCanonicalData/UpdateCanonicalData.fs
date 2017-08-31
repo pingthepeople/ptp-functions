@@ -4,6 +4,7 @@ open FSharp.Data
 open FSharp.Data.JsonExtensions
 open Microsoft.Azure.WebJobs
 open Microsoft.Azure.WebJobs.Host
+open Ptp.Core
 open Ptp.Model
 open Ptp.Queries
 open Ptp.Http

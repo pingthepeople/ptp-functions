@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Content Include="packages.config" />
+    <Compile Include="Common\Core.fs" />
     <Compile Include="Common\Logging.fs" />
     <Compile Include="Common\Model.fs" />
     <Compile Include="Common\Queries.fs" />

@@ -4,6 +4,7 @@ open Chessie.ErrorHandling
 open FSharp.Data
 open FSharp.Data.JsonExtensions
 open Newtonsoft.Json
+open Ptp.Core
 open Ptp.Logging
 open System
 open System.Net
@@ -42,3 +43,13 @@ let constructHttpResponse twoTrackInput =
         let (status,error) = msgs |> Seq.head
         httpResponse status {Error=error}
     either success failure twoTrackInput 
+
+let validateBody<'T> (errorMessage:string) (req:HttpRequestMessage) =
+    let emptyContent = (HttpStatusCode.BadRequest, errorMessage)
+    if req.Content = null 
+    then fail emptyContent 
+    else
+        let content = req.Content.ReadAsStringAsync().Result
+        if isEmpty content      
+        then fail emptyContent 
+        else ok (content |> JsonConvert.DeserializeObject<'T>)
