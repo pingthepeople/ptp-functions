@@ -1,5 +1,6 @@
 ﻿module UpdateCanonicalData
 
+open Chessie.ErrorHandling
 open FSharp.Data
 open FSharp.Data.JsonExtensions
 open Microsoft.Azure.WebJobs
@@ -14,70 +15,140 @@ open Ptp.Logging
 open Ptp.Bill
 open System
 open System.Data.SqlClient
+open FSharp.Data.HttpMethod
 
-let updateSubjects cn =
+let logNewAdditions (log:TraceWriter) category (items: string list) = 
+    match items with
+    | [] -> log.Info(sprintf "No new %ss found." category)
+    | _  ->
+        items 
+        |> String.concat "\n"
+        |> (fun s -> log.Info((sprintf "Found new %ss:\n%s" category s)))
 
-    let sessionYear = cn |> currentSessionYear
-    let sessionId = cn |> dapperQuery<int> "SELECT TOP 1 Id FROM Session ORDER BY Name Desc" |> Seq.head
+// SUBJECTS 
 
-    let toModel subject ={
-        Subject.Id=0; 
+/// Fetch all bill subjects for the current session from the IGA API
+let fetchAllSubjects sessionId sessionYear = 
+    let toModel subject = 
+      { Subject.Id=0; 
         SessionId=sessionId; 
         Name=subject?entry.AsString(); 
         Link=subject?link.AsString() }
-
-    // Find new subjects
-    let knownSubjects = cn |> dapperQuery<string> "SELECT Link from Subject WHERE SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)"
-    let newSubjects = 
+    let op() = 
         fetchAll (sprintf "/%s/subjects" sessionYear)
-        |> List.filter (fun subject -> knownSubjects |> Seq.exists (fun knownSubject -> knownSubject = subject?link.AsString()) |> not)
         |> List.map toModel
+    tryF op "fetch all subjects"
 
-    // Add them to the database
-    newSubjects |> List.iter (fun subject -> cn |> dapperParametrizedQuery<int> InsertSubject subject |> ignore)
-    newSubjects
+/// Filter out any bill subjects that we already have in the database
+let resolveNewSubjects cn sessionId  (subjects: Subject list) = 
+    let op() = 
+        let knownSubjects = 
+            cn 
+            |> dapperQuery<string> (sprintf "SELECT Link from Subject WHERE SessionId = %d" sessionId)
+        subjects
+        |> List.filter (fun s -> knownSubjects |> Seq.exists (fun ks -> ks = s.Link) |> not)
+    tryF op "resolve new subjects"
 
-let updateBills cn =
+/// Add new bill subject records to the database
+let insertNewSubjects cn (subjects: Subject list) = 
+    let insert subject =
+        cn 
+        |> dapperParametrizedQuery<int> InsertSubject subject 
+        |> ignore
+    let op () = 
+        subjects |> List.iter insert
+        subjects
+    tryF op "insert new subjects"
 
-    // Find new bills
-    let sessionYear = cn |> currentSessionYear
-    let knownBills = cn |> dapperQuery<string> "SELECT Name from Bill WHERE SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)"
-    let lastUpdate = cn |> dapperQueryOne<DateTime> "SELECT MAX(Created) from Bill WHERE SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)"
-    let newBills = fetchAll (sprintf "/%s/bills?minFiledDate=%s" sessionYear (lastUpdate.ToString("yyyy-MM-dd")))
-    let newBillMetadata =   
-        newBills
+/// Invalidate the Redis cache key for bill subjects
+let invalidateSubjectsCache  (subjects: Subject list) =
+    let op() = 
+        subjects |> invalidateCache SubjectsKey
+        subjects
+    tryF op "invalidate Subjects cache"
+
+/// Log the addition of any new bill subjects
+let logNewSubjects (log:TraceWriter) (subjects: Subject list) = 
+    subjects
+    |> List.map(fun s -> s.Name)
+    |> logNewAdditions log "subject"
+    ok subjects
+
+// BILLS
+/// Determine the time of entry into the database of the most recent bill.
+/// The IGA API allows us to query new bills by filing date, which is a fast convenience.
+let getTimeOfLastBillUpdate cn sessionId = 
+    let op() =
+        cn 
+        |> dapperQueryOne<DateTime> (sprintf "SELECT MAX(Created) from Bill WHERE SessionId = %d" sessionId)
+    tryF op "fetch time of last bill update"
+
+/// Fetch all bills from the IGA API filed after a certain date.
+let fetchRecentBills sessionYear (lastUpdate:DateTime) = 
+    let op() = 
+        fetchAll (sprintf "/%s/bills?minFiledDate=%s" sessionYear (lastUpdate.ToString("yyyy-MM-dd")))
+    tryF op "fetch recent bills"
+
+/// Filter out any bills that we already have in the database
+let resolveNewBills cn sessionId newBillMetadata = 
+    let op() =
+        let knownBills = cn |> dapperQuery<string> (sprintf "SELECT Name from Bill WHERE SessionId = %d" sessionId)
+        newBillMetadata
         |> List.filter (fun bill -> knownBills |> Seq.exists (fun knownBill -> knownBill = bill?billName.AsString()) |> not)
         |> List.map (fun bill -> get (bill?link.AsString()))
-    
-    // Add the bills to the database
-    let newBillRecords = newBillMetadata |> List.map (fun bill -> cn |> insertBill bill)
+    tryF op "resolve new bills"
 
-    // Determine bill subjects
-    let subjects = cn |> dapperQuery<Subject> "SELECT Id,Name,Link From [Subject] WHERE SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)"
-    
-    let pairBillRecordWithMetadata (bill:Bill) =
-        let billMetadata = newBillMetadata |> List.find(fun newBill -> bill.Name = (newBill?billName.AsString()))
-        (bill,billMetadata)
+/// Add new bill records to the database
+let insertNewBills cn newBillMetadata =
+    let op() =
+        let newBillRecords = 
+            newBillMetadata 
+            |> List.map (fun bill -> cn |> insertBill bill)
+        (newBillRecords, newBillMetadata)
+    tryF op "insert new bills"
 
-    let newBillSubjectRecords (bill:Bill, billMetadata) = 
-        let billSubjects = billMetadata?latestVersion?subjects.AsArray()
-        let toBillSubjectRecord subject =
-            let subjectId =  subjects |> Seq.find (fun s -> s.Link = subject?link.AsString()) |> (fun subject -> subject.Id)
-            { BillSubject.Id = 0; BillId = bill.Id; SubjectId = subjectId; }
-        billSubjects |> Array.map toBillSubjectRecord
+/// Relate new bills to their subject(s)
+let insertNewBillSubjects cn sessionId (newBillRecords, newBillMetadata) =
+    let op() =
+        let subjects = cn |> dapperQuery<Subject> (sprintf "SELECT Id,Name,Link From [Subject] WHERE SessionId = %d" sessionId)
 
-    newBillRecords
-        |> Seq.map pairBillRecordWithMetadata
-        |> Seq.collect newBillSubjectRecords
-        |> Seq.iter (fun subject -> cn |> dapperParametrizedQuery<int> InsertBillSubject subject |> ignore)
+        let pairBillRecordWithMetadata (bill:Bill) =
+            let billMetadata = newBillMetadata |> List.find(fun newBill -> bill.Name = (newBill?billName.AsString()))
+            (bill,billMetadata)
 
-    newBillRecords
+        let newBillSubjectRecords (bill:Bill, billMetadata) = 
+            let billSubjects = billMetadata?latestVersion?subjects.AsArray()
+            let toBillSubjectRecord subject =
+                let subjectId =  subjects |> Seq.find (fun s -> s.Link = subject?link.AsString()) |> (fun subject -> subject.Id)
+                { BillSubject.Id = 0; BillId = bill.Id; SubjectId = subjectId; }
+            billSubjects |> Array.map toBillSubjectRecord
 
-let updateCommittees cn =
+        newBillRecords
+            |> Seq.map pairBillRecordWithMetadata
+            |> Seq.collect newBillSubjectRecords
+            |> Seq.iter (fun subject -> cn |> dapperParametrizedQuery<int> InsertBillSubject subject |> ignore)
+        
+        newBillRecords
 
-    let sessionYear = cn |> currentSessionYear
-    let sessionId = cn |> dapperQuery<int> "SELECT TOP 1 Id FROM Session ORDER BY Name Desc" |> Seq.head
+    tryF op "insert new bill subjects"
 
+/// Invalidate the Redis cache key for bills
+let invalidateBillCache bills = 
+    let op() = 
+        bills |> invalidateCache BillsKey
+        bills 
+    tryF op "invalidate Bills cache"
+
+/// Log the addition of any new bills
+let logNewBills (log:TraceWriter) (bills: Bill list) = 
+    bills
+    |> List.map(fun s -> s.Name)
+    |> logNewAdditions log "bill"
+    ok bills
+
+// COMMITTEES
+/// Fetch all committees for the current session year from the IGA API 
+let fetchAllCommittees sessionId sessionYear = 
     let toModel chamber c ={
         Committee.Id=0; 
         SessionId=sessionId; 
@@ -85,57 +156,98 @@ let updateCommittees cn =
         Name=c?name.AsString(); 
         Link=c?link.AsString().Replace("standing-","") }
 
-    let knownCommittees = 
-        cn |> dapperQuery<string> "SELECT Link from Committee WHERE SessionId = (SELECT TOP 1 Id FROM Session ORDER BY Name Desc)"
+    let op () =
+        let house =
+            fetchAll (sprintf "/%s/chambers/house/committees" sessionYear)
+            |> List.map (fun c-> toModel Chamber.House c)
+        let senate =
+            fetchAll (sprintf "/%s/chambers/senate/committees" sessionYear)
+            |> List.map (fun c -> toModel Chamber.Senate c)
+        house 
+        |> List.append senate
 
-    let fetchNewCommittees chamber =
-        fetchAll (sprintf "/%s/chambers/%s/committees" sessionYear (chamber.ToString().ToLower()))
-        |> List.map (fun committee -> committee |> toModel chamber)
-        |> List.filter (fun committee -> knownCommittees |> Seq.exists (fun knownCommittee -> knownCommittee = committee.Link) |> not)
+    tryF op "fetch all committees"
+
+/// Filter out any committees that we already have in the database    
+let resolveNewCommittees cn sessionId (committees : Committee list)= 
+    let op () =
+        let knownCommittees = 
+            cn 
+            |> dapperQuery<string> (sprintf "SELECT Link from Committee WHERE SessionId = %d" sessionId)
+        committees
+        |> List.filter (fun c -> knownCommittees |> Seq.exists (fun kc -> kc = c.Link) |> not)
+
+    tryF op "filter known committees"
+
+/// Add new committee records to the database
+let insertNewCommittees cn committees = 
+    let op () =
+        committees 
+        |> List.iter (fun c -> 
+            cn 
+            |> dapperParametrizedQuery<int> InsertCommittee c 
+            |> ignore)
+        committees
+    tryF op "insert new committees"
+
+/// Invalidate the Redis cache key for committees
+let invalidateCommitteeCache committees = 
+    let op () =
+        committees |> invalidateCache CommitteesKey
+        committees
+    tryF op "invalidate Committee cache"
+
+/// Log the addition of any new committees
+let logNewCommittees (log:TraceWriter) (committees: Committee list)= 
+    committees
+    |> List.map(fun s -> sprintf "%A: %s" s.Chamber s.Name)
+    |> logNewAdditions log "committee"
+    ok committees
+
+/// Find, add, and log new subjects
+let updateSubjects (log:TraceWriter) cn sessionId sessionYear =
+    let AddNewSubjects = "UpdateCanonicalData / Add new subjects"
+    log.Info(sprintf "[START] %s" AddNewSubjects)
+    fetchAllSubjects sessionId sessionYear
+    >>= resolveNewSubjects cn sessionId 
+    >>= insertNewSubjects cn
+    >>= invalidateSubjectsCache
+    >>= logNewSubjects log    
+    |> haltOnFail log AddNewSubjects
+
+/// Find, add, and log new committees
+let updateCommittees (log:TraceWriter) cn sessionId sessionYear =
+    let AddNewCommittees = "UpdateCanonicalData / Add new committees"
+    log.Info(sprintf "[START] %s" AddNewCommittees)
+    fetchAllCommittees sessionId sessionYear
+    >>= resolveNewCommittees cn sessionId
+    >>= insertNewCommittees cn
+    >>= invalidateCommitteeCache
+    >>= logNewCommittees log
+    |> haltOnFail log AddNewCommittees
     
-    // Find new committees
-    let houseCommittees = fetchNewCommittees Chamber.House
-    let senateCommittees = fetchNewCommittees Chamber.Senate
+/// Find, add, and log new bills
+let updateBills (log:TraceWriter) cn sessionId sessionYear =
+    let AddNewBills = "UpdateCanonicalData / Add new bills"
+    log.Info(sprintf "[START] %s" AddNewBills)
+    getTimeOfLastBillUpdate cn sessionId
+    >>= fetchRecentBills sessionYear
+    >>= resolveNewBills cn sessionId
+    >>= insertNewBills cn
+    >>= insertNewBillSubjects cn sessionId
+    >>= invalidateBillCache
+    >>= logNewBills log
+    |> haltOnFail log AddNewBills 
 
-    // Add them to the database
-    houseCommittees |> List.iter (fun committee -> cn |> dapperParametrizedQuery<int> InsertCommittee committee |> ignore)
-    senateCommittees |> List.iter (fun committee -> cn |> dapperParametrizedQuery<int> InsertCommittee committee |> ignore)
-    (houseCommittees, senateCommittees)
+let updateCanonicalData (log:TraceWriter) =
+    use cn = new SqlConnection(sqlConStr())
+    let sessionYear = cn |> currentSessionYear
+    let sessionId = cn |> currentSessionId
+
+    updateSubjects   log cn sessionId sessionYear |> ignore
+    updateCommittees log cn sessionId sessionYear |> ignore
+    updateBills      log cn sessionId sessionYear |> ignore
 
 let Run(myTimer: TimerInfo, log: TraceWriter) =
-    log.Info(sprintf "F# function executed at: %s" (timestamp()))
-    try
-        let cn = new SqlConnection(sqlConStr())
-        let date = DateTime.Now.AddDays(-1.0).ToString("yyyy-MM-dd")
-
-        let logTrace trace = 
-            trace |> trackTrace "updateCanonicalData"
-            trace |> log.Info
-
-        log.Info(sprintf "[%s] Update subjects ..." (timestamp()))
-        let newSubjects = cn |> updateSubjects
-        newSubjects |> List.iter (fun subject -> logTrace (sprintf "  Added subject '%s'" (subject.Name)))
-        log.Info(sprintf "[%s] Update subjects [OK]" (timestamp()) )
-
-        log.Info(sprintf "[%s] Update bills ..." (timestamp()))
-        let newBills = cn |> updateBills
-        newBills |> List.iter (fun bill -> logTrace (sprintf "  Added bill '%s' ('%s')" bill.Name bill.Title))
-        log.Info(sprintf "[%s] Update bills [OK]" (timestamp()) )
-        
-        log.Info(sprintf "[%s] Update committees ..." (timestamp()))
-        let (houseCommittees, senateCommittees) = cn |> updateCommittees
-        houseCommittees |> List.iter (fun committee -> logTrace (sprintf "   Added House committee '%s'" committee.Name))
-        senateCommittees |> List.iter (fun committee -> logTrace (sprintf "   Added Senate committee '%s'" committee.Name))
-        log.Info(sprintf "[%s] Update committees [OK]" (timestamp()))
-
-        log.Info(sprintf "[%s] Invalidating caches ..." (timestamp()))
-        newSubjects |> invalidateCache SubjectsKey
-        newBills |> invalidateCache BillsKey
-        (houseCommittees @ senateCommittees) |> invalidateCache CommitteesKey
-        log.Info(sprintf "[%s] Invalidating caches [OK]" (timestamp()))
-    with
-    | ex -> 
-        ex |> trackException "updateCanonicalData"
-        log.Error(sprintf "Encountered error: %s" (ex.ToString())) 
-        reraise()
-
+     updateCanonicalData 
+     |> tryRun "UpdateCanonicalData" log 

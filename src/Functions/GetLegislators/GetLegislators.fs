@@ -4,7 +4,6 @@ open Chessie.ErrorHandling
 open FSharp.Data
 open FSharp.Data.CssSelectorExtensions
 open Microsoft.Azure.WebJobs.Host
-open Newtonsoft.Json
 open Ptp.Core
 open Ptp.Model
 open Ptp.Http
@@ -76,18 +75,20 @@ let parseLegislators (document:HtmlDocument) =
     else ok [ legislators.[0] |> parse Chamber.Senate;
               legislators.[1] |> parse Chamber.House ]
 
-let deserializeLocation = 
-    validateBody<Location> "Please provide a location in the form '{ Address:STRING, City:STRING, Zip:STRING, Year:INT (optional)}'"
+let deserializeLocation req = 
+    req 
+    |> validateBody<Location> "Please provide a location in the form '{ Address:STRING, City:STRING, Zip:STRING, Year:INT (optional)}'"
 
-let processRequest = 
-    deserializeLocation
-    >> bind validateLocation 
-    >> bind fetchLegislatorsHtml
-    >> bind parseLegislators
+let processRequest req = 
+    req
+    |> deserializeLocation 
+    >>= validateLocation 
+    >>= fetchLegislatorsHtml
+    >>= parseLegislators
 
 let Run(req: HttpRequestMessage, log: TraceWriter) = 
     log.Info("GetLegislators function triggered.")
     req
     |> processRequest
-    |> logResult log "GetLegislators"
+    |> continueOnFail log "GetLegislators"
     |> constructHttpResponse

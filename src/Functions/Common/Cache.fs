@@ -19,16 +19,17 @@ let ActionsKey = """laravel:actions"""
 let ScheduledActionsKey = """laravel:scheduled_actions"""
 
 let delete (key:string) =
+    let cacheKey = sprintf "%s-%s" (System.Environment.GetEnvironmentVariable("Redis.CacheKeyPrefix")) key
     let func() = 
         let muxer  = 
             System.Environment.GetEnvironmentVariable("Redis.ConnectionString")
             |> ConnectionMultiplexer.Connect
         let db = muxer.GetDatabase(0)
-        (RedisKey.op_Implicit key) 
+        (RedisKey.op_Implicit cacheKey) 
         |> db.KeyDeleteAsync
         |> muxer.Wait
 
-    trackDependency "redis" key func |> ignore
+    trackDependency "redis" cacheKey func |> ignore
     
 let invalidateCache key seq =
     match (Seq.isEmpty seq) with

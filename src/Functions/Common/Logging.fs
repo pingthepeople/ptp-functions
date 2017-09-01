@@ -1,5 +1,6 @@
 ﻿module Ptp.Logging
 
+open Ptp.Core
 open Chessie.ErrorHandling
 open Microsoft.ApplicationInsights
 open Microsoft.Azure.WebJobs.Host
@@ -40,17 +41,30 @@ let trackDependency name command func =
    
 let format msgs =
     msgs 
-    |> Seq.collect (fun m -> m.ToString())
-    |> Seq.toArray
-    |> (fun a -> String.Join ("\n", a))
+    |> Seq.map (fun m -> sprintf "* %s" (m.ToString()))
+    |> String.concat "\n"
 
-let logResult (log:TraceWriter) source twoTrackInput =
-    let success(resp,msgs) = 
-        match msgs |> Seq.isEmpty with
-        | true -> 
-            log.Info (sprintf "%s succeeded" source)
-        | false -> 
-            log.Info (sprintf "%s succeeded with messages:\n%s" source (format msgs))
-    let failure (msgs) = 
-        log.Error (sprintf "%s failed:\n%s" source (format msgs))
+let onSuccess (log:TraceWriter) source (resp,msgs) =
+    format msgs
+    |> (fun f -> log.Info (sprintf "[FINISH] %s\n%s" source f))
+
+let onFailure  (log:TraceWriter) source msgs =
+    format msgs
+    |> (fun error -> sprintf "[ERROR] %s:\n%s" source error)
+    |> tee log.Error
+
+let haltOnFail (log:TraceWriter) source twoTrackInput =
+    let failure (msgs) =
+        onFailure log source msgs
+        |> failwith
+    let success = 
+        onSuccess log source
+    eitherTee success failure twoTrackInput 
+
+let continueOnFail (log:TraceWriter) source twoTrackInput =
+    let failure (msgs) =
+        onFailure log source msgs
+        |> ignore
+    let success = 
+        onSuccess log source
     eitherTee success failure twoTrackInput 

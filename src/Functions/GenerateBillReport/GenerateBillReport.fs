@@ -8,11 +8,11 @@ open Ptp.Model
 open Ptp.Http
 open Ptp.Database
 open Ptp.Queries
+open Ptp.Logging
 open System
 open System.Net
 open System.Net.Http
 open System.Data.SqlClient
-open Ptp.Logging
 
 [<CLIMutable>]
 type Body  = { Id : int }
@@ -26,12 +26,15 @@ let generateReport body =
     with
     | ex -> fail (HttpStatusCode.InternalServerError, ("Failed to generate report: " + ex.Message))
 
-let processRequest = 
+let deserializeId = 
     validateBody<Body> "A user id is expected in the form '{ Id: INT }'"
+
+let processRequest = 
+    deserializeId
     >> bind generateReport
 
 let Run(req: HttpRequestMessage, log: TraceWriter) =
     req
     |> processRequest
-    |> logResult log "GenerateBillReport"
+    |> continueOnFail log "GenerateBillReport"
     |> constructHttpResponse

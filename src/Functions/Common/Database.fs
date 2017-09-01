@@ -35,3 +35,4 @@ let currentSessionYear cn =
 
 let currentSessionId cn = 
     cn |> dapperQueryOne<int> "SELECT TOP 1 Id FROM Session ORDER BY Name Desc"
+

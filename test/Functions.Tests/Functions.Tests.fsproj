@@ -58,6 +58,7 @@
     <Compile Include="GetLegislatorsTests.fs" />
     <Content Include="App.config" />
     <Compile Include="GenerateBillReportTests.fs" />
+    <Compile Include="UpdateCanonicalDataTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Chessie">
