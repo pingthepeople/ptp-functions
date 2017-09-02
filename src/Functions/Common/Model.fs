@@ -11,11 +11,13 @@ type Party = Republican=1 | Democratic=2 | Independent=3
 type Legislator = 
     {
         Id:int;
-        Name:string;
+        SessionId:int;
+        FirstName:string;
+        LastName:string;
         Chamber:Chamber;
         District:int;
         Party:Party;
-        Url:string;
+        Link:string;
         Image:string;
     }
 
@@ -220,4 +222,14 @@ type Location =
         City:string;
         Zip:string;
         Year:int;
+    }
+
+type Body = 
+    {
+        Name:string;
+        Chamber:Chamber;
+        District:int;
+        Party:Party;
+        Link:string;
+        Image:string;
     }

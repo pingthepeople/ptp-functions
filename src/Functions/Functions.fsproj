@@ -68,6 +68,7 @@
     <None Include="UpdateCanonicalData\function.json" />
     <Compile Include="GenerateBillReport\GenerateBillReport.fs" />
     <None Include="GenerateBillReport\function.json" />
+    <None Include="Scaffolding\createDbTables.sql" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Chessie">
@@ -75,6 +76,9 @@
     </Reference>
     <Reference Include="Dapper">
       <HintPath>..\..\packages\Dapper.1.50.2\lib\net451\Dapper.dll</HintPath>
+    </Reference>
+    <Reference Include="FSharp.Collections.ParallelSeq">
+      <HintPath>..\..\packages\FSharp.Collections.ParallelSeq.1.0.2\lib\net40\FSharp.Collections.ParallelSeq.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.Core">
       <HintPath>..\..\packages\FSharp.Core.4.0.0.1\lib\net40\FSharp.Core.dll</HintPath>

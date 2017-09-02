@@ -16,6 +16,11 @@ VALUES (@Name,@Link,@Chamber,@SessionId);
 SELECT CAST(SCOPE_IDENTITY() as int)"""
 
     [<Literal>]
+    let InsertLegislator= """INSERT INTO Legislator(FirstName,LastName,Link,Chamber,Party,District,Image,SessionId) 
+VALUES (@FirstName,@FirstName,@Link,@Chamber,@Party,@District,@Image,@SessionId); 
+SELECT CAST(SCOPE_IDENTITY() as int)"""
+
+    [<Literal>]
     let InsertSubject= """INSERT INTO Subject(Name,Link,SessionId) 
 VALUES (@Name,@Link,@SessionId); 
 SELECT CAST(SCOPE_IDENTITY() as int)"""

@@ -15,7 +15,7 @@ open Ptp.Logging
 open Ptp.Bill
 open System
 open System.Data.SqlClient
-open FSharp.Data.HttpMethod
+open FSharp.Collections.ParallelSeq
 
 let logNewAdditions (log:TraceWriter) category (items: string list) = 
     match items with
@@ -79,8 +79,7 @@ let logNewSubjects (log:TraceWriter) (subjects: Subject list) =
 /// The IGA API allows us to query new bills by filing date, which is a fast convenience.
 let getTimeOfLastBillUpdate cn sessionId = 
     let op() =
-        cn 
-        |> dapperQueryOne<DateTime> (sprintf "SELECT MAX(Created) from Bill WHERE SessionId = %d" sessionId)
+        cn |> dapperQueryOne<DateTime> (sprintf "SELECT MAX(Created) from Bill WHERE SessionId = %d" sessionId)
     tryF op "fetch time of last bill update"
 
 /// Fetch all bills from the IGA API filed after a certain date.
@@ -172,12 +171,11 @@ let fetchAllCommittees sessionId sessionYear =
 let resolveNewCommittees cn sessionId (committees : Committee list)= 
     let op () =
         let knownCommittees = 
-            cn 
-            |> dapperQuery<string> (sprintf "SELECT Link from Committee WHERE SessionId = %d" sessionId)
+            cn |> dapperQuery<string> (sprintf "SELECT Link from Committee WHERE SessionId = %d" sessionId)
         committees
         |> List.filter (fun c -> knownCommittees |> Seq.exists (fun kc -> kc = c.Link) |> not)
 
-    tryF op "filter known committees"
+    tryF op "resolve new committees"
 
 /// Add new committee records to the database
 let insertNewCommittees cn committees = 
@@ -204,6 +202,65 @@ let logNewCommittees (log:TraceWriter) (committees: Committee list)=
     |> logNewAdditions log "committee"
     ok committees
 
+// LEGISLATORS
+
+/// Fetch all bill subjects for the current session from the IGA API
+let fetchAllLegislators sessionYear = 
+    let op() = 
+        fetchAll (sprintf "/%s/legislators" sessionYear)
+        |> List.map (fun l -> l?link.AsString())
+    tryF op "fetch all legislators"
+
+/// Filter out any committees that we already have in the database    
+let resolveNewLegislators cn sessionId (links : string list)= 
+    let toModel l = 
+      { Legislator.Id=0; 
+        SessionId=sessionId; 
+        FirstName=l?firstName.AsString(); 
+        LastName=l?lastName.AsString(); 
+        Link=l?link.AsString();
+        Party=Enum.Parse(typedefof<Party>, l?party.AsString()) :?> Party;
+        Chamber=Enum.Parse(typedefof<Chamber>, l?chamber?name.AsString()) :?> Chamber;
+        Image=""; 
+        District=0; }
+
+    let op () =
+        let knownCommittees = 
+            cn |> dapperQuery<string> (sprintf "SELECT Link from Legislator WHERE SessionId = %d" sessionId)
+        links
+        |> List.filter (fun l -> knownCommittees |> Seq.exists (fun kc -> kc = l) |> not)
+        |> PSeq.map tryGet 
+        |> PSeq.toList
+        |> List.filter (fun j -> j <> JsonValue.Null)
+        |> List.map toModel
+
+    tryF op "resolve new legislators"
+
+/// Add new committee records to the database
+let insertNewLegislators cn legislators = 
+    let op () =
+        legislators 
+        |> List.iter (fun l -> 
+            cn 
+            |> dapperParametrizedQuery<int> InsertLegislator l 
+            |> ignore)
+        legislators
+    tryF op "insert new legislators"
+
+/// Invalidate the Redis cache key for committees
+let invalidateLegislatorCache legislators = 
+    let op () =
+        legislators  |> invalidateCache LegislatorsKey
+        legislators 
+    tryF op "invalidate legislators cache"
+
+/// Log the addition of any new committees
+let logNewLegislators (log:TraceWriter) (legislators: Legislator list)= 
+    legislators
+    |> List.map(fun s -> sprintf "%A: %s %s" s.Chamber s.FirstName s.LastName)
+    |> logNewAdditions log "legislator"
+    ok legislators
+
 /// Find, add, and log new subjects
 let updateSubjects (log:TraceWriter) cn sessionId sessionYear =
     let AddNewSubjects = "UpdateCanonicalData / Add new subjects"
@@ -225,7 +282,17 @@ let updateCommittees (log:TraceWriter) cn sessionId sessionYear =
     >>= invalidateCommitteeCache
     >>= logNewCommittees log
     |> haltOnFail log AddNewCommittees
-    
+
+let updateLegislators (log:TraceWriter) cn sessionId sessionYear =
+    let AddNewLegislators = "UpdateCanonicalData / Add new legislators"
+    log.Info(sprintf "[START] %s" AddNewLegislators)
+    fetchAllLegislators sessionYear
+    >>= resolveNewLegislators cn sessionId
+    >>= insertNewLegislators cn
+    >>= invalidateLegislatorCache
+    >>= logNewLegislators log
+    |> haltOnFail log AddNewLegislators
+
 /// Find, add, and log new bills
 let updateBills (log:TraceWriter) cn sessionId sessionYear =
     let AddNewBills = "UpdateCanonicalData / Add new bills"
@@ -244,9 +311,10 @@ let updateCanonicalData (log:TraceWriter) =
     let sessionYear = cn |> currentSessionYear
     let sessionId = cn |> currentSessionId
 
-    updateSubjects   log cn sessionId sessionYear |> ignore
-    updateCommittees log cn sessionId sessionYear |> ignore
-    updateBills      log cn sessionId sessionYear |> ignore
+    updateSubjects    log cn sessionId sessionYear |> ignore
+    updateCommittees  log cn sessionId sessionYear |> ignore
+    updateLegislators log cn sessionId sessionYear |> ignore
+    updateBills       log cn sessionId sessionYear |> ignore
 
 let Run(myTimer: TimerInfo, log: TraceWriter) =
      updateCanonicalData 

@@ -17,6 +17,14 @@ let get endpoint =
     let result = trackDependency "http" uri func
     result |> JsonValue.Parse
 
+let tryGet endpoint =
+    try
+        get endpoint
+    with 
+    | ex -> 
+        Console.WriteLine(sprintf "failed to get %s: %s" endpoint (ex.ToString()))
+        JsonValue.Null
+
 let fetchAll endpoint =
     let rec fetchRec link =
         let json = get link

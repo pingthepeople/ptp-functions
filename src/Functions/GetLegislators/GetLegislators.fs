@@ -19,6 +19,8 @@ let detail side (node:HtmlNode) =
     |> Seq.head
     |> (fun n -> n.InnerText().Trim())
 
+
+
 let parse chamber (node:HtmlNode)  =
     let person = 
         node.Descendants ["h3"]
@@ -41,7 +43,7 @@ let parse chamber (node:HtmlNode)  =
         |> detail "right" 
         |> Int32.Parse
 
-    {Id=0; Name=name; Url=url; Chamber=chamber; Image=image; Party=party; District=district}
+    {Name=name; Link=url; Chamber=chamber; Image=image; Party=party; District=district}
 
 let validateLocation loc =
     let thisYear = System.DateTime.Now.Year

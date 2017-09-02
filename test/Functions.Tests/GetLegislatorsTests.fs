@@ -71,23 +71,21 @@ let ``get legislators`` () =
 
     let expectedSenator =
         {
-            Legislator.Id=0; 
             Name="Senator Mark Stoops"; 
             Party=Party.Democratic; 
             Chamber=Chamber.Senate; 
             District=40; 
-            Url="https://iga.in.gov/legislative/2017/legislators/legislator_mark_stoops_1107";
+            Link="https://iga.in.gov/legislative/2017/legislators/legislator_mark_stoops_1107";
             Image="https://iga.in.gov/legislative/2017/portraits/legislator_mark_stoops_1107/" 
         }
 
     let expectedRepresentative =
         {
-            Legislator.Id=0; 
             Name="Representative Matt Pierce"; 
             Party=Party.Democratic; 
             Chamber=Chamber.House; 
             District=61; 
-            Url="https://iga.in.gov/legislative/2017/legislators/legislator_matthew_pierce_708";
+            Link="https://iga.in.gov/legislative/2017/legislators/legislator_matthew_pierce_708";
             Image="https://iga.in.gov/legislative/2017/portraits/legislator_matthew_pierce_708/" 
         }
 

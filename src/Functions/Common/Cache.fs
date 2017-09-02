@@ -18,8 +18,11 @@ let ActionsKey = """laravel:actions"""
 [<Literal>]
 let ScheduledActionsKey = """laravel:scheduled_actions"""
 
+[<Literal>]
+let LegislatorsKey = """laravel:legislators"""
+
 let delete (key:string) =
-    let cacheKey = sprintf "%s-%s" (System.Environment.GetEnvironmentVariable("Redis.CacheKeyPrefix")) key
+    let cacheKey = sprintf "%s%s" key (System.Environment.GetEnvironmentVariable("Redis.CacheKeyPostfix"))
     let func() = 
         let muxer  = 
             System.Environment.GetEnvironmentVariable("Redis.ConnectionString")
