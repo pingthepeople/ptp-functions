@@ -76,6 +76,19 @@ CREATE TABLE ScheduledAction
     BillId int NOT NULL FOREIGN KEY REFERENCES Bill(Id),
 )
 
+CREATE TABLE Legislator
+(
+    Id int IDENTITY(1,1) PRIMARY KEY,
+    FirstName nvarchar(256) NOT NULL,
+    LastName nvarchar(256) NOT NULL,
+	Link nvarchar(256) NOT NULL,
+    Chamber TINYINT NOT NULL,
+	Party TINYINT NOT NULL,
+	District TINYINT NOT NULL,
+    Image nvarchar(256) NOT NULL,
+    SessionId int NOT NULL FOREIGN KEY REFERENCES [Session](Id)
+)
+
 -- Many-to-many tables
 
 Create Table UserBill
