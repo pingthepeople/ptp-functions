@@ -68,3 +68,11 @@ let continueOnFail (log:TraceWriter) source twoTrackInput =
     let success = 
         onSuccess log source
     eitherTee success failure twoTrackInput 
+
+let logNewAdditions (log:TraceWriter) category (items: string list) = 
+    match items with
+    | [] -> log.Info(sprintf "No new %ss found." category)
+    | _  ->
+        items 
+        |> String.concat "\n"
+        |> (fun s -> log.Info((sprintf "Found new %ss:\n%s" category s)))

@@ -64,6 +64,10 @@
     <None Include="GetLegislators\function.json" />
     <None Include="host.json" />
     <None Include="local.settings.json" />
+    <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Bills.fs" />
+    <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Committees.fs" />
+    <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Legislators.fs" />
+    <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Subjects.fs" />
     <Compile Include="UpdateCanonicalData\UpdateCanonicalData.fs" />
     <None Include="UpdateCanonicalData\function.json" />
     <Compile Include="GenerateBillReport\GenerateBillReport.fs" />
