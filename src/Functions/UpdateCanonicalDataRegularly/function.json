@@ -1,0 +1,13 @@
+﻿{
+  "disabled": false,
+  "scriptFile": "../bin/Functions.dll",
+  "entryPoint": "UpdateCanonicalDataRegularly.Run",
+  "bindings": [
+    {
+      "name": "myTimer",
+      "type": "timerTrigger",
+      "direction": "in",
+      "schedule": "0 5-59/10 7-20 * * 1-5"
+    }
+  ]
+}
