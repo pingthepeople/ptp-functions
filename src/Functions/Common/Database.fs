@@ -8,6 +8,17 @@ open System.Dynamic
 
 type DateSelectArgs = {Date:string}
 type IdSelect = {Id:int}
+type IdListSelect = {Ids:int[]}
+
+let sqlConStr() = System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString")
+let sqlConnection() = new SqlConnection(sqlConStr())
+
+let expand (param : Map<string,_>) =
+    let expando = ExpandoObject()
+    let expandoDictionary = expando :> IDictionary<string,obj>
+    for paramValue in param do
+        expandoDictionary.Add(paramValue.Key, paramValue.Value :> obj)
+    expando
 
 let dapperQuery<'Result> (query:string) (connection:SqlConnection) =
     let func() = connection.Query<'Result>(query)
@@ -22,13 +33,21 @@ let dapperMapParametrizedQuery<'Result> (query:string) (param : Map<string,_>) (
     let expandoDictionary = expando :> IDictionary<string,obj>
     for paramValue in param do
         expandoDictionary.Add(paramValue.Key, paramValue.Value :> obj)
-    connection |> dapperParametrizedQuery query expando
+    connection |> dapperParametrizedQuery query (expand param)
     
 let dapperParameterizedQueryOne<'Result> (query:string) (param:obj) connection =
     connection |> dapperParametrizedQuery<'Result> query param |> Seq.head
 
 let dapperQueryOne<'Result> (query:string) connection =
     connection |> dapperQuery<'Result> query |> Seq.head
+
+let dapperCommand (query:string) (connection:SqlConnection) =
+    let func() = connection.Execute(query) |> ignore
+    trackDependency "database" query func
+
+let dapperParameterizedCommand (query:string) (param:obj) (connection:SqlConnection) =
+    let func() = connection.Execute(query, param) |> ignore
+    trackDependency "database" query func
 
 let currentSessionYear cn = 
     cn |> dapperQueryOne<string> "SELECT TOP 1 Name FROM Session ORDER BY Name Desc"

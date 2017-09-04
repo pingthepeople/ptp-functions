@@ -19,7 +19,6 @@ let (|EmptySeq|_|) a =
 let isEmpty str = str |> String.IsNullOrWhiteSpace
 let timestamp() = System.DateTime.Now.ToString("HH:mm:ss.fff")
 let datestamp() = System.DateTime.Now.ToString("yyyy-MM-dd")
-let sqlConStr() = System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString")
 
 let tee f x =
     f(x)

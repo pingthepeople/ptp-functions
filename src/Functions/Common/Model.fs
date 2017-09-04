@@ -4,8 +4,8 @@ open Ptp.Core
 
 //  Database models
 type Chamber = House=1 | Senate=2
-
 type Party = Republican=1 | Democratic=2 | Independent=3
+type CommitteePosition = Member=1 | RankingMinority = 2 | ViceChair=3 | Chair=4 | Advisor=5 | Conferee=6
 
 [<CLIMutable>]
 type Legislator = 
@@ -178,6 +178,13 @@ type BillSubject = {
     SubjectId:int;
 }
 
+[<CLIMutable>]
+type CommitteeMember = {
+    Id:int;
+    LegislatorId:int;
+    CommitteeId:int;
+    Position:CommitteePosition;
+}
 
 //  Messaging / Data Processing Models
 

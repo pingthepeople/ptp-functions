@@ -119,6 +119,15 @@ CREATE TABLE BillSubject
     SubjectId int FOREIGN KEY REFERENCES [Subject](Id),
 )
 
+CREATE TABLE LegislatorCommittee
+(
+    Id int IDENTITY(1,1) PRIMARY KEY,
+    Created DATETIME NOT NULL DEFAULT GetUtcDate(),
+	Position TINYINT NOT NULL,
+    LegislatorId int FOREIGN KEY REFERENCES Legislator(Id),
+    CommitteeId int FOREIGN KEY REFERENCES Committee(Id),
+)
+
 -- Laravel Migrations table
 
 CREATE TABLE migrations (

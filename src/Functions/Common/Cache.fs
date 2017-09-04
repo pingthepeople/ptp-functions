@@ -21,6 +21,9 @@ let ScheduledActionsKey = """laravel:scheduled_actions"""
 [<Literal>]
 let LegislatorsKey = """laravel:legislators"""
 
+[<Literal>]
+let MembershipsKey = """laravel:memberships"""
+
 let delete (key:string) =
     let cacheKey = sprintf "%s%s" key (System.Environment.GetEnvironmentVariable("Redis.CacheKeyPostfix"))
     let func() = 
@@ -38,3 +41,4 @@ let invalidateCache key seq =
     match (Seq.isEmpty seq) with
     | true -> ()
     | false -> delete key
+    seq
