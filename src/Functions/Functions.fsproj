@@ -74,6 +74,8 @@
     <Compile Include="UpdateCanonicalDataDaily\UpdateCanonicalDataDaily.fs" />
     <None Include="UpdateCanonicalDataRegularly\function.json" />
     <Compile Include="UpdateCanonicalDataRegularly\UpdateCanonicalDataRegularly.fs" />
+    <None Include="UpdateCanonicalDataManual\function.json" />
+    <Compile Include="UpdateCanonicalDataManual\UpdateCanonicalDataManual.fs" />
     <Compile Include="GenerateBillReport\GenerateBillReport.fs" />
     <None Include="GenerateBillReport\function.json" />
   </ItemGroup>
