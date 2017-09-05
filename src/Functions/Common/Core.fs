@@ -36,6 +36,15 @@ let tryF f msg =
     with 
         ex -> fail (sprintf "Failed to %s: %s" msg (ex.ToString()))
 
+let tryFIfAny x f msg =
+    if x |> Seq.isEmpty 
+    then ok x
+    else 
+        try 
+            f() |> ok 
+        with 
+            ex -> fail (sprintf "Failed to %s: %s" msg (ex.ToString()))
+
 let tryRun desc (log:TraceWriter) f =
     try
         log.Info(sprintf "[START] %s" desc)

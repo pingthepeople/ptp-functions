@@ -30,9 +30,9 @@ let fetchRecentBills sessionYear (lastUpdate:DateTime) =
     tryF op "fetch recent bills"
 
 /// Filter out any bills that we already have in the database
-let resolveNewBills cn sessionId newBillMetadata = 
+let resolveNewBills cn newBillMetadata = 
     let op() =
-        let knownBills = cn |> dapperQuery<string> (sprintf "SELECT Name from Bill WHERE SessionId = %d" sessionId)
+        let knownBills = cn |> dapperQuery<string> "SELECT Name from Bill WHERE SessionId = (SELECT TOP 1 Id From Session ORDER BY Name DESC)"
         newBillMetadata
         |> List.filter (fun bill -> knownBills |> Seq.exists (fun knownBill -> knownBill = bill?billName.AsString()) |> not)
         |> List.map (fun bill -> bill?link.AsString())
@@ -45,20 +45,16 @@ let resolveNewBills cn sessionId newBillMetadata =
 /// Add new bill records to the database
 let insertNewBills cn newBillMetadata =
     let op() =
-        let newBillRecords = 
-            newBillMetadata 
-            |> List.map (fun bill -> cn |> insertBill bill)
-        (newBillRecords, newBillMetadata)
+        newBillMetadata 
+        |> List.map (fun metadata -> 
+                let newBill = cn |> insertBill metadata
+                (newBill, metadata))       
     tryF op "insert new bills"
 
 /// Relate new bills to their subject(s)
-let insertNewBillSubjects cn sessionId (newBillRecords, newBillMetadata) =
+let insertNewBillSubjects cn (metadataAndRecords:(Bill*JsonValue) list) =
     let op() =
-        let subjects = cn |> dapperQuery<Subject> (sprintf "SELECT Id,Name,Link From [Subject] WHERE SessionId = %d" sessionId)
-
-        let pairBillRecordWithMetadata (bill:Bill) =
-            let billMetadata = newBillMetadata |> List.find(fun newBill -> bill.Name = (newBill?billName.AsString()))
-            (bill,billMetadata)
+        let subjects = cn |> dapperQuery<Subject> "SELECT Id,Link From [Subject] WHERE SessionId = (SELECT TOP 1 Id From Session ORDER BY Name DESC)"
 
         let newBillSubjectRecords (bill:Bill, billMetadata) = 
             let billSubjects = billMetadata?latestVersion?subjects.AsArray()
@@ -67,14 +63,65 @@ let insertNewBillSubjects cn sessionId (newBillRecords, newBillMetadata) =
                 { BillSubject.Id = 0; BillId = bill.Id; SubjectId = subjectId; }
             billSubjects |> Array.map toBillSubjectRecord
 
-        newBillRecords
-            |> Seq.map pairBillRecordWithMetadata
-            |> Seq.collect newBillSubjectRecords
-            |> Seq.iter (fun subject -> cn |> dapperParametrizedQuery<int> InsertBillSubject subject |> ignore)
-        
-        newBillRecords
+        metadataAndRecords
+        |> List.map (fun (bill,_) -> bill.Id)
+        |> List.toArray
+        |> fun ids -> 
+            cn |> dapperParameterizedCommand "DELETE FROM BillSubject WHERE BillId in @Ids" {Ids=ids}
 
-    tryF op "insert new bill subjects"
+        metadataAndRecords
+        |> Seq.collect newBillSubjectRecords
+        |> Seq.toList
+        |> fun subjects -> 
+            cn |> dapperParameterizedCommand InsertBillSubject subjects 
+        
+        metadataAndRecords
+    tryFIfAny metadataAndRecords op "insert new bill subjects"
+
+let insertNewBillLegislators cn (metadataAndRecords:(Bill*JsonValue) list) =
+    let op() =
+        let legislators = cn |> dapperQuery<Legislator> "SELECT Id,Link From [Legislator] WHERE SessionId = (SELECT TOP 1 Id From Session ORDER BY Name DESC)"
+
+        let parseRole role billId (jsonValue:JsonValue)=
+            match (jsonValue.TryGetProperty("link")) with
+            | None -> []
+            | Some link -> 
+                let legislator = legislators |> Seq.tryFind (fun l -> l.Link = link.AsString())
+                match legislator with
+                | None -> []
+                | Some l -> [{BillId=billId; LegislatorId=l.Id; Position=role; Id=0}]
+
+        let getRoles role billId property (jsonValue:JsonValue)=
+            match jsonValue.TryGetProperty(property) with
+            | None -> []
+            | Some json ->
+                json.AsArray()
+                |> Array.toList
+                |> List.collect (fun j -> parseRole role billId j)
+
+        let newBillLegislatorRecords (bill:Bill,metadata) =
+            let authors = getRoles BillPosition.Author bill.Id "authors" metadata 
+            let coauthors = getRoles BillPosition.CoAuthor bill.Id "coauthors" metadata 
+            let sponsors = getRoles BillPosition.Sponsor bill.Id "sponsors" metadata 
+            let cosponsors = getRoles BillPosition.Sponsor bill.Id "cosponsors" metadata 
+            authors @ coauthors @ sponsors @ cosponsors
+        
+        metadataAndRecords
+        |> List.map (fun (bill,_) -> bill.Id)
+        |> List.toArray
+        |> fun ids -> 
+            cn |> dapperParameterizedCommand "DELETE FROM LegislatorBill WHERE BillId in @Ids" {Ids=ids}
+        
+        metadataAndRecords 
+        |> Seq.collect newBillLegislatorRecords
+        |> Seq.toList
+        |> fun records -> 
+            cn |> dapperParameterizedCommand InsertLegislatorBill records
+        
+        metadataAndRecords
+
+    tryFIfAny metadataAndRecords op "insert new bill legislators"
+
 
 /// Invalidate the Redis cache key for bills
 let invalidateBillCache bills = 
@@ -83,11 +130,11 @@ let invalidateBillCache bills =
     tryF op "invalidate Bills cache"
 
 /// Log the addition of any new bills
-let logNewBills (log:TraceWriter) (bills: Bill list) = 
-    bills
-    |> List.map(fun s -> s.Name)
+let logNewBills (log:TraceWriter) (metadataAndRecords:(Bill*JsonValue) list) = 
+    metadataAndRecords
+    |> List.map (fun (bill,_) -> bill.Name)
     |> logNewAdditions log "bill"
-    ok bills
+    ok metadataAndRecords
 
 /// Find, add, and log new bills
 let updateBills (log:TraceWriter) cn sessionId sessionYear =
@@ -95,9 +142,10 @@ let updateBills (log:TraceWriter) cn sessionId sessionYear =
     log.Info(sprintf "[START] %s" AddNewBills)
     getTimeOfLastBillUpdate cn sessionId
     >>= fetchRecentBills sessionYear
-    >>= resolveNewBills cn sessionId
+    >>= resolveNewBills cn
     >>= insertNewBills cn
-    >>= insertNewBillSubjects cn sessionId
+    >>= insertNewBillSubjects cn
+    >>= insertNewBillLegislators cn 
     >>= invalidateBillCache
     >>= logNewBills log
     |> haltOnFail log AddNewBills 

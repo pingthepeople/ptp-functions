@@ -7,6 +7,7 @@ open Ptp.Database
 open Ptp.UpdateCanonicalData.Committees
 open Ptp.UpdateCanonicalData.Legislators
 open Ptp.UpdateCanonicalData.Memberships
+open Ptp.UpdateCanonicalData.Bills
 open System.Data.SqlClient
 
 let updateCanonicalData (log:TraceWriter) =

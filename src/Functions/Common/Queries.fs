@@ -27,8 +27,11 @@ SELECT CAST(SCOPE_IDENTITY() as int)"""
 
     [<Literal>]
     let InsertBillSubject= """INSERT INTO BillSubject(BillId,SubjectId) 
-VALUES (@BillId,@SubjectId); 
-SELECT CAST(SCOPE_IDENTITY() as int)"""
+VALUES (@BillId,@SubjectId)"""
+
+    [<Literal>]
+    let InsertLegislatorBill= """INSERT INTO LegislatorBill(BillId,LegislatorId,Position) 
+VALUES (@BillId,@LegislatorId,@Position)"""
 
     [<Literal>]
     let SelectActionsRequiringNotification = """SELECT a.Id, a.BillId, a.Description, a.ActionType, a.Chamber

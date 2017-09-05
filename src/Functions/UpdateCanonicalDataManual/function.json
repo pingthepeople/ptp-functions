@@ -1,0 +1,12 @@
+﻿{
+  "disabled": false,
+  "scriptFile": "../bin/Functions.dll",
+  "entryPoint": "UpdateCanonicalDataManual.Run",
+  "bindings": [
+    {
+      "type": "manualTrigger",
+      "direction": "in",
+      "name": "input"
+    }
+  ]
+}
