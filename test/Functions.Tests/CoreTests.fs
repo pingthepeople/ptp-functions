@@ -9,16 +9,16 @@ let b = [   2; 3; 4]
 
 [<Fact>]
 let ``a except b``() =
-    test <@ a |> except b (fun a b -> a=b) |> Seq.toList = [1;] @>
+    test <@ a |> except b |> Seq.toList = [1;] @>
 
 [<Fact>]
 let ``b except a``() =
-    test <@ b |> except a (fun a b -> a=b) |> Seq.toList = [4;] @>
+    test <@ b |> except a |> Seq.toList = [4;] @>
 
 [<Fact>]
 let ``b except b``() =
-    test <@ b |> except b (fun a b -> a=b) |> Seq.toList = [] @>
+    test <@ b |> except b |> Seq.toList = [] @>
 
 [<Fact>]
 let ``a except empty``() =
-    test <@ a |> except [] (fun a b -> a=b) |> Seq.toList = a @>
+    test <@ a |> except [] |> Seq.toList = a @>

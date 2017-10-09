@@ -15,6 +15,7 @@ type Command =
     | UpdateChamberCalendar=6
     | UpdateCommitteeCalendar=7
     | UpdateDeadBills=8
+    | UpdateCommitteeMemberships=9
 
 type QueryText = QueryText of string
 type CommandText = CommandText of string
