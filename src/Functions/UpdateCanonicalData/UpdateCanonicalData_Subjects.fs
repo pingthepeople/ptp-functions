@@ -19,21 +19,21 @@ let subjectModel json =
     Link=json?link.AsString() }
 
 /// Fetch all subject metadata from the IGA API for the specified session year
-let fetchAllSubjectsFromApi sessionYear =
-    sprintf "/%s/subjects" sessionYear 
-    |> fetchAllPages
-    >>= deserializeAs subjectModel
+let fetchAllSubjectsFromApi sessionYear = trial {
+    let url = sprintf "/%s/subjects" sessionYear 
+    let! pages = url |> fetchAllPages
+    let! models = pages |> deserializeAs subjectModel
+    return models
+    }
 
 /// Fetch all subject metadata from the IGA API for the specified session year
-let filterOutKnownSubjects (allSubjects: Subject seq) =
+let filterOutKnownSubjects (allSubjects: Subject seq) = trial {
     let queryText = sprintf "SELECT Link from Subject WHERE SessionId = %s" SessionIdSubQuery
-    let byUrl (subj:Subject) link = subj.Link = link
-    let filter knownUrls = 
-        allSubjects 
-        |> except knownUrls byUrl 
-        |> ok
-    dbQuery<string> queryText
-    >>= filter
+    let! knownSubjects = dbQuery<string> queryText
+    let matchOnUrl (subj:Subject) link = subj.Link = link
+    let unknownSubjects = allSubjects |> except' knownSubjects matchOnUrl
+    return unknownSubjects
+    }
 
 let persistNewSubjects subjects = 
     let foo = sprintf """INSERT INTO Subject(Name,Link,SessionId) 

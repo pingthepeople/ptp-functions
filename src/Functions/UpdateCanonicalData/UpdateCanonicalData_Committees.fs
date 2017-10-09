@@ -22,28 +22,28 @@ let committeeModel c =
     Link=c?link.AsString().Replace("standing-","") }
 
 /// Fetch URLs for all committees in the current session year.
-let fetchAllCommitteesFromAPI sessionYear = 
+let fetchAllCommitteesFromAPI sessionYear = trial {
+    let url = sprintf "/%s/committees" sessionYear
+    let! pages = url |> fetchAllPages
     let link json = json?link.AsString()
-    sprintf "/%s/committees" sessionYear
-    |> fetchAllPages
-    >>= deserializeAs link
+    let! committeeUrls = pages |> deserializeAs link
+    return committeeUrls
+    }
 
 /// Remove any URLs of committees that we already know about
-let filterOutKnownCommittees (allUrls: string seq) =
+let filterOutKnownCommittees (allCommitteeUrls: string seq) = trial {
     let queryText = sprintf "SELECT Link from Committee WHERE SessionId = %s" SessionIdSubQuery
-    let byUrl apiLink dbLink = apiLink = dbLink
-    let filter knownUrls = 
-        allUrls 
-        |> except knownUrls byUrl 
-        |> ok
-    dbQuery<string> queryText
-    >>= filter
+    let! knownCommitteeUrls = dbQuery<string> queryText
+    let unknownCommittees = allCommitteeUrls |> except knownCommitteeUrls
+    return unknownCommittees
+    }
 
 /// Fetch full metadata for committess that we don't yet know about
-let resolveNewCommittees urls =
-    urls 
-    |> fetchAllParallel
-    >>= deserializeAs committeeModel
+let resolveNewCommittees urls = trial {
+    let! pages = urls |> fetchAllParallel
+    let! models = pages |> deserializeAs committeeModel
+    return models
+    }
 
 /// Add new committee records to the database
 let persistNewCommittees committees = 

@@ -41,10 +41,17 @@ let isEmpty str = str |> String.IsNullOrWhiteSpace
 let timestamp() = System.DateTime.Now.ToString("HH:mm:ss.fff")
 let datestamp() = System.DateTime.Now.ToString("yyyy-MM-dd")
 
-let inline except b matchOn a =
+let inline except b a =
     let notInB a' = 
         b 
-        |> Seq.exists (fun b' -> matchOn a' b') 
+        |> Seq.exists (fun b' -> a' = b') 
+        |> not
+    a |> Seq.filter notInB
+
+let inline except' b matchPredicate a =
+    let notInB a' = 
+        b 
+        |> Seq.exists (fun b' -> matchPredicate a' b') 
         |> not
     a |> Seq.filter notInB
 

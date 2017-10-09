@@ -25,29 +25,28 @@ let legislatorModel json =
     District=0; }
 
 /// Fetch URLs for all legislators in the current session.
-let fetchAllLegislatorsFromAPI sessionYear = 
+let fetchAllLegislatorsFromAPI sessionYear = trial {
     let url = sprintf "/%s/legislators" sessionYear
     let legislatorUrl result = result?link.AsString()
-    url
-    |> fetchAllPages
-    >>= deserializeAs legislatorUrl
+    let! pages = url |> fetchAllPages
+    let! result = pages |> deserializeAs legislatorUrl
+    return result;
+    }
 
 /// Filter out URLs for any legislator that we already have in the database    
-let filterOutKnownLegislators allUrls = 
+let filterOutKnownLegislators allUrls = trial {
     let query = sprintf "SELECT Link from Legislator WHERE SessionId = %s" SessionIdSubQuery
-    let byUrl a b = a = b
-    let filter knownUrls = 
-        allUrls 
-        |> except knownUrls byUrl 
-        |> ok
-    dbQuery<string> query
-    >>= filter
+    let! knownUrls = dbQuery<string> query
+    let filteredUrls = allUrls |> except knownUrls
+    return filteredUrls
+    }
 
 /// Get full metadata for legislators that we don't yet know about
-let resolveNewLegislators urls =
-    urls
-    |> fetchAllParallel
-    >>= deserializeAs legislatorModel
+let resolveNewLegislators urls = trial {
+    let! metadata = urls |> fetchAllParallel
+    let! models = metadata |> deserializeAs legislatorModel
+    return models
+    }
 
 /// Add new legislator records to the database
 let persistNewLegislators legislators = 
