@@ -6,6 +6,27 @@ open Microsoft.Azure.WebJobs.Host
 open System
 open System.Net
 
+type Command =
+    | UpdateBills=1
+    | UpdateSubjects=2
+    | UpdateLegislators=3
+    | UpdateCommittees=4
+    | UpdateActions=5
+    | UpdateChamberCalendar=6
+    | UpdateCommitteeCalendar=7
+    | UpdateDeadBills=8
+
+type QueryText = QueryText of string
+type CommandText = CommandText of string
+
+type WorkFlowFailure =
+    | DatabaseCommandError of CommandText * string
+    | DatabaseQueryError of QueryText * string
+    | APICommandError of CommandText * string
+    | APIQueryError of QueryText * string
+    | DTOtoDomainConversionFailure of string
+    | CacheInvalidationError of string
+
 
 let (|StartsWith|_|) (p:string) (s:string) =
     if s.StartsWith(p) then
@@ -20,6 +41,13 @@ let isEmpty str = str |> String.IsNullOrWhiteSpace
 let timestamp() = System.DateTime.Now.ToString("HH:mm:ss.fff")
 let datestamp() = System.DateTime.Now.ToString("yyyy-MM-dd")
 
+let inline except b matchOn a =
+    let notInB a' = 
+        b 
+        |> Seq.exists (fun b' -> matchOn a' b') 
+        |> not
+    a |> Seq.filter notInB
+
 let tee f x =
     f(x)
     x
@@ -30,11 +58,21 @@ let tryHttpF f (status:HttpStatusCode) msg =
     with 
         ex -> fail ((status,sprintf "Failed to %s: %s" msg (ex.ToString())))
 
+
 let tryF f msg =
     try 
         f() |> ok 
     with 
         ex -> fail (sprintf "Failed to %s: %s" msg (ex.ToString()))
+
+let tryF' f failure =
+    try 
+        f() |> ok 
+    with 
+        ex ->
+            ex.ToString()
+            |> failure
+            |> fail
 
 let tryFIfAny x f msg =
     if x |> Seq.isEmpty 

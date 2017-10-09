@@ -2,6 +2,7 @@
 
 open Ptp.Core
 
+
 //  Database models
 type Chamber = House=1 | Senate=2
 type Party = Republican=1 | Democratic=2 | Independent=3

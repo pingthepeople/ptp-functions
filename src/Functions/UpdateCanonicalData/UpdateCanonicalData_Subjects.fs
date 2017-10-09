@@ -12,61 +12,53 @@ open Ptp.Database
 open Ptp.Cache
 open Ptp.Logging
 
-// SUBJECTS 
+let subjectModel json = 
+  { Subject.Id=0; 
+    SessionId=0; 
+    Name=json?entry.AsString(); 
+    Link=json?link.AsString() }
 
-/// Fetch all bill subjects for the current session from the IGA API
-let fetchAllSubjects sessionId sessionYear = 
-    let toModel subject = 
-      { Subject.Id=0; 
-        SessionId=sessionId; 
-        Name=subject?entry.AsString(); 
-        Link=subject?link.AsString() }
-    let op() = 
-        fetchAll (sprintf "/%s/subjects" sessionYear)
-        |> List.map toModel
-    tryF op "fetch all subjects"
+/// Fetch all subject metadata from the IGA API for the specified session year
+let fetchAllSubjectsFromApi sessionYear =
+    sprintf "/%s/subjects" sessionYear 
+    |> fetchAllPages
+    >>= deserializeAs subjectModel
 
-/// Filter out any bill subjects that we already have in the database
-let resolveNewSubjects cn sessionId  (subjects: Subject list) = 
-    let op() = 
-        let knownSubjects = 
-            cn 
-            |> dapperQuery<string> (sprintf "SELECT Link from Subject WHERE SessionId = %d" sessionId)
-        subjects
-        |> List.filter (fun s -> knownSubjects |> Seq.exists (fun ks -> ks = s.Link) |> not)
-    tryF op "resolve new subjects"
+/// Fetch all subject metadata from the IGA API for the specified session year
+let filterOutKnownSubjects (allSubjects: Subject seq) =
+    let queryText = sprintf "SELECT Link from Subject WHERE SessionId = %s" SessionIdSubQuery
+    let byUrl (subj:Subject) link = subj.Link = link
+    let filter knownUrls = 
+        allSubjects 
+        |> except knownUrls byUrl 
+        |> ok
+    dbQuery<string> queryText
+    >>= filter
 
-/// Add new bill subject records to the database
-let insertNewSubjects cn (subjects: Subject list) = 
-    let insert subject =
-        cn 
-        |> dapperParametrizedQuery<int> InsertSubject subject 
-        |> ignore
-    let op () = 
-        subjects |> List.iter insert
-        subjects
-    tryF op "insert new subjects"
+let persistNewSubjects subjects = 
+    let foo = sprintf """INSERT INTO Subject(Name,Link,SessionId) 
+VALUES (@Name,@Link,%s)""" SessionIdSubQuery
+    dbCommand foo subjects
 
 /// Invalidate the Redis cache key for bill subjects
-let invalidateSubjectsCache  (subjects: Subject list) =
-    let op() = 
-        subjects |> invalidateCache SubjectsKey
-    tryF op "invalidate Subjects cache"
+let invalidateSubjectsCache (subjects: Subject seq) =
+    invalidateCache' SubjectsKey subjects
 
 /// Log the addition of any new bill subjects
-let logNewSubjects (log:TraceWriter) (subjects: Subject list) = 
-    subjects
-    |> List.map(fun s -> s.Name)
-    |> logNewAdditions log "subject"
-    ok subjects
+let describeNewSubjects (subjects: Subject seq) = 
+    let describer (s:Subject) = sprintf "%s" s.Name
+    subjects |> describeNewItems describer
 
 /// Find, add, and log new subjects
-let updateSubjects (log:TraceWriter) cn sessionId sessionYear =
-    let AddNewSubjects = "UpdateCanonicalData / Add new subjects"
-    log.Info(sprintf "[START] %s" AddNewSubjects)
-    fetchAllSubjects sessionId sessionYear
-    >>= resolveNewSubjects cn sessionId 
-    >>= insertNewSubjects cn
-    >>= invalidateSubjectsCache
-    >>= logNewSubjects log    
-    |> haltOnFail log AddNewSubjects
+let updateSubjects (log:TraceWriter) =
+    let workflow = 
+        getCurrentSessionYear
+        >> bind fetchAllSubjectsFromApi
+        >> bind filterOutKnownSubjects
+        >> bind persistNewSubjects
+        >> bind invalidateSubjectsCache
+        >> bind describeNewSubjects
+
+    workflow
+    |> evaluate log Command.UpdateSubjects
+    |> throwOnFail

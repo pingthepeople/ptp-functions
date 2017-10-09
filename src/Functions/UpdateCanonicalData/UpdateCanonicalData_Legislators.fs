@@ -12,72 +12,68 @@ open Ptp.Database
 open Ptp.Cache
 open Ptp.Logging
 open System
-open FSharp.Collections.ParallelSeq
 
-// LEGISLATORS
+let legislatorModel json = 
+    { Legislator.Id=0; 
+    SessionId=0; 
+    FirstName=json?firstName.AsString(); 
+    LastName=json?lastName.AsString(); 
+    Link=json?link.AsString();
+    Party=Enum.Parse(typedefof<Party>, json?party.AsString()) :?> Party;
+    Chamber=Enum.Parse(typedefof<Chamber>, json?chamber?name.AsString()) :?> Chamber;
+    Image=""; 
+    District=0; }
 
-/// Fetch all bill subjects for the current session from the IGA API
-let fetchAllLegislators sessionYear = 
-    let op() = 
-        fetchAll (sprintf "/%s/legislators" sessionYear)
-        |> List.map (fun l -> l?link.AsString())
-    tryF op "fetch all legislators"
+/// Fetch URLs for all legislators in the current session.
+let fetchAllLegislatorsFromAPI sessionYear = 
+    let url = sprintf "/%s/legislators" sessionYear
+    let legislatorUrl result = result?link.AsString()
+    url
+    |> fetchAllPages
+    >>= deserializeAs legislatorUrl
 
-/// Filter out any committees that we already have in the database    
-let resolveNewLegislators cn sessionId (links : string list)= 
-    let toModel l = 
-      { Legislator.Id=0; 
-        SessionId=sessionId; 
-        FirstName=l?firstName.AsString(); 
-        LastName=l?lastName.AsString(); 
-        Link=l?link.AsString();
-        Party=Enum.Parse(typedefof<Party>, l?party.AsString()) :?> Party;
-        Chamber=Enum.Parse(typedefof<Chamber>, l?chamber?name.AsString()) :?> Chamber;
-        Image=""; 
-        District=0; }
+/// Filter out URLs for any legislator that we already have in the database    
+let filterOutKnownLegislators allUrls = 
+    let query = sprintf "SELECT Link from Legislator WHERE SessionId = %s" SessionIdSubQuery
+    let byUrl a b = a = b
+    let filter knownUrls = 
+        allUrls 
+        |> except knownUrls byUrl 
+        |> ok
+    dbQuery<string> query
+    >>= filter
 
-    let op () =
-        let knownCommittees = 
-            cn |> dapperQuery<string> (sprintf "SELECT Link from Legislator WHERE SessionId = %d" sessionId)
-        links
-        |> List.filter (fun l -> knownCommittees |> Seq.exists (fun kc -> kc = l) |> not)
-        |> PSeq.map tryGet 
-        |> PSeq.toList
-        |> List.filter (fun j -> j <> JsonValue.Null)
-        |> List.map toModel
+/// Get full metadata for legislators that we don't yet know about
+let resolveNewLegislators urls =
+    urls
+    |> fetchAllParallel
+    >>= deserializeAs legislatorModel
 
-    tryF op "resolve new legislators"
+/// Add new legislator records to the database
+let persistNewLegislators legislators = 
+    dbCommand InsertLegislator legislators
 
-/// Add new committee records to the database
-let insertNewLegislators cn legislators = 
-    let op () =
-        legislators 
-        |> List.iter (fun l -> 
-            cn 
-            |> dapperParametrizedQuery<int> InsertLegislator l 
-            |> ignore)
-        legislators
-    tryF op "insert new legislators"
-
-/// Invalidate the Redis cache key for committees
+/// Invalidate the Redis cache key for legislators
 let invalidateLegislatorCache legislators = 
-    let op () =
-        legislators  |> invalidateCache LegislatorsKey
-    tryF op "invalidate legislators cache"
+    invalidateCache' LegislatorsKey legislators
 
-/// Log the addition of any new committees
-let logNewLegislators (log:TraceWriter) (legislators: Legislator list)= 
-    legislators
-    |> List.map(fun s -> sprintf "%A: %s %s" s.Chamber s.FirstName s.LastName)
-    |> logNewAdditions log "legislator"
-    ok legislators
+/// Log the addition of any new legislators
+let logNewLegislators legislators = 
+    let describer l = 
+        sprintf "%s %s (%A, %A)" l.FirstName l.LastName l.Chamber l.Party
+    legislators |> describeNewItems describer
 
-let updateLegislators (log:TraceWriter) cn sessionId sessionYear =
-    let AddNewLegislators = "UpdateCanonicalData / Add new legislators"
-    log.Info(sprintf "[START] %s" AddNewLegislators)
-    fetchAllLegislators sessionYear
-    >>= resolveNewLegislators cn sessionId
-    >>= insertNewLegislators cn
-    >>= invalidateLegislatorCache
-    >>= logNewLegislators log
-    |> haltOnFail log AddNewLegislators
+/// Define and execute legislators workflow
+let updateLegislators (log:TraceWriter) =
+    let workflow = 
+        getCurrentSessionYear
+        >> bind fetchAllLegislatorsFromAPI
+        >> bind filterOutKnownLegislators
+        >> bind resolveNewLegislators
+        >> bind persistNewLegislators
+        >> bind invalidateLegislatorCache
+        >> bind logNewLegislators
+
+    workflow
+    |> evaluate log Command.UpdateLegislators
+    |> throwOnFail

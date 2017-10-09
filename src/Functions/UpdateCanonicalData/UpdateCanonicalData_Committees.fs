@@ -14,69 +14,61 @@ open Ptp.Logging
 open System
 
 // COMMITTEES
+let committeeModel c =
+  { Committee.Id=0; 
+    SessionId=0; 
+    Chamber=Enum.Parse(typedefof<Chamber>, c?chamber?name.AsString()) :?> Chamber; 
+    Name=c?name.AsString(); 
+    Link=c?link.AsString().Replace("standing-","") }
 
-/// Fetch all committees for the current session year from the IGA API 
-let fetchAllCommittees sessionId sessionYear = 
-    let toModel chamber c ={
-        Committee.Id=0; 
-        SessionId=sessionId; 
-        Chamber=chamber; 
-        Name=c?name.AsString(); 
-        Link=c?link.AsString().Replace("standing-","") }
+/// Fetch URLs for all committees in the current session year.
+let fetchAllCommitteesFromAPI sessionYear = 
+    let link json = json?link.AsString()
+    sprintf "/%s/committees" sessionYear
+    |> fetchAllPages
+    >>= deserializeAs link
 
-    let op () =
-        let house =
-            fetchAll (sprintf "/%s/chambers/house/committees" sessionYear)
-            |> List.map (fun c-> toModel Chamber.House c)
-        let senate =
-            fetchAll (sprintf "/%s/chambers/senate/committees" sessionYear)
-            |> List.map (fun c -> toModel Chamber.Senate c)
-        house 
-        |> List.append senate
+/// Remove any URLs of committees that we already know about
+let filterOutKnownCommittees (allUrls: string seq) =
+    let queryText = sprintf "SELECT Link from Committee WHERE SessionId = %s" SessionIdSubQuery
+    let byUrl apiLink dbLink = apiLink = dbLink
+    let filter knownUrls = 
+        allUrls 
+        |> except knownUrls byUrl 
+        |> ok
+    dbQuery<string> queryText
+    >>= filter
 
-    tryF op "fetch all committees"
-
-/// Filter out any committees that we already have in the database    
-let resolveNewCommittees cn sessionId (committees : Committee list)= 
-    let op () =
-        let knownCommittees = 
-            cn |> dapperQuery<string> (sprintf "SELECT Link from Committee WHERE SessionId = %d" sessionId)
-        committees
-        |> List.filter (fun c -> knownCommittees |> Seq.exists (fun kc -> kc = c.Link) |> not)
-
-    tryF op "resolve new committees"
+/// Fetch full metadata for committess that we don't yet know about
+let resolveNewCommittees urls =
+    urls 
+    |> fetchAllParallel
+    >>= deserializeAs committeeModel
 
 /// Add new committee records to the database
-let insertNewCommittees cn committees = 
-    let op () =
-        committees 
-        |> List.iter (fun c -> 
-            cn 
-            |> dapperParametrizedQuery<int> InsertCommittee c 
-            |> ignore)
-        committees
-    tryF op "insert new committees"
+let persistNewCommittees committees = 
+    committees |> dbCommand InsertCommittee 
 
 /// Invalidate the Redis cache key for committees
 let invalidateCommitteeCache committees = 
-    let op () =
-        committees |> invalidateCache CommitteesKey
-    tryF op "invalidate Committee cache"
+    committees |> invalidateCache' CommitteesKey
 
-/// Log the addition of any new committees
-let logNewCommittees (log:TraceWriter) (committees: Committee list)= 
-    committees
-    |> List.map(fun s -> sprintf "%A: %s" s.Chamber s.Name)
-    |> logNewAdditions log "committee"
-    ok committees
+/// Log the addition of new committees
+let describeNewCommittees committees = 
+    let describer (c:Committee) = sprintf "%A: %s" c.Chamber c.Name
+    committees |> describeNewItems describer
 
 /// Find, add, and log new committees
-let updateCommittees (log:TraceWriter) cn sessionId sessionYear =
-    let AddNewCommittees = "UpdateCanonicalData / Add new committees"
-    log.Info(sprintf "[START] %s" AddNewCommittees)
-    fetchAllCommittees sessionId sessionYear
-    >>= resolveNewCommittees cn sessionId
-    >>= insertNewCommittees cn
-    >>= invalidateCommitteeCache
-    >>= logNewCommittees log
-    |> haltOnFail log AddNewCommittees
+let updateCommittees (log:TraceWriter) =
+    let workflow = 
+        getCurrentSessionYear
+        >> bind fetchAllCommitteesFromAPI
+        >> bind filterOutKnownCommittees
+        >> bind resolveNewCommittees
+        >> bind persistNewCommittees
+        >> bind invalidateCommitteeCache
+        >> bind describeNewCommittees
+
+    workflow
+    |> evaluate log Command.UpdateCommittees
+    |> throwOnFail

@@ -52,8 +52,12 @@ let resolve (committee : Committee) (legislators : Legislator list) position (js
             link.AsString()
             |> toCommitteeMembership committee legislators position        
 
-let toConferenceCommitteeMemberships (log:TraceWriter) (committee : Committee) (legislators : Legislator list) (json:JsonValue) =
-    
+
+let tryConvert propertyName committee legislators position (json:JsonValue) =
+    json.TryGetProperty(propertyName)
+    |> resolve committee legislators position
+
+let toConferenceCommitteeMemberships (committee : Committee) (legislators : Legislator list) (json:JsonValue) =
     let chair =
         json.TryGetProperty("conferee_chair")
         |> resolve committee legislators CommitteePosition.Chair
@@ -97,7 +101,7 @@ let getLatestMemberships (log:TraceWriter) (committees : Committee list, legisla
         let conferenceMemberships = 
             committees
             |> List.filter (fun c -> c.Link.Contains("conference"))
-            |> PSeq.collect (fun c -> resolveMemberships (toConferenceCommitteeMemberships log) legislators c)
+            |> PSeq.collect (fun c -> resolveMemberships toConferenceCommitteeMemberships legislators c)
             |> PSeq.toList
         let standingMemberships =
             committees

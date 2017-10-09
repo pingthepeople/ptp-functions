@@ -1,10 +1,12 @@
 ﻿module Ptp.Database
 
+open Chessie.ErrorHandling
 open Dapper
 open Ptp.Logging
 open System.Collections.Generic
 open System.Data.SqlClient
 open System.Dynamic
+open Ptp.Core
 
 type DateSelectArgs = {Date:string}
 type IdSelect = {Id:int}
@@ -21,12 +23,10 @@ let expand (param : Map<string,_>) =
     expando
 
 let dapperQuery<'Result> (query:string) (connection:SqlConnection) =
-    let func() = connection.Query<'Result>(query)
-    trackDependency "database" query func
+    connection.Query<'Result>(query)
     
 let dapperParametrizedQuery<'Result> (query:string) (param:obj) (connection:SqlConnection) : 'Result seq =
-    let func() = connection.Query<'Result>(query, param)
-    trackDependency "database" query func
+    connection.Query<'Result>(query, param)
     
 let dapperMapParametrizedQuery<'Result> (query:string) (param : Map<string,_>) (connection:SqlConnection) : 'Result seq =
     let expando = ExpandoObject()
@@ -42,12 +42,10 @@ let dapperQueryOne<'Result> (query:string) connection =
     connection |> dapperQuery<'Result> query |> Seq.head
 
 let dapperCommand (query:string) (connection:SqlConnection) =
-    let func() = connection.Execute(query) |> ignore
-    trackDependency "database" query func
+    connection.Execute(query) |> ignore
 
 let dapperParameterizedCommand (query:string) (param:obj) (connection:SqlConnection) =
-    let func() = connection.Execute(query, param) |> ignore
-    trackDependency "database" query func
+    connection.Execute(query, param) |> ignore
 
 let currentSessionYear cn = 
     cn |> dapperQueryOne<string> "SELECT TOP 1 Name FROM Session ORDER BY Name Desc"
@@ -55,3 +53,27 @@ let currentSessionYear cn =
 let currentSessionId cn = 
     cn |> dapperQueryOne<int> "SELECT TOP 1 Id FROM Session ORDER BY Name Desc"
 
+// ROP
+let dbQuery<'Result> (queryText:string) =
+    let op() =
+        sqlConnection() 
+        |> dapperQuery<'Result> queryText
+        |> Seq.cast<'Result>
+    tryF' op (fun err -> DatabaseQueryError(QueryText(queryText), err))
+
+let queryOne<'Result> (queryText:string) =
+    let takeOne results = 
+        results |> Seq.head |> ok
+
+    dbQuery<'Result> queryText
+    >>= takeOne
+
+let dbCommand (commandText:string) items =
+    let op() =
+        sqlConnection() 
+        |> dapperParameterizedCommand commandText items
+        items
+    tryF' op (fun e -> DatabaseCommandError (CommandText(commandText),e))
+
+let getCurrentSessionYear () = 
+    queryOne<string> "SELECT TOP 1 Name FROM Session ORDER BY Name DESC"

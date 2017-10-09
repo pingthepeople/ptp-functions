@@ -9,6 +9,7 @@ open Ptp.Logging
 open System
 open System.Net
 open System.Net.Http
+open FSharp.Collections.ParallelSeq
 
 let get endpoint = 
     let uri = "https://api.iga.in.gov" + endpoint
@@ -61,3 +62,28 @@ let validateBody<'T> (errorMessage:string) (req:HttpRequestMessage) =
         if isEmpty content      
         then fail emptyContent 
         else ok (content |> JsonConvert.DeserializeObject<'T>)
+
+let fetchAllPages (query:string) =
+    let op() = 
+        query
+        |> fetchAll
+    tryF' op (fun e -> APIQueryError (QueryText(query),e))
+
+let fetchAllParallel (queries:string seq) =
+    match queries with
+    | EmptySeq -> 
+        Seq.empty |> ok 
+    | _ ->
+        let op() =
+            queries
+            |> PSeq.map fetchAll 
+            |> PSeq.concat
+            |> Seq.filter (fun j -> j <> JsonValue.Null)
+        let query = sprintf "Multiple queries starting with %s" (queries |> Seq.head)
+        tryF' op (fun e -> APIQueryError (QueryText(query),e))
+
+let deserializeAs domainModel jsonValues =
+    let op() =
+        jsonValues
+        |> Seq.map domainModel
+    tryF' op DTOtoDomainConversionFailure

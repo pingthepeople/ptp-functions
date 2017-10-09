@@ -15,8 +15,8 @@ let updateCanonicalData (log:TraceWriter) =
     let sessionYear = cn |> currentSessionYear
     let sessionId = cn |> currentSessionId
 
-    updateLegislators log cn sessionId sessionYear |> ignore
-    updateCommittees  log cn sessionId sessionYear |> ignore
+    updateLegislators log |> ignore
+    updateCommittees  log |> ignore
     updateMemberships log cn sessionId             |> ignore
 
 let Run(myTimer: TimerInfo, log: TraceWriter) =

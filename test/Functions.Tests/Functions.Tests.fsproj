@@ -59,6 +59,7 @@
     <Content Include="App.config" />
     <Compile Include="GenerateBillReportTests.fs" />
     <Compile Include="UpdateCanonicalDataTests.fs" />
+    <Compile Include="CoreTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Chessie">

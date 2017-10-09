@@ -13,7 +13,7 @@ let updateCanonicalData (log:TraceWriter) =
     let sessionYear = cn |> currentSessionYear
     let sessionId = cn |> currentSessionId
 
-    updateSubjects    log cn sessionId sessionYear |> ignore
+    updateSubjects    log |> ignore
     updateBills       log cn sessionId sessionYear |> ignore
 
 let Run(myTimer: TimerInfo, log: TraceWriter) =

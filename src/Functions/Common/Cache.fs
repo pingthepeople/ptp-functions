@@ -1,6 +1,7 @@
 ﻿module Ptp.Cache
 
 open Ptp.Logging
+open Ptp.Core
 open StackExchange.Redis
 
 [<Literal>]
@@ -26,19 +27,22 @@ let MembershipsKey = """laravel:memberships"""
 
 let delete (key:string) =
     let cacheKey = sprintf "%s%s" key (System.Environment.GetEnvironmentVariable("Redis.CacheKeyPostfix"))
-    let func() = 
-        let muxer  = 
-            System.Environment.GetEnvironmentVariable("Redis.ConnectionString")
-            |> ConnectionMultiplexer.Connect
-        let db = muxer.GetDatabase(0)
-        (RedisKey.op_Implicit cacheKey) 
-        |> db.KeyDeleteAsync
-        |> muxer.Wait
-
-    trackDependency "redis" cacheKey func |> ignore
+    let muxer  = 
+        System.Environment.GetEnvironmentVariable("Redis.ConnectionString")
+        |> ConnectionMultiplexer.Connect
+    let db = muxer.GetDatabase(0)
+    (RedisKey.op_Implicit cacheKey) 
+    |> db.KeyDeleteAsync
+    |> muxer.Wait
+    |> ignore
     
 let invalidateCache key seq =
     match (Seq.isEmpty seq) with
     | true -> ()
     | false -> delete key
     seq
+
+let invalidateCache' key seq =
+    let op() =
+        invalidateCache key seq
+    tryF' op CacheInvalidationError

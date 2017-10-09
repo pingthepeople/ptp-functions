@@ -1,6 +1,9 @@
 ﻿module Ptp.Queries
 
     [<Literal>]
+    let SessionIdSubQuery = """(SELECT TOP 1 Id FROM Session ORDER BY NAME DESC)"""
+
+    [<Literal>]
     let InsertAction = """INSERT INTO Action(Description,Link,Date,ActionType,Chamber,BillId) 
 VALUES (@Description,@Link,@Date,@ActionType,@Chamber,@BillId); 
 SELECT CAST(SCOPE_IDENTITY() as int)"""
@@ -10,20 +13,14 @@ SELECT CAST(SCOPE_IDENTITY() as int)"""
 VALUES (@Link,@Date,@ActionType,@Start,@End,@Location,@Chamber,@BillId); 
 SELECT CAST(SCOPE_IDENTITY() as int)"""
 
-    [<Literal>]
-    let InsertCommittee= """INSERT INTO Committee(Name,Link,Chamber,SessionId) 
-VALUES (@Name,@Link,@Chamber,@SessionId); 
-SELECT CAST(SCOPE_IDENTITY() as int)"""
+    let InsertCommittee= sprintf """INSERT INTO Committee(Name,Link,Chamber,SessionId) 
+VALUES (@Name,@Link,@Chamber,%s)""" SessionIdSubQuery
 
-    [<Literal>]
-    let InsertLegislator= """INSERT INTO Legislator(FirstName,LastName,Link,Chamber,Party,District,Image,SessionId) 
-VALUES (@FirstName,@LastName,@Link,@Chamber,@Party,@District,@Image,@SessionId); 
-SELECT CAST(SCOPE_IDENTITY() as int)"""
+    let InsertLegislator= sprintf """INSERT INTO Legislator(FirstName,LastName,Link,Chamber,Party,District,Image,SessionId) 
+VALUES (@FirstName,@LastName,@Link,@Chamber,@Party,@District,@Image,%s)""" SessionIdSubQuery
 
-    [<Literal>]
-    let InsertSubject= """INSERT INTO Subject(Name,Link,SessionId) 
-VALUES (@Name,@Link,@SessionId); 
-SELECT CAST(SCOPE_IDENTITY() as int)"""
+    let InsertSubject= sprintf """INSERT INTO Subject(Name,Link,SessionId) 
+VALUES (@Name,@Link,%s)""" SessionIdSubQuery
 
     [<Literal>]
     let InsertBillSubject= """INSERT INTO BillSubject(BillId,SubjectId) 
