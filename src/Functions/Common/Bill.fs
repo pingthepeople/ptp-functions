@@ -41,7 +41,8 @@ let toModel (bill:JsonValue) =
     Chamber=(if bill?originChamber.AsString() = "house" then Chamber.House else Chamber.Senate);
     Authors=bill?latestVersion?authors.AsArray() |> Array.toList |> List.map (fun a -> a?lastName.AsString()) |> List.sort |> String.concat ", ";
     IsDead=false;
-    Version=printVersion }
+    Version=printVersion;
+    ApiUpdated=System.DateTime.Now;}
     
 let insertBill bill cn = 
     let newBillModel = bill |> toModel
