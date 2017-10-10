@@ -38,6 +38,9 @@ let (|StartsWith|_|) (p:string) (s:string) =
         Some(s.Substring(p.Length))
     else
         None
+
+let (|Contains|_|) (p:string) (s:string) =
+    if s.Contains(p) then Some(s) else None
     
 let (|EmptySeq|_|) a = 
     if Seq.isEmpty a then Some () else None

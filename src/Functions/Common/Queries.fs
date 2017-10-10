@@ -1,7 +1,7 @@
 ﻿module Ptp.Queries
 
     [<Literal>]
-    let SessionIdSubQuery = """(SELECT TOP 1 Id FROM Session ORDER BY NAME DESC)"""
+    let SessionIdSubQuery = """(SELECT TOP 1 Id FROM [Session] WHERE Active = 1)"""
 
     [<Literal>]
     let InsertAction = """INSERT INTO Action(Description,Link,Date,ActionType,Chamber,BillId) 
@@ -12,9 +12,6 @@ SELECT CAST(SCOPE_IDENTITY() as int)"""
     let InsertScheduledAction = """INSERT INTO ScheduledAction(Link,Date,ActionType,[Start],[End],Location,Chamber,BillId) 
 VALUES (@Link,@Date,@ActionType,@Start,@End,@Location,@Chamber,@BillId); 
 SELECT CAST(SCOPE_IDENTITY() as int)"""
-
-    let InsertCommittee= sprintf """INSERT INTO Committee(Name,Link,Chamber,SessionId) 
-VALUES (@Name,@Link,@Chamber,%s)""" SessionIdSubQuery
 
     let InsertLegislator= sprintf """INSERT INTO Legislator(FirstName,LastName,Link,Chamber,Party,District,Image,SessionId) 
 VALUES (@FirstName,@LastName,@Link,@Chamber,@Party,@District,@Image,%s)""" SessionIdSubQuery

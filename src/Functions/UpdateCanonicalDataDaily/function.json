@@ -11,8 +11,8 @@
     },
     {
       "name": "nextCommand",
-      "queueName": "%CommandQueue.Name%",
-      "connection": "CommandQueue.Send.ConnectionString",
+      "queueName": "command",
+      "connection": "CommandQueue.ConnectionString",
       "accessRights": "manage",
       "type": "serviceBus",
       "direction": "out"

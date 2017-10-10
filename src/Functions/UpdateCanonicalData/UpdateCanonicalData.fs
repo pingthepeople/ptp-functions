@@ -34,10 +34,10 @@ let chooseNextOnFailure command errs =
 
 let chooseNextOnSuccess command =
     match command with
-    | Workflow.UpdateLegislators  -> Some Workflow.UpdateCommittees
-    | Workflow.UpdateCommittees   -> Some Workflow.UpdateComMembers
+    | Workflow.UpdateLegislators  -> None // Workflow.UpdateCommittees
+    | Workflow.UpdateCommittees   -> None // Some Workflow.UpdateComMembers
     | Workflow.UpdateComMembers   -> Some Workflow.UpdateSubjects
-    | Workflow.UpdateSubjects     -> Some Workflow.UpdateBills
+    | Workflow.UpdateSubjects     -> None // Some Workflow.UpdateBills
     | Workflow.UpdateBills        -> None
     | Workflow.UpdateActions      -> Some Workflow.UpdateChamberCal
     | Workflow.UpdateChamberCal   -> Some Workflow.UpdateCommitteeCal
@@ -50,14 +50,26 @@ let chooseNext command result =
     | Fail (errs) -> chooseNextOnFailure command errs
     | _ -> chooseNextOnSuccess command
 
-let enqueue (queue:ICollector<Workflow>) command =
+let enqueue (log:TraceWriter) (queue:ICollector<string>) command=
     match command with
-    | Some com -> com |> queue.Add
-    | None -> ()
+    | Some c -> 
+        sprintf "Enqueueing next command: %A" command |> log.Info
+        (c.ToString()) |> queue.Add
+    | None -> 
+        "Enqueueing no next command." |> log.Info
+        ()
 
-let Run(log: TraceWriter, command: Workflow, nextCommand: ICollector<Workflow>) =
-    command
+let tryParse command =
+    let parsed = Enum.Parse(typedefof<Workflow>, command) :?> Workflow
+    match int parsed with
+    | 0 -> failwith "Could not parse Workflow" 
+    | _ -> parsed
+
+let Run(log: TraceWriter, command: string, nextCommand: ICollector<string>) =
+    sprintf "Received command '%s'" command |> log.Info
+    let parsedCommand = tryParse command
+    parsedCommand
     |> chooseWorkflow
-    |> runWorkflow log command
-    |> chooseNext command
-    |> enqueue nextCommand
+    |> runWorkflow log parsedCommand
+    |> chooseNext parsedCommand
+    |> enqueue log nextCommand

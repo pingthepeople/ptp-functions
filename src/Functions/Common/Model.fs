@@ -4,9 +4,10 @@ open Ptp.Core
 open System
 
 //  Database models
-type Chamber = House=1 | Senate=2
+type Chamber = None=0 | House=1 | Senate=2
 type Party = Republican=1 | Democratic=2 | Independent=3
 type CommitteePosition = Member=1 | RankingMinority = 2 | ViceChair=3 | Chair=4 | Advisor=5 | Conferee=6
+type CommitteeType = Interim=1 | Standing=2 | Conference=3
 type BillPosition = Author=1 | CoAuthor= 2 | Sponsor=3 | CoSponsor=4 
 
 [<CLIMutable>]
@@ -48,7 +49,8 @@ type Committee = {
     Id:int; 
     Name:string; 
     Link:string; 
-    Chamber:Chamber; 
+    Chamber:Chamber;
+    CommitteeType:CommitteeType;
     SessionId:int; 
 }
 

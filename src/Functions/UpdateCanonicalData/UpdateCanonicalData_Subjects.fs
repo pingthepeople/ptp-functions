@@ -24,15 +24,18 @@ let fetchAllSubjectsFromApi sessionYear = trial {
     let! models = pages |> deserializeAs subjectModel
     return models
     }
-
-/// Fetch all subject metadata from the IGA API for the specified session year
-let filterOutKnownSubjects (allSubjects: Subject seq) = trial {
-    let queryText = sprintf "SELECT Link from Subject WHERE SessionId = %s" SessionIdSubQuery
-    let! knownSubjects = dbQuery<string> queryText
-    let matchOnUrl (subj:Subject) link = subj.Link = link
-    let unknownSubjects = allSubjects |> except' knownSubjects matchOnUrl
-    return unknownSubjects
+let fetchKnownSubjectsFromDb allSubjects = trial {
+        let queryText = sprintf "SELECT Id, Link from Subject WHERE SessionId = %s" SessionIdSubQuery
+        let! knownSubjects = dbQuery<LinkAndId> queryText
+        return (allSubjects, knownSubjects)
     }
+/// Fetch all subject metadata from the IGA API for the specified session year
+let filterOutKnownSubjects (allSubjects:Subject seq, knownSubjects: LinkAndId seq) =
+    let matchOnUrl (a:Subject) b = a.Link = b.Link
+    allSubjects 
+    |> except' knownSubjects matchOnUrl 
+    |> Seq.toList
+    |> ok
 
 let persistNewSubjects subjects = 
     let foo = sprintf """INSERT INTO Subject(Name,Link,SessionId) 
@@ -52,6 +55,7 @@ let describeNewSubjects (subjects: Subject seq) =
 let updateSubjects =
     getCurrentSessionYear
     >> bind fetchAllSubjectsFromApi
+    >> bind fetchKnownSubjectsFromDb
     >> bind filterOutKnownSubjects
     >> bind persistNewSubjects
     >> bind invalidateSubjectsCache

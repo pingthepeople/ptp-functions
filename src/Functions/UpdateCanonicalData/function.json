@@ -5,16 +5,16 @@
   "bindings": [
     {
       "name": "command",
-      "queueName": "%CommandQueue.Name%",
-      "connection": "CommandQueue.Listen.ConnectionString",
-      "accessRights": "listen",
+      "queueName": "command",
+      "connection": "CommandQueue.ConnectionString",
+      "accessRights": "manage",
       "type": "serviceBusTrigger",
       "direction": "in"
     },
     {
       "name": "nextCommand",
-      "queueName": "%CommandQueue.Name%",
-      "connection": "CommandQueue.Send.ConnectionString",
+      "queueName": "command",
+      "connection": "CommandQueue.ConnectionString",
       "accessRights": "manage",
       "type": "serviceBus",
       "direction": "out"

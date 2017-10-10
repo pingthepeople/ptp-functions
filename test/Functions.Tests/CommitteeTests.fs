@@ -1,0 +1,26 @@
+﻿module CommitteeTests
+
+open Swensen.Unquote
+open Xunit
+open Xunit.Abstractions
+open Ptp.UpdateCanonicalData.Committees
+open Ptp.Core
+open Chessie.ErrorHandling
+open FSharp.Data
+
+type CommitteeTests(output:ITestOutputHelper) =
+
+    [<Fact>] 
+    member __.``parallel fetch with errors`` ()=
+        System.Environment.SetEnvironmentVariable("IgaApiKey", "CHANGEME")
+
+        let urls = [
+            "/2017/standing-committees/committee_agriculture_and_natural_resources_3100";
+            "/2017/conference-committees/committee_conference_committee_for_hb_1001";
+            "/2017/interim-committees/committee_i_agriculture_and_natural_resources_interim_study_committee_on";
+            ]
+
+        resolveNewCommittees urls
+        |> (fun r -> r.ToString())
+        |> output.WriteLine
+        

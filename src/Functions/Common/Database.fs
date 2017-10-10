@@ -62,8 +62,8 @@ let expectOne query results =
 
 let queryOne<'Result> (queryText:string) = trial {
     let! results = dbQuery<'Result> queryText
-    let! head = results |> expectOne queryText
-    return head
+    let! ret = results |> expectOne queryText
+    return ret
     }
 
 let dbCommand (commandText:string) items =
@@ -74,4 +74,4 @@ let dbCommand (commandText:string) items =
     tryF' op (fun e -> DatabaseCommandError (CommandText(commandText),e))
 
 let getCurrentSessionYear () =
-    queryOne<string> "SELECT TOP 1 Name FROM Session ORDER BY Name DESC"
+    queryOne<string> "SELECT TOP 1 Name FROM Session WHERE Active = 1"

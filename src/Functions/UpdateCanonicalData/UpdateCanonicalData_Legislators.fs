@@ -32,18 +32,20 @@ let fetchAllLegislatorsFromAPI sessionYear = trial {
     return result;
     }
 
-/// Filter out URLs for any legislator that we already have in the database    
-let filterOutKnownLegislators allUrls = trial {
+let fetchKnownLegislatorsFromDb allLegs = trial {
     let query = sprintf "SELECT Link from Legislator WHERE SessionId = %s" SessionIdSubQuery
-    let! knownUrls = dbQuery<string> query
-    let filteredUrls = allUrls |> except knownUrls
-    return filteredUrls
+    let! knownLegs = dbQuery<string> query
+    return (allLegs,knownLegs)
     }
+
+/// Filter out URLs for any legislator that we already have in the database    
+let filterOutKnownLegislators (allLegs,knownLegs) = 
+    allLegs |> except knownLegs |> ok
 
 /// Get full metadata for legislators that we don't yet know about
 let resolveNewLegislators urls = trial {
     let! metadata = urls |> fetchAllParallel
-    let! models = metadata |> deserializeAs legislatorModel
+    let! models = metadata |> chooseJson |> deserializeAs legislatorModel
     return models
     }
 
@@ -65,6 +67,7 @@ let logNewLegislators legislators =
 let updateLegislators =
     getCurrentSessionYear
     >> bind fetchAllLegislatorsFromAPI
+    >> bind fetchKnownLegislatorsFromDb
     >> bind filterOutKnownLegislators
     >> bind resolveNewLegislators
     >> bind persistNewLegislators

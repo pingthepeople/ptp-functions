@@ -31,9 +31,19 @@ let billModel (bill:JsonValue) =
     Version=printVersion;
     ApiUpdated = bill?latestVersion?updated.AsDateTime()}
 
+let resolveLastUpdateTimestamp results = 
+    let head = results |> Seq.tryHead
+    match head with
+    | Some datetime -> ok datetime
+    | None -> ok (DateTime(2000,1,1))
+
 let getLastUpdateTimestamp sessionYear = trial {
     let queryText = sprintf "GET MAX(ApiUpdated) FROM Bills WHERE SessionId = %s" SessionIdSubQuery
-    let! lastUpdate = queryOne<DateTime> queryText
+    let! results = dbQuery<DateTime> queryText
+    let lastUpdate = 
+        match results |> Seq.tryHead with
+        | Some datetime -> datetime
+        | None -> DateTime(2000,1,1)
     return (sessionYear, lastUpdate)
     }
 
@@ -49,7 +59,7 @@ let fetchRecentlyUpdatedBillsFromApi (sessionYear, lastUpdate) = trial {
     // find the recently updated metadata based on the 'latestVersion.updated' timestamp
     let wasRecentlyUpdated json = 
         json?latestVersion?updated.AsDateTime() > lastUpdate
-    let recentlyUpdated = metadata |> Seq.filter wasRecentlyUpdated
+    let recentlyUpdated = metadata |> chooseJson |> Seq.filter wasRecentlyUpdated
     return recentlyUpdated
     }
 

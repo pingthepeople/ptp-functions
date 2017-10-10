@@ -22,3 +22,15 @@ let ``b except b``() =
 [<Fact>]
 let ``a except empty``() =
     test <@ a |> except [] |> Seq.toList = a @>
+
+[<Fact>]
+let ``a intersect b``() =
+    test <@ a |> intersect b |> Seq.toList = [2; 3;] @>
+
+[<Fact>]
+let ``b intersect a``() =
+    test <@ b |> intersect a |> Seq.toList = [2; 3;] @>
+
+[<Fact>]
+let ``a intersect empty``() =
+    test <@ a |> intersect [] |> Seq.toList = [] @>

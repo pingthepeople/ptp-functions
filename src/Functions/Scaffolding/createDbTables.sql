@@ -12,6 +12,7 @@ CREATE TABLE Committee
     Name nvarchar(256) NOT NULL,
     Link nvarchar(256) NOT NULL,
     Chamber TINYINT NOT NULL,
+    CommitteeType TINYINT NOT NULL,
     Created DATETIME NOT NULL DEFAULT GetUtcDate(),
     SessionId int NOT NULL FOREIGN KEY REFERENCES [Session](Id)
 )

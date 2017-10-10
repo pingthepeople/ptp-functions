@@ -45,7 +45,7 @@ let parse chamber (node:HtmlNode)  =
 
 let setReasonableDefaults loc = 
     match loc.Year with 
-    | 0 -> ok {loc with Year = (System.DateTime.Now.Year + 1)}
+    | 0 -> ok {loc with Year = System.DateTime.Now.Year}
     | _ -> ok loc
 
 let validateRequest loc = trial {
@@ -57,8 +57,8 @@ let validateRequest loc = trial {
         [
             loc.Year    |> validateInt loc withinNextYear (sprintf "Year can't be past %d" nextYear)
             loc.Address |> validateStr loc hasValue "Please provide an address" 
-            loc.City    |> validateStr loc hasValue "Please provide an city" 
-            loc.Zip     |> validateStr loc hasValue "Please provide an zip code" 
+            loc.City    |> validateStr loc hasValue "Please provide a city" 
+            loc.Zip     |> validateStr loc hasValue "Please provide a zip code" 
         ]
     let! result::_ = validations |> collect
     return result
@@ -82,19 +82,19 @@ let parseLegislators (document:HtmlDocument) =
     else ok [ legislators.[0] |> parse Chamber.Senate;
               legislators.[1] |> parse Chamber.House ]
 
-let deserializeLocation = 
-    validateBody<Location> "Please provide a location of ContentType 'application/json' in the form '{ Address:STRING, City:STRING, Zip:STRING, Year:INT (optional)}'"
+let deserializeBody = 
+    validateBody<Location> "Please provide a location of ContentType 'application/json' in the form '{ Address:string, City:string, Zip:string, Year:int (optional)}'"
+
+let workflow req =
+    (fun _ -> deserializeBody req)
+    >> bind setReasonableDefaults
+    >> bind validateRequest
+    >> bind fetchLegislatorsHtml
+    >> bind parseLegislators
+    >> bind serialize
 
 let Run(req: HttpRequestMessage, log: TraceWriter) = 
-    let deserializeBody() = deserializeLocation req
-    let workflow =
-        deserializeBody
-        >> bind setReasonableDefaults
-        >> bind validateRequest
-        >> bind fetchLegislatorsHtml
-        >> bind parseLegislators
-        >> bind serialize
-
-    workflow
+    req
+    |> workflow
     |> runWorkflow log Workflow.HttpGetLegislators
     |> constructHttpResponse

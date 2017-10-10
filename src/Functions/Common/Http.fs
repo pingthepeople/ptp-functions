@@ -11,8 +11,11 @@ open System.Net
 open System.Net.Http
 open FSharp.Collections.ParallelSeq
 
-let get endpoint = 
-    let uri = "https://api.iga.in.gov" + endpoint
+let get (endpoint:string) = 
+    let uri =
+        match endpoint.StartsWith("http") with
+        | true -> endpoint
+        | false -> "https://api.iga.in.gov" + endpoint
     let standardHeaders = [ "Accept", "application/json"; "Authorization", "Token " + Environment.GetEnvironmentVariable("IgaApiKey") ]
     Http.RequestString(uri, httpMethod = "GET", headers = standardHeaders) 
     |> JsonValue.Parse
@@ -35,6 +38,7 @@ let tryGet endpoint =
             with
             | ex -> tryGet' (x+1) endpoint (ex.ToString() :: errors)
     tryGet' 0 endpoint []    
+
 
 let fetchAll endpoint =
     let rec fetchRec link =
@@ -62,7 +66,7 @@ let constructHttpResponse twoTrackResult =
             let validationErrors = flatten msgs
             httpResponse HttpStatusCode.BadRequest validationErrors
         | _ -> 
-            httpResponse HttpStatusCode.InternalServerError ""
+            httpResponse HttpStatusCode.InternalServerError "An internal error occurred"
     | Pass resp -> 
         resp |> httpResponse HttpStatusCode.OK
     | Warn (resp,msg) -> 
@@ -97,18 +101,31 @@ let fetchAllPages (url:string) =
     let op() = fetchAll url
     tryF' op (fun e -> APIQueryError (QueryText(url),e))
 
+/// Fetch all URLs in parallel and pair the responses with their URL
 let fetchAllParallel (urls:string seq) =
-    match urls with
-    | EmptySeq -> 
-        Seq.empty |> ok 
-    | _ ->
-        let op() =
-            urls
-            |> PSeq.map fetchAll 
-            |> PSeq.concat
-            |> Seq.filter (fun j -> j <> JsonValue.Null)
-        let query = sprintf "Multiple queries starting with %s" (urls |> Seq.head)
-        tryF' op (fun e -> APIQueryError (QueryText(query),e))
+    let fetchOne url =
+        try
+            ok (url, Some(tryGet url))
+        with 
+        | ex -> 
+            let msg = APIQueryError (QueryText(url),(ex.ToString()))
+            Result.Succeed((url,None),msg)
+    urls
+    |> PSeq.map fetchOne
+    |> seq
+    |> collect
+
+let chooseJson (jsonList:list<(string*JsonValue option)>) =
+    jsonList |> List.map snd |> List.choose id
+
+    
+let chooseJson' (jsonList:list<(string*JsonValue option)>) =
+    jsonList 
+    |> List.map (fun (url,json) -> 
+        match json with
+        | Some j -> Some(url,j)
+        | None -> None)
+    |> List.choose id
 
 let deserializeAs domainModel jsonValues =
     let op() = jsonValues |> Seq.map domainModel
