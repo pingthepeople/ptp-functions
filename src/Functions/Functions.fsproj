@@ -60,22 +60,20 @@
     <Compile Include="Common\Http.fs" />
     <Compile Include="Common\Database.fs" />
     <Compile Include="Common\Cache.fs" />
-    <Compile Include="Common\Bill.fs" />
+    <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Common.fs" />
     <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Bills.fs" />
     <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Committees.fs" />
     <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Legislators.fs" />
     <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Memberships.fs" />
     <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Subjects.fs" />
+    <Compile Include="UpdateCanonicalData\UpdateCanonicalData.fs" />
+    <None Include="UpdateCanonicalData\function.json" />
     <Compile Include="GetLegislators\GetLegislators.fs" />
     <None Include="GetLegislators\function.json" />
     <None Include="host.json" />
     <None Include="local.settings.json" />
     <None Include="UpdateCanonicalDataDaily\function.json" />
     <Compile Include="UpdateCanonicalDataDaily\UpdateCanonicalDataDaily.fs" />
-    <None Include="UpdateCanonicalDataRegularly\function.json" />
-    <Compile Include="UpdateCanonicalDataRegularly\UpdateCanonicalDataRegularly.fs" />
-    <None Include="UpdateCanonicalDataManual\function.json" />
-    <Compile Include="UpdateCanonicalDataManual\UpdateCanonicalDataManual.fs" />
     <Compile Include="GenerateBillReport\GenerateBillReport.fs" />
     <None Include="GenerateBillReport\function.json" />
   </ItemGroup>

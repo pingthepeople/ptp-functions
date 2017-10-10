@@ -5,7 +5,6 @@ open FSharp.Data
 open FSharp.Data.JsonExtensions
 open Newtonsoft.Json
 open Ptp.Core
-open Ptp.Logging
 open System
 open System.Net
 open System.Net.Http
@@ -14,27 +13,36 @@ open FSharp.Collections.ParallelSeq
 let get endpoint = 
     let uri = "https://api.iga.in.gov" + endpoint
     let standardHeaders = [ "Accept", "application/json"; "Authorization", "Token " + Environment.GetEnvironmentVariable("IgaApiKey") ]
-    let func() = Http.RequestString(uri, httpMethod = "GET", headers = standardHeaders) 
-    let result = trackDependency "http" uri func
-    result |> JsonValue.Parse
+    Http.RequestString(uri, httpMethod = "GET", headers = standardHeaders) 
+    |> JsonValue.Parse
 
 let tryGet endpoint =
-    try
-        get endpoint
-    with 
-    | ex -> 
-        Console.WriteLine(sprintf "failed to get %s: %s" endpoint (ex.ToString()))
-        JsonValue.Null
+    let failwith errors = 
+        errors
+        |> List.rev
+        |> String.concat "\n"
+        |> sprintf "Failed to fetch %s after 3 attempts: %s" endpoint
+        |> failwith
+    
+    let rec tryGet' attempt endpoint errors =
+        match attempt with
+        | 3 -> failwith errors
+        | x ->
+            try
+                System.Threading.Thread.Sleep(x * 1000)
+                get endpoint
+            with
+            | ex -> tryGet' (x+1) endpoint (ex.ToString() :: errors)
+    tryGet' 0 endpoint []    
 
 let fetchAll endpoint =
     let rec fetchRec link =
-        let json = get link
+        let json = tryGet link
         let items = json?items.AsArray() |> Array.toList
-        try
-            let nextLink = json?nextLink.ToString().Trim('"')
-            items @ (fetchRec nextLink)
-        with
-        | ex -> items
+        match json.TryGetProperty("nextLink") with
+        | Some link -> items @ (fetchRec (link.AsString()))
+        | None -> items
+
     fetchRec endpoint
 
 type Error = { Error:string; }
@@ -63,23 +71,27 @@ let validateBody<'T> (errorMessage:string) (req:HttpRequestMessage) =
         then fail emptyContent 
         else ok (content |> JsonConvert.DeserializeObject<'T>)
 
-let fetchAllPages (query:string) =
+let fetch (url:string) =
     let op() = 
-        query
-        |> fetchAll
-    tryF' op (fun e -> APIQueryError (QueryText(query),e))
+        tryGet url
+    tryF' op (fun e -> APIQueryError (QueryText(url),e))
 
-let fetchAllParallel (queries:string seq) =
-    match queries with
+let fetchAllPages (url:string) =
+    let op() = 
+        fetchAll url
+    tryF' op (fun e -> APIQueryError (QueryText(url),e))
+
+let fetchAllParallel (urls:string seq) =
+    match urls with
     | EmptySeq -> 
         Seq.empty |> ok 
     | _ ->
         let op() =
-            queries
+            urls
             |> PSeq.map fetchAll 
             |> PSeq.concat
             |> Seq.filter (fun j -> j <> JsonValue.Null)
-        let query = sprintf "Multiple queries starting with %s" (queries |> Seq.head)
+        let query = sprintf "Multiple queries starting with %s" (urls |> Seq.head)
         tryF' op (fun e -> APIQueryError (QueryText(query),e))
 
 let deserializeAs domainModel jsonValues =

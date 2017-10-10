@@ -3,7 +3,6 @@
 open Chessie.ErrorHandling
 open FSharp.Data
 open FSharp.Data.JsonExtensions
-open Microsoft.Azure.WebJobs.Host
 open Ptp.Core
 open Ptp.Model
 open Ptp.Queries
@@ -50,15 +49,10 @@ let describeNewSubjects (subjects: Subject seq) =
     subjects |> describeNewItems describer
 
 /// Find, add, and log new subjects
-let updateSubjects (log:TraceWriter) =
-    let workflow = 
-        getCurrentSessionYear
-        >> bind fetchAllSubjectsFromApi
-        >> bind filterOutKnownSubjects
-        >> bind persistNewSubjects
-        >> bind invalidateSubjectsCache
-        >> bind describeNewSubjects
-
-    workflow
-    |> evaluate log Command.UpdateSubjects
-    |> throwOnFail
+let updateSubjects =
+    getCurrentSessionYear
+    >> bind fetchAllSubjectsFromApi
+    >> bind filterOutKnownSubjects
+    >> bind persistNewSubjects
+    >> bind invalidateSubjectsCache
+    >> bind describeNewSubjects

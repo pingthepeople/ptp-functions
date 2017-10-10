@@ -2,42 +2,8 @@
 
 open Ptp.Core
 open Chessie.ErrorHandling
-open Microsoft.ApplicationInsights
 open Microsoft.Azure.WebJobs.Host
 open System
-
-let telemetryClient = 
-    lazy (
-        let client = TelemetryClient()
-        client.InstrumentationKey <- System.Environment.GetEnvironmentVariable("ApplicationInsights.InstrumentationKey")
-        client
-    )
-
-let trackException source ex =
-    let props = dict["source",source]
-    telemetryClient.Force().TrackException(ex, props)
-
-let trackTrace source trace = 
-    let props = dict["source",source]
-    telemetryClient.Force().TrackTrace(trace, props)
-
-let trackRequest name start duration responseCode success = 
-    telemetryClient.Force().TrackRequest(name, start, duration, responseCode, success)
-
-let trackDependency name command func = 
-    let start = System.DateTimeOffset(System.DateTime.UtcNow)
-    let timer = System.Diagnostics.Stopwatch.StartNew()
-    let trackDependency' success = 
-        telemetryClient.Force().TrackDependency(name, command, start, timer.Elapsed, success)
-
-    try
-        let result = func()
-        trackDependency' true
-        result
-    with
-    | ex -> 
-        trackDependency' false
-        reraise()
 
 let success msg = 
     sprintf "[SUCCESS] %s" msg
@@ -49,7 +15,7 @@ let toError (msgs:WorkFlowFailure list) =
     |> String.concat "\n" 
 
 /// Log succesful or failed completion of the function, along with any warnings.
-let evaluate (log:TraceWriter) source workflow = 
+let runWorkflow (log:TraceWriter) source workflow = 
 
     log.Info(sprintf "[START] %A" source)
 
@@ -96,14 +62,6 @@ let onFailure  (log:TraceWriter) source msgs =
     format msgs
     |> logError log source
 
-let haltOnFail (log:TraceWriter) source twoTrackInput =
-    let failure (msgs) =
-        onFailure log source msgs
-        |> failwith
-    let success = 
-        onSuccess log source
-    eitherTee success failure twoTrackInput 
-
 let continueOnFail (log:TraceWriter) source twoTrackInput =
     let failure (msgs) =
         onFailure log source msgs
@@ -111,16 +69,6 @@ let continueOnFail (log:TraceWriter) source twoTrackInput =
     let success = 
         onSuccess log source
     eitherTee success failure twoTrackInput 
-
-let logNewAdditions (log:TraceWriter) category (items: string list) = 
-    match items with
-    | [] -> log.Info(sprintf "No new %ss found." category)
-    | _  ->
-        items 
-        |> String.concat "\n"
-        |> (fun s -> log.Info((sprintf "Found new %ss:\n%s" category s)))
-
-
 
 let describeList (items: string seq) = 
     match items with

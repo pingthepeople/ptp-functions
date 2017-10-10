@@ -1,13 +1,15 @@
 ﻿{
-  "disabled": true,
+  "disabled": false,
   "scriptFile": "../bin/Functions.dll",
-  "entryPoint": "UpdateCanonicalDataDaily.Run",
+  "entryPoint": "Ptp.UpdateCanonicalData.Function.Run",
   "bindings": [
     {
-      "name": "myTimer",
-      "type": "timerTrigger",
-      "direction": "in",
-      "schedule": "0 0 7 * * 1-5"
+      "name": "command",
+      "queueName": "%CommandQueue.Name%",
+      "connection": "CommandQueue.Listen.ConnectionString",
+      "accessRights": "listen",
+      "type": "serviceBusTrigger",
+      "direction": "in"
     },
     {
       "name": "nextCommand",

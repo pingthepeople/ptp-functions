@@ -2,54 +2,23 @@
 
 open Chessie.ErrorHandling
 open FSharp.Data
-open FSharp.Data.JsonExtensions
-open Microsoft.Azure.WebJobs.Host
 open Ptp.Core
 open Ptp.Model
 open Ptp.Http
 open Ptp.Database
 open Ptp.Cache
-open Ptp.Logging
 open System
 open FSharp.Collections.ParallelSeq
 open Ptp.Queries
 open Ptp.UpdateCanonicalData
-
-type LinkAndId = {Id:int; Link:string}
-
-// Lots of JSON parsing functions
-let toCommitteeMembership committee legislators position link = 
-    let legislator = legislators |> Seq.tryFind (fun l -> l.Link = link)
-    match legislator with
-    | Some l -> [{ Id=0; Position= position; CommitteeId=committee.Id; LegislatorId=l.Id; }]
-    | None   -> []
-
-let doWithProperty name f (json:JsonValue) =
-    match json.TryGetProperty(name) with
-    | Some value -> value |> f
-    | None -> []
-
-let multiple committee legislators (json:JsonValue) name position = 
-    let parseMultiple (value:JsonValue) =
-        value.AsArray()
-        |> Array.toList 
-        |> List.map (fun m -> m?link.AsString())
-        |> List.collect (fun l -> toCommitteeMembership committee legislators position l)
-    json |> doWithProperty name parseMultiple
-
-let single committee legislators (json:JsonValue) name position = 
-    let parseMemberFromLink (value:JsonValue) =
-        value.AsString()
-        |> toCommitteeMembership committee legislators position        
-    let parseLinkForPosition (value:JsonValue) =
-        value |> doWithProperty "link" parseMemberFromLink
-    json |> doWithProperty name parseLinkForPosition
+open Ptp.UpdateCanonicalData_Common
 
 /// Determine the makeup of a given committee.
 /// Standing committees meet througout the session.
 /// Conference committees meet to work out the difference between house/senate versions of a bill.
 let determineCommitteeComposition committee legislators (json:JsonValue) =
-    let resolve strategy = strategy committee legislators json
+    let committeeMembership (cid,lid,pos) = { Id=0; CommitteeId=cid; LegislatorId=lid; Position= pos; }
+    let resolve strategy = strategy committee legislators json committeeMembership
     let one = resolve single
     let any = resolve multiple
     
@@ -72,7 +41,7 @@ let determineCommitteeComposition committee legislators (json:JsonValue) =
     then conferenceCommittee()
     else standingCommittee()
 
-let resolveMemberships legislators committee =
+let resolveMemberships legislators (committee:LinkAndId) =
     committee.Link
     |> tryGet 
     |> determineCommitteeComposition committee legislators 
@@ -84,16 +53,19 @@ let getCurrentMemberships (committees,legislators) =
         |> PSeq.toList
     tryF' op (fun e -> APIQueryError(QueryText("Resolve committee memberships"),e))
 
+let comQuery = sprintf "SELECT Id, Link from Committee WHERE SessionId = %s" SessionIdSubQuery
+let legQuery = sprintf "SELECT Id, Link from Legislator WHERE SessionId = %s" SessionIdSubQuery
+let memQuery = sprintf "SELECT Id, LegislatorId, CommitteeId, Position from Membership WHERE SessionId = %s" SessionIdSubQuery
+let insertQuery = "INSERT INTO LegislatorCommittee (CommitteeId, LegislatorId, Position) VALUES (@CommitteeId, @LegislatorId, @Position)"
+let deleteQuery = "DELETE FROM LegislatorCommittee WHERE (CommitteeId, LegislatorId, Position) IN ((@CommitteeId, @LegislatorId, @Position))"
+
 let getCurrentCommittees () = trial {
-    let comQuery = sprintf "SELECT Id, Link from Committee WHERE SessionId = %s" SessionIdSubQuery
     let! committees = dbQuery<LinkAndId> comQuery
-    let legQuery = sprintf "SELECT Id, Link from Legislator WHERE SessionId = %s" SessionIdSubQuery
     let! legislators = dbQuery<LinkAndId> legQuery
     return (committees, legislators)
     }
 
 let getKnownMemberships () = trial {
-    let memQuery = sprintf "SELECT Id, LegislatorId, CommitteeId, Position from Membership WHERE SessionId = %s" SessionIdSubQuery
     let! knownMemberships = dbQuery<CommitteeMember> memQuery
     return knownMemberships
     }
@@ -105,12 +77,10 @@ let matchPredicate a b =
 
 let addNewMemberships (currentMemberships, knownMemberships) = 
     let toAdd = currentMemberships |> except' knownMemberships matchPredicate
-    let insertQuery = "INSERT INTO LegislatorCommittee (CommitteeId, LegislatorId, Position) VALUES (@CommitteeId, @LegislatorId, @Position)"
     dbCommand insertQuery toAdd
 
 let deleteOldMemberships (currentMemberships, knownMemberships) =
     let toDelete = knownMemberships |> except' currentMemberships matchPredicate
-    let deleteQuery = "DELETE FROM LegislatorCommittee WHERE (CommitteeId, LegislatorId, Position) IN ((@CommitteeId, @LegislatorId, @Position))"
     dbCommand deleteQuery toDelete
 
 let updateMemberships currentMems = trial {
@@ -132,14 +102,9 @@ let describeNewMemberships (added, deleted) =
     sprintf "Added %d new memberships; Deleted % old memberships" addCount deleteCount
     |> ok
 
-let updateCommitteeMemberships (log:TraceWriter) =
-    let workflow =
-        getCurrentCommittees
-        >> bind getCurrentMemberships
-        >> bind updateMemberships
-        >> bind clearMembershipCache  
-        >> bind describeNewMemberships
-
-    workflow
-    |> evaluate log Command.UpdateCommitteeMemberships
-    |> throwOnFail
+let updateCommitteeMemberships =
+    getCurrentCommittees
+    >> bind getCurrentMemberships
+    >> bind updateMemberships
+    >> bind clearMembershipCache  
+    >> bind describeNewMemberships

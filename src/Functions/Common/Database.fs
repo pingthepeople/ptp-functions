@@ -2,7 +2,6 @@
 
 open Chessie.ErrorHandling
 open Dapper
-open Ptp.Logging
 open System.Collections.Generic
 open System.Data.SqlClient
 open System.Dynamic
@@ -11,6 +10,7 @@ open Ptp.Core
 type DateSelectArgs = {Date:string}
 type IdSelect = {Id:int}
 type IdListSelect = {Ids:int[]}
+type LinksListSelect = {Links:string[]}
 
 let sqlConStr() = System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString")
 let sqlConnection() = new SqlConnection(sqlConStr())
@@ -35,23 +35,8 @@ let dapperMapParametrizedQuery<'Result> (query:string) (param : Map<string,_>) (
         expandoDictionary.Add(paramValue.Key, paramValue.Value :> obj)
     connection |> dapperParametrizedQuery query (expand param)
     
-let dapperParameterizedQueryOne<'Result> (query:string) (param:obj) connection =
-    connection |> dapperParametrizedQuery<'Result> query param |> Seq.head
-
-let dapperQueryOne<'Result> (query:string) connection =
-    connection |> dapperQuery<'Result> query |> Seq.head
-
-let dapperCommand (query:string) (connection:SqlConnection) =
-    connection.Execute(query) |> ignore
-
 let dapperParameterizedCommand (query:string) (param:obj) (connection:SqlConnection) =
     connection.Execute(query, param) |> ignore
-
-let currentSessionYear cn = 
-    cn |> dapperQueryOne<string> "SELECT TOP 1 Name FROM Session ORDER BY Name Desc"
-
-let currentSessionId cn = 
-    cn |> dapperQueryOne<int> "SELECT TOP 1 Id FROM Session ORDER BY Name Desc"
 
 // ROP
 let dbQuery<'Result> (queryText:string) =
@@ -61,12 +46,25 @@ let dbQuery<'Result> (queryText:string) =
         |> Seq.cast<'Result>
     tryF' op (fun err -> DatabaseQueryError(QueryText(queryText), err))
 
-let queryOne<'Result> (queryText:string) =
-    let takeOne results = 
-        results |> Seq.head |> ok
+let dbParameterizedQuery<'Result> (queryText:string) (param:obj)=
+    let op() =
+        sqlConnection() 
+        |> dapperParametrizedQuery<'Result> queryText param
+        |> Seq.cast<'Result>
+    tryF' op (fun err -> DatabaseQueryError(QueryText(queryText), err))
 
-    dbQuery<'Result> queryText
-    >>= takeOne
+let expectOne query results = 
+    match Seq.tryHead results with
+    | None -> 
+        fail (DatabaseQueryError(QueryText(query), "Expected query to return one value but got none."))
+    | Some value -> 
+        ok value
+
+let queryOne<'Result> (queryText:string) = trial {
+    let! results = dbQuery<'Result> queryText
+    let! head = results |> expectOne queryText
+    return head
+    }
 
 let dbCommand (commandText:string) items =
     let op() =
@@ -75,5 +73,5 @@ let dbCommand (commandText:string) items =
         items
     tryF' op (fun e -> DatabaseCommandError (CommandText(commandText),e))
 
-let getCurrentSessionYear () = 
+let getCurrentSessionYear () =
     queryOne<string> "SELECT TOP 1 Name FROM Session ORDER BY Name DESC"

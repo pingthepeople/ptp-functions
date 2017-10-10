@@ -3,7 +3,6 @@
 open Chessie.ErrorHandling
 open FSharp.Data
 open FSharp.Data.JsonExtensions
-open Microsoft.Azure.WebJobs.Host
 open Ptp.Core
 open Ptp.Model
 open Ptp.Queries
@@ -63,16 +62,11 @@ let logNewLegislators legislators =
     legislators |> describeNewItems describer
 
 /// Define and execute legislators workflow
-let updateLegislators (log:TraceWriter) =
-    let workflow = 
-        getCurrentSessionYear
-        >> bind fetchAllLegislatorsFromAPI
-        >> bind filterOutKnownLegislators
-        >> bind resolveNewLegislators
-        >> bind persistNewLegislators
-        >> bind invalidateLegislatorCache
-        >> bind logNewLegislators
-
-    workflow
-    |> evaluate log Command.UpdateLegislators
-    |> throwOnFail
+let updateLegislators =
+    getCurrentSessionYear
+    >> bind fetchAllLegislatorsFromAPI
+    >> bind filterOutKnownLegislators
+    >> bind resolveNewLegislators
+    >> bind persistNewLegislators
+    >> bind invalidateLegislatorCache
+    >> bind logNewLegislators

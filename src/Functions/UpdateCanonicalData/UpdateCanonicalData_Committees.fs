@@ -59,16 +59,11 @@ let describeNewCommittees committees =
     committees |> describeNewItems describer
 
 /// Find, add, and log new committees
-let updateCommittees (log:TraceWriter) =
-    let workflow = 
-        getCurrentSessionYear
-        >> bind fetchAllCommitteesFromAPI
-        >> bind filterOutKnownCommittees
-        >> bind resolveNewCommittees
-        >> bind persistNewCommittees
-        >> bind invalidateCommitteeCache
-        >> bind describeNewCommittees
-
-    workflow
-    |> evaluate log Command.UpdateCommittees
-    |> throwOnFail
+let updateCommittees =
+    getCurrentSessionYear
+    >> bind fetchAllCommitteesFromAPI
+    >> bind filterOutKnownCommittees
+    >> bind resolveNewCommittees
+    >> bind persistNewCommittees
+    >> bind invalidateCommitteeCache
+    >> bind describeNewCommittees

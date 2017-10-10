@@ -1,21 +1,19 @@
 ﻿module Ptp.Core
 
 open Chessie.ErrorHandling
-open Microsoft.Azure.WebJobs
-open Microsoft.Azure.WebJobs.Host
 open System
 open System.Net
 
-type Command =
-    | UpdateBills=1
-    | UpdateSubjects=2
-    | UpdateLegislators=3
-    | UpdateCommittees=4
-    | UpdateActions=5
-    | UpdateChamberCalendar=6
-    | UpdateCommitteeCalendar=7
-    | UpdateDeadBills=8
-    | UpdateCommitteeMemberships=9
+type Update =
+    | Bills=1
+    | Subjects=2
+    | Legislators=3
+    | Committees=4
+    | Actions=5
+    | ChamberCal=6
+    | CommitteeCal=7
+    | DeadBills=8
+    | ComMembers=9
 
 type QueryText = QueryText of string
 type CommandText = CommandText of string
@@ -23,11 +21,12 @@ type CommandText = CommandText of string
 type WorkFlowFailure =
     | DatabaseCommandError of CommandText * string
     | DatabaseQueryError of QueryText * string
+    | DatabaseQueryExpectationError of QueryText * string
     | APICommandError of CommandText * string
     | APIQueryError of QueryText * string
     | DTOtoDomainConversionFailure of string
     | CacheInvalidationError of string
-
+    | UnknownBill of string
 
 let (|StartsWith|_|) (p:string) (s:string) =
     if s.StartsWith(p) then
@@ -56,22 +55,18 @@ let inline except' b matchPredicate a =
         |> not
     a |> Seq.filter notInB
 
+let inline intersect' b matchPredicate a =
+    let inB a' = 
+        b 
+        |> Seq.exists (fun b' -> matchPredicate a' b') 
+    a |> Seq.filter inB
+
+let inline intersect b a =
+    a |> intersect' b (fun a' b' -> a' = b') 
+
 let tee f x =
     f(x)
     x
-
-let tryHttpF f (status:HttpStatusCode) msg =
-    try 
-        f() |> ok 
-    with 
-        ex -> fail ((status,sprintf "Failed to %s: %s" msg (ex.ToString())))
-
-
-let tryF f msg =
-    try 
-        f() |> ok 
-    with 
-        ex -> fail (sprintf "Failed to %s: %s" msg (ex.ToString()))
 
 let tryF' f failure =
     try 
@@ -81,22 +76,3 @@ let tryF' f failure =
             ex.ToString()
             |> failure
             |> fail
-
-let tryFIfAny x f msg =
-    if x |> Seq.isEmpty 
-    then ok x
-    else 
-        try 
-            f() |> ok 
-        with 
-            ex -> fail (sprintf "Failed to %s: %s" msg (ex.ToString()))
-
-let tryRun desc (log:TraceWriter) f =
-    try
-        log.Info(sprintf "[START] %s" desc)
-        f log |> ignore
-        log.Info(sprintf "[FINISH] %s" desc)
-    with
-    | ex -> 
-        log.Error(sprintf "[ERROR] %s" desc)
-        reraise()
