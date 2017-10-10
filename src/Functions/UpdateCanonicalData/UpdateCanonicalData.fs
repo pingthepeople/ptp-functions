@@ -14,35 +14,35 @@ open Ptp.Logging
 
 let chooseWorkflow command =
     match command with
-    | Update.Legislators -> updateLegislators
-    | Update.Committees  -> updateCommittees
-    | Update.ComMembers  -> updateCommitteeMemberships
-    | Update.Subjects    -> updateSubjects
-    | Update.Bills       -> updateBills
+    | Workflow.UpdateLegislators -> updateLegislators
+    | Workflow.UpdateCommittees  -> updateCommittees
+    | Workflow.UpdateComMembers  -> updateCommitteeMemberships
+    | Workflow.UpdateSubjects    -> updateSubjects
+    | Workflow.UpdateBills       -> updateBills
     | _ -> raise (NotImplementedException())
 
 let chooseNextOnFailure command errs =
     match errs with
     | [ UnknownBill _ ] ->
         match command with
-        | Update.Actions      -> Some Update.Bills
-        | Update.ChamberCal   -> Some Update.Bills
-        | Update.CommitteeCal -> Some Update.Bills
-        | Update.DeadBills    -> Some Update.Bills
+        | Workflow.UpdateActions      -> Some Workflow.UpdateBills
+        | Workflow.UpdateChamberCal   -> Some Workflow.UpdateBills
+        | Workflow.UpdateCommitteeCal -> Some Workflow.UpdateBills
+        | Workflow.UpdateDeadBills    -> Some Workflow.UpdateBills
         | _ -> failwith "fffff"
     | _ -> failwith "fffff"
 
 let chooseNextOnSuccess command =
     match command with
-    | Update.Legislators  -> Some Update.Committees
-    | Update.Committees   -> Some Update.ComMembers
-    | Update.ComMembers   -> Some Update.Subjects
-    | Update.Subjects     -> Some Update.Bills
-    | Update.Bills        -> None
-    | Update.Actions      -> Some Update.ChamberCal
-    | Update.ChamberCal   -> Some Update.CommitteeCal
-    | Update.CommitteeCal -> Some Update.DeadBills
-    | Update.DeadBills    -> None
+    | Workflow.UpdateLegislators  -> Some Workflow.UpdateCommittees
+    | Workflow.UpdateCommittees   -> Some Workflow.UpdateComMembers
+    | Workflow.UpdateComMembers   -> Some Workflow.UpdateSubjects
+    | Workflow.UpdateSubjects     -> Some Workflow.UpdateBills
+    | Workflow.UpdateBills        -> None
+    | Workflow.UpdateActions      -> Some Workflow.UpdateChamberCal
+    | Workflow.UpdateChamberCal   -> Some Workflow.UpdateCommitteeCal
+    | Workflow.UpdateCommitteeCal -> Some Workflow.UpdateDeadBills
+    | Workflow.UpdateDeadBills    -> None
     | _ -> raise (NotImplementedException (command.ToString()))
 
 let chooseNext command result =
@@ -50,12 +50,12 @@ let chooseNext command result =
     | Fail (errs) -> chooseNextOnFailure command errs
     | _ -> chooseNextOnSuccess command
 
-let enqueue (queue:ICollector<Update>) command =
+let enqueue (queue:ICollector<Workflow>) command =
     match command with
     | Some com -> com |> queue.Add
     | None -> ()
 
-let Run(log: TraceWriter, command: Update, nextCommand: ICollector<Update>) =
+let Run(log: TraceWriter, command: Workflow, nextCommand: ICollector<Workflow>) =
     command
     |> chooseWorkflow
     |> runWorkflow log command

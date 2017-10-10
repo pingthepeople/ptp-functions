@@ -2,18 +2,20 @@
 
 open Chessie.ErrorHandling
 open System
-open System.Net
 
-type Update =
-    | Bills=1
-    | Subjects=2
-    | Legislators=3
-    | Committees=4
-    | Actions=5
-    | ChamberCal=6
-    | CommitteeCal=7
-    | DeadBills=8
-    | ComMembers=9
+type Workflow =
+    | UpdateBills=1
+    | UpdateSubjects=2
+    | UpdateLegislators=3
+    | UpdateCommittees=4
+    | UpdateActions=5
+    | UpdateChamberCal=6
+    | UpdateCommitteeCal=7
+    | UpdateDeadBills=8
+    | UpdateComMembers=9
+    // HTTP
+    | HttpGenerateBillReport=10
+    | HttpGetLegislators=11
 
 type QueryText = QueryText of string
 type CommandText = CommandText of string
@@ -25,8 +27,11 @@ type WorkFlowFailure =
     | APICommandError of CommandText * string
     | APIQueryError of QueryText * string
     | DTOtoDomainConversionFailure of string
+    | DomainToDTOConversionFailure of string
     | CacheInvalidationError of string
     | UnknownBill of string
+    | UnknownEntity of string
+    | RequestValidationError of string
 
 let (|StartsWith|_|) (p:string) (s:string) =
     if s.StartsWith(p) then
