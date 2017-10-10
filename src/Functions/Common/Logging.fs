@@ -8,7 +8,7 @@ open System
 let success msg = 
     sprintf "[SUCCESS] %s" msg
 
-let toError (msgs:WorkFlowFailure list) = 
+let flatten (msgs:WorkFlowFailure list) = 
     msgs 
     |> List.rev 
     |> List.map (fun wf -> wf.ToString())
@@ -22,9 +22,9 @@ let runWorkflow (log:TraceWriter) source workflow =
     let result = workflow()
     match result with
     | Fail (boo) ->  
-        boo |> toError |> log.Error
+        boo |> flatten |> log.Error
     | Warn (yay,boo) ->  
-        boo |> toError |> log.Warning
+        boo |> flatten |> log.Warning
         yay |> success |> log.Info
     | Pass (yay) -> 
         yay |> success |> log.Info
@@ -36,39 +36,8 @@ let runWorkflow (log:TraceWriter) source workflow =
 let throwOnFail result =
     match result with   
     | Fail (boo) ->
-        boo |> toError |> Exception |> raise
+        boo |> flatten |> Exception |> raise
     | _ -> ignore
-
-let format msgs =
-    msgs 
-    |> Seq.map (fun m -> sprintf "* %s" (m.ToString()))
-    |> String.concat "\n"
-
-let logStart (log:TraceWriter) source =
-    log.Info(sprintf "[START] %s" source)
-
-let logFinish (log:TraceWriter) source str =
-    log.Info(sprintf "[FINISH] %s\n%s" source str)
-
-let logError (log:TraceWriter) source str =
-    log.Error(sprintf "[ERROR] %s:\n%s" source str)
-    str
-
-let onSuccess (log:TraceWriter) source (resp,msgs) =
-    format msgs
-    |> logFinish log source 
-
-let onFailure  (log:TraceWriter) source msgs =
-    format msgs
-    |> logError log source
-
-let continueOnFail (log:TraceWriter) source twoTrackInput =
-    let failure (msgs) =
-        onFailure log source msgs
-        |> ignore
-    let success = 
-        onSuccess log source
-    eitherTee success failure twoTrackInput 
 
 let describeList (items: string seq) = 
     match items with

@@ -17,24 +17,21 @@ open System.Data.SqlClient
 [<CLIMutable>]
 type Body  = { Id : int }
 
-let generateReport body = 
-    try
-        new SqlConnection(sqlConStr()) 
-        |> dapperMapParametrizedQuery<BillStatus> FetchBillStatusForUser (Map["Id", body.Id :> obj]) 
-        |> JsonConvert.SerializeObject
-        |> ok
-    with
-    | ex -> fail (HttpStatusCode.InternalServerError, ("Failed to generate report: " + ex.Message))
+let generateReport body = trial { 
+    let! result = dbParameterizedQuery<BillStatus> FetchBillStatusForUser {Id=body.Id}
+    return result |> JsonConvert.SerializeObject
+    }
 
 let deserializeId = 
     validateBody<Body> "A user id is expected in the form '{ Id: INT }'"
 
-let processRequest = 
-    deserializeId
-    >> bind generateReport
-
 let Run(req: HttpRequestMessage, log: TraceWriter) =
-    req
-    |> processRequest
-    |> continueOnFail log "GenerateBillReport"
+    let deserializeId() = deserializeId req
+    
+    let workflow =
+        deserializeId
+        >> bind generateReport
+    
+    workflow
+    |> runWorkflow log Workflow.HttpGenerateBillReport
     |> constructHttpResponse

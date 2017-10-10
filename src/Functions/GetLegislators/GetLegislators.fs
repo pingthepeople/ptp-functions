@@ -19,8 +19,6 @@ let detail side (node:HtmlNode) =
     |> Seq.head
     |> (fun n -> n.InnerText().Trim())
 
-
-
 let parse chamber (node:HtmlNode)  =
     let person = 
         node.Descendants ["h3"]
@@ -45,52 +43,58 @@ let parse chamber (node:HtmlNode)  =
 
     {Name=name; Link=url; Chamber=chamber; Image=image; Party=party; District=district}
 
-let validateLocation loc =
+let setReasonableDefaults loc = 
+    match loc.Year with 
+    | 0 -> ok {loc with Year = (System.DateTime.Now.Year + 1)}
+    | _ -> ok loc
+
+let validateRequest loc = trial {
     let thisYear = System.DateTime.Now.Year
     let nextYear = thisYear + 1
-    if   isEmpty loc.Address    then fail (HttpStatusCode.BadRequest, "Please provide an address")
-    elif isEmpty loc.City       then fail (HttpStatusCode.BadRequest, "Please provide a city")
-    elif isEmpty loc.Zip        then fail (HttpStatusCode.BadRequest, "Please provide a zip code")
-    elif loc.Year > nextYear    then fail (HttpStatusCode.BadRequest, "The year cannot be past next year")
-    elif loc.Year = 0           then ok { loc with Year=thisYear }
-    else ok loc
+    let withinNextYear x = x <= (thisYear+1)
+    let hasValue x = String.IsNullOrWhiteSpace(x) = false
+    let validations =
+        [
+            loc.Year    |> validateInt loc withinNextYear (sprintf "Year can't be past %d" nextYear)
+            loc.Address |> validateStr loc hasValue "Please provide an address" 
+            loc.City    |> validateStr loc hasValue "Please provide an city" 
+            loc.Zip     |> validateStr loc hasValue "Please provide an zip code" 
+        ]
+    let! result::_ = validations |> collect
+    return result
+    }
 
 let fetchLegislatorsHtml location =
     let year = location.Year
     let address = location.Address |> WebUtility.UrlEncode
     let city = location.City |> WebUtility.UrlEncode
-    let zip = location.Zip |> WebUtility.UrlEncode  
-    try 
-        sprintf "http://iga.in.gov/legislative/%d/legislators/search/?txtAddress=%s&txtCity=%s&txtZip1=%s" year address city zip
-        |> HtmlDocument.Load
-        |> ok
-    with
-    | ex -> 
-        fail (HttpStatusCode.InternalServerError, (sprintf "Failed to fetch legislators information from IGA: %s" ex.Message))
+    let zip = location.Zip |> WebUtility.UrlEncode
+    let url = sprintf "http://iga.in.gov/legislative/%d/legislators/search/?txtAddress=%s&txtCity=%s&txtZip1=%s" year address city zip
+    let op() = url |> HtmlDocument.Load
+    tryF' op (fun err -> (APIQueryError(QueryText(url), err)))
 
 let parseLegislators (document:HtmlDocument) =
     let legislators = 
         document.CssSelect ("div.legislator-wrapper") 
         |> Seq.toArray
     if legislators |> Seq.isEmpty 
-    then fail (HttpStatusCode.NotFound, "No legislators found for that address")
+    then fail (UnknownEntity "No legislators found for that address")
     else ok [ legislators.[0] |> parse Chamber.Senate;
               legislators.[1] |> parse Chamber.House ]
 
-let deserializeLocation req = 
-    req 
-    |> validateBody<Location> "Please provide a location in the form '{ Address:STRING, City:STRING, Zip:STRING, Year:INT (optional)}'"
-
-let processRequest req = 
-    req
-    |> deserializeLocation 
-    >>= validateLocation 
-    >>= fetchLegislatorsHtml
-    >>= parseLegislators
+let deserializeLocation = 
+    validateBody<Location> "Please provide a location of ContentType 'application/json' in the form '{ Address:STRING, City:STRING, Zip:STRING, Year:INT (optional)}'"
 
 let Run(req: HttpRequestMessage, log: TraceWriter) = 
-    log.Info("GetLegislators function triggered.")
-    req
-    |> processRequest
-    |> continueOnFail log "GetLegislators"
+    let deserializeBody() = deserializeLocation req
+    let workflow =
+        deserializeBody
+        >> bind setReasonableDefaults
+        >> bind validateRequest
+        >> bind fetchLegislatorsHtml
+        >> bind parseLegislators
+        >> bind serialize
+
+    workflow
+    |> runWorkflow log Workflow.HttpGetLegislators
     |> constructHttpResponse

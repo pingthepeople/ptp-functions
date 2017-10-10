@@ -5,6 +5,7 @@ open FSharp.Data
 open FSharp.Data.JsonExtensions
 open Newtonsoft.Json
 open Ptp.Core
+open Ptp.Logging
 open System
 open System.Net
 open System.Net.Http
@@ -53,32 +54,47 @@ let httpResponse status content =
     |> (fun j -> new StringContent(j, System.Text.Encoding.UTF8, "application/json"))
     |> (fun c -> new HttpResponseMessage(StatusCode = status, Content=c))
 
-let constructHttpResponse twoTrackInput =
-    let success(resp,msgs) = 
-        httpResponse HttpStatusCode.OK resp
-    let failure (msgs) = 
-        let (status,error) = msgs |> Seq.head
-        httpResponse status {Error=error}
-    either success failure twoTrackInput 
+let constructHttpResponse twoTrackResult =
+    match twoTrackResult with
+    | Fail msgs -> 
+        match List.head msgs with
+        | RequestValidationError _ -> 
+            let validationErrors = flatten msgs
+            httpResponse HttpStatusCode.BadRequest validationErrors
+        | _ -> 
+            httpResponse HttpStatusCode.InternalServerError ""
+    | Pass resp -> 
+        resp |> httpResponse HttpStatusCode.OK
+    | Warn (resp,msg) -> 
+        resp |> httpResponse HttpStatusCode.OK
+
+let validationError errorMessage = RequestValidationError(errorMessage) |> fail
 
 let validateBody<'T> (errorMessage:string) (req:HttpRequestMessage) =
-    let emptyContent = (HttpStatusCode.BadRequest, errorMessage)
     if req.Content = null 
-    then fail emptyContent 
+    then errorMessage |> validationError 
     else
         let content = req.Content.ReadAsStringAsync().Result
         if isEmpty content      
-        then fail emptyContent 
-        else ok (content |> JsonConvert.DeserializeObject<'T>)
+        then errorMessage |> validationError 
+        else content |> JsonConvert.DeserializeObject<'T> |> ok
+
+let inline validateStr x f (errorMessage:string) (param:String) =
+    if f(param) 
+    then x |> ok
+    else errorMessage |> validationError
+
+let inline validateInt x f (errorMessage:string) (param:int) =
+    if f(param) 
+    then x |> ok
+    else errorMessage |> validationError
 
 let fetch (url:string) =
-    let op() = 
-        tryGet url
+    let op() = tryGet url
     tryF' op (fun e -> APIQueryError (QueryText(url),e))
 
 let fetchAllPages (url:string) =
-    let op() = 
-        fetchAll url
+    let op() = fetchAll url
     tryF' op (fun e -> APIQueryError (QueryText(url),e))
 
 let fetchAllParallel (urls:string seq) =
@@ -95,7 +111,9 @@ let fetchAllParallel (urls:string seq) =
         tryF' op (fun e -> APIQueryError (QueryText(query),e))
 
 let deserializeAs domainModel jsonValues =
-    let op() =
-        jsonValues
-        |> Seq.map domainModel
+    let op() = jsonValues |> Seq.map domainModel
     tryF' op DTOtoDomainConversionFailure
+
+let serialize resp = 
+    let op() = resp |> JsonConvert.SerializeObject
+    tryF' op DomainToDTOConversionFailure
