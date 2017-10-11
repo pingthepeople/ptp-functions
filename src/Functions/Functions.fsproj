@@ -64,7 +64,6 @@
     <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Bills.fs" />
     <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Committees.fs" />
     <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Legislators.fs" />
-    <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Memberships.fs" />
     <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Subjects.fs" />
     <Compile Include="UpdateCanonicalData\UpdateCanonicalData.fs" />
     <None Include="UpdateCanonicalData\function.json" />

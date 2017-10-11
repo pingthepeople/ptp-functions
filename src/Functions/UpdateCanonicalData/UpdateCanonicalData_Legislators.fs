@@ -12,29 +12,39 @@ open Ptp.Cache
 open Ptp.Logging
 open System
 
-let legislatorModel json = 
+let legislatorModel (url,json) = 
+    let firstName = json?firstName.AsString();
+    let lastName = json?lastName.AsString();
+    let partyName = json?party.AsString()
+    let party = Enum.Parse(typedefof<Party>, partyName) :?> Party
+    let chamberName =  json?chamber?name.AsString()
+    let chamber = Enum.Parse(typedefof<Chamber>, chamberName) :?> Chamber
+
     { Legislator.Id=0; 
-    SessionId=0; 
-    FirstName=json?firstName.AsString(); 
-    LastName=json?lastName.AsString(); 
-    Link=json?link.AsString();
-    Party=Enum.Parse(typedefof<Party>, json?party.AsString()) :?> Party;
-    Chamber=Enum.Parse(typedefof<Chamber>, json?chamber?name.AsString()) :?> Chamber;
-    Image=""; 
-    District=0; }
+      FirstName=firstName; 
+      LastName=lastName; 
+      Link=url;
+      Party=party;
+      Chamber=chamber;
+      Image=""; 
+      SessionId=0; 
+      District=0; }
 
 /// Fetch URLs for all legislators in the current session.
-let fetchAllLegislatorsFromAPI sessionYear = trial {
+let fetchAllLegislatorsLinksFromApi sessionYear = trial {
     let url = sprintf "/%s/legislators" sessionYear
     let legislatorUrl result = result?link.AsString()
     let! pages = url |> fetchAllPages
     let! result = pages |> deserializeAs legislatorUrl
-    return result;
+    return result
     }
 
+let fetchAllKnownLegislatorsQuery = sprintf "SELECT Link from Legislator WHERE SessionId = %s" SessionIdSubQuery
+let insertLegislator= sprintf """INSERT INTO Legislator(FirstName,LastName,Link,Chamber,Party,District,Image,SessionId) 
+VALUES (@FirstName,@LastName,@Link,@Chamber,@Party,@District,@Image,%s)""" SessionIdSubQuery
+
 let fetchKnownLegislatorsFromDb allLegs = trial {
-    let query = sprintf "SELECT Link from Legislator WHERE SessionId = %s" SessionIdSubQuery
-    let! knownLegs = dbQuery<string> query
+    let! knownLegs = dbQuery<string> fetchAllKnownLegislatorsQuery
     return (allLegs,knownLegs)
     }
 
@@ -45,13 +55,13 @@ let filterOutKnownLegislators (allLegs,knownLegs) =
 /// Get full metadata for legislators that we don't yet know about
 let resolveNewLegislators urls = trial {
     let! metadata = urls |> fetchAllParallel
-    let! models = metadata |> chooseJson |> deserializeAs legislatorModel
+    let! models = metadata |> chooseBoth |> deserializeAs legislatorModel
     return models
     }
 
-/// Add new legislator records to the database
+/// Add new legislator records to the databsasase
 let persistNewLegislators legislators = 
-    dbCommand InsertLegislator legislators
+    dbCommand insertLegislator legislators
 
 /// Invalidate the Redis cache key for legislators
 let invalidateLegislatorCache legislators = 
@@ -63,10 +73,10 @@ let logNewLegislators legislators =
         sprintf "%s %s (%A, %A)" l.FirstName l.LastName l.Chamber l.Party
     legislators |> describeNewItems describer
 
-/// Define and execute legislators workflow
+/// Define afetchAllLegislatorsLinksFromApikflow
 let updateLegislators =
     getCurrentSessionYear
-    >> bind fetchAllLegislatorsFromAPI
+    >> bind fetchAllLegislatorsLinksFromApi
     >> bind fetchKnownLegislatorsFromDb
     >> bind filterOutKnownLegislators
     >> bind resolveNewLegislators

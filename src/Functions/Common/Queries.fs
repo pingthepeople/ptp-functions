@@ -13,20 +13,6 @@ SELECT CAST(SCOPE_IDENTITY() as int)"""
 VALUES (@Link,@Date,@ActionType,@Start,@End,@Location,@Chamber,@BillId); 
 SELECT CAST(SCOPE_IDENTITY() as int)"""
 
-    let InsertLegislator= sprintf """INSERT INTO Legislator(FirstName,LastName,Link,Chamber,Party,District,Image,SessionId) 
-VALUES (@FirstName,@LastName,@Link,@Chamber,@Party,@District,@Image,%s)""" SessionIdSubQuery
-
-    let InsertSubject= sprintf """INSERT INTO Subject(Name,Link,SessionId) 
-VALUES (@Name,@Link,%s)""" SessionIdSubQuery
-
-    [<Literal>]
-    let InsertBillSubject= """INSERT INTO BillSubject(BillId,SubjectId) 
-VALUES (@BillId,@SubjectId)"""
-
-    [<Literal>]
-    let InsertLegislatorBill= """INSERT INTO LegislatorBill(BillId,LegislatorId,Position) 
-VALUES (@BillId,@LegislatorId,@Position)"""
-
     [<Literal>]
     let SelectActionsRequiringNotification = """SELECT a.Id, a.BillId, a.Description, a.ActionType, a.Chamber
 FROM [Action] a
