@@ -23,7 +23,7 @@ type HttpTests(output:ITestOutputHelper) =
         
         let nextWorkflowStep results =
             results
-            |> chooseJson'
+            |> chooseBoth
             |> List.map fst
             |> String.concat ", "
             |> sprintf "happy dance: %s"

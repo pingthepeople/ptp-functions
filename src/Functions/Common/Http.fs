@@ -115,17 +115,7 @@ let fetchAllParallel (urls:string seq) =
     |> seq
     |> collect
 
-let chooseJson (jsonList:list<(string*JsonValue option)>) =
-    jsonList |> List.map snd |> List.choose id
 
-    
-let chooseJson' (jsonList:list<(string*JsonValue option)>) =
-    jsonList 
-    |> List.map (fun (url,json) -> 
-        match json with
-        | Some j -> Some(url,j)
-        | None -> None)
-    |> List.choose id
 
 let deserializeAs domainModel jsonValues =
     let op() = jsonValues |> Seq.map domainModel

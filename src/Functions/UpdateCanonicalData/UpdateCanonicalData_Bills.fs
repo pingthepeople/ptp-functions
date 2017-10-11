@@ -59,7 +59,7 @@ let fetchRecentlyUpdatedBillsFromApi (sessionYear, lastUpdate) = trial {
     // find the recently updated metadata based on the 'latestVersion.updated' timestamp
     let wasRecentlyUpdated json = 
         json?latestVersion?updated.AsDateTime() > lastUpdate
-    let recentlyUpdated = metadata |> chooseJson |> Seq.filter wasRecentlyUpdated
+    let recentlyUpdated = metadata |> chooseSnd |> Seq.filter wasRecentlyUpdated
     return recentlyUpdated
     }
 

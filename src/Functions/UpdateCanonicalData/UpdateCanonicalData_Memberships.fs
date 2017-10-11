@@ -55,7 +55,7 @@ let fetchCommitteesFromApi (committees,legislators:LinkAndId seq) = trial {
         
         let pairs = 
             apiCommittees
-            |> chooseJson'
+            |> chooseBoth
             |> Seq.map joinWithPair
 
         return (pairs, legislators)

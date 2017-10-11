@@ -84,3 +84,18 @@ let tryF' f failure =
             ex.ToString()
             |> failure
             |> fail
+
+/// Given a tuple of 'a and an option 'b, 
+/// unwrap and return only the 'b where 'b is Some value
+let chooseSnd (items:list<('a*'b option)>) =
+    items |> List.map snd |> List.choose id
+
+/// Given a tuple of 'a and an option 'b, 
+/// unwrap and return only the pairs where 'b is Some value.
+let chooseBoth (items:list<('a*'b option)>) =
+    items 
+    |> List.map (fun (a,b) -> 
+        match b with
+        | Some value -> Some(a,value)
+        | None -> None)
+    |> List.choose id

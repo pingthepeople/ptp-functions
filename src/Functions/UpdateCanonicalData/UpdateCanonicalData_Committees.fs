@@ -61,7 +61,7 @@ let filterOutKnownCommittees (allCommitteeUrls: string seq) = trial {
 /// Fetch full metadata for committess that we don't yet know about
 let resolveNewCommittees urls = trial {
     let! pages = urls |> fetchAllParallel
-    let! models = pages |> chooseJson' |> deserializeAs committeeModel
+    let! models = pages |> chooseBoth |> deserializeAs committeeModel
     return models
     }
 
