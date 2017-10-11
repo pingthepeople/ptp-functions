@@ -12,7 +12,6 @@ type Workflow =
     | UpdateChamberCal=6
     | UpdateCommitteeCal=7
     | UpdateDeadBills=8
-    | UpdateComMembers=9
     // HTTP
     | HttpGenerateBillReport=10
     | HttpGetLegislators=11
@@ -49,19 +48,15 @@ let isEmpty str = str |> String.IsNullOrWhiteSpace
 let timestamp() = System.DateTime.Now.ToString("HH:mm:ss.fff")
 let datestamp() = System.DateTime.Now.ToString("yyyy-MM-dd")
 
-let inline except b a =
-    let notInB a' = 
-        b 
-        |> Seq.exists (fun b' -> a' = b') 
-        |> not
-    a |> Seq.filter notInB
-
 let inline except' b matchPredicate a =
     let notInB a' = 
         b 
         |> Seq.exists (fun b' -> matchPredicate a' b') 
         |> not
     a |> Seq.filter notInB
+
+let inline except b a =
+    a |> except' b (fun a' b' -> a' = b') 
 
 let inline intersect' b matchPredicate a =
     let inB a' = 

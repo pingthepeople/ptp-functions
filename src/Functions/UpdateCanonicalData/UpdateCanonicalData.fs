@@ -6,7 +6,6 @@ open Ptp.UpdateCanonicalData.Subjects
 open Ptp.UpdateCanonicalData.Committees
 open Ptp.UpdateCanonicalData.Legislators
 open Ptp.UpdateCanonicalData.Bills
-open Ptp.UpdateCanonicalData.Memberships
 open Ptp.Core
 open System
 open Chessie.ErrorHandling
@@ -16,7 +15,6 @@ let chooseWorkflow command =
     match command with
     | Workflow.UpdateLegislators -> updateLegislators
     | Workflow.UpdateCommittees  -> updateCommittees
-    | Workflow.UpdateComMembers  -> updateCommitteeMemberships
     | Workflow.UpdateSubjects    -> updateSubjects
     | Workflow.UpdateBills       -> updateBills
     | _ -> raise (NotImplementedException())
@@ -36,7 +34,6 @@ let chooseNextOnSuccess command =
     match command with
     | Workflow.UpdateLegislators  -> None // Workflow.UpdateCommittees
     | Workflow.UpdateCommittees   -> None // Some Workflow.UpdateComMembers
-    | Workflow.UpdateComMembers   -> Some Workflow.UpdateSubjects
     | Workflow.UpdateSubjects     -> None // Some Workflow.UpdateBills
     | Workflow.UpdateBills        -> None
     | Workflow.UpdateActions      -> Some Workflow.UpdateChamberCal

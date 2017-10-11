@@ -1,7 +1,6 @@
 ﻿module Ptp.UpdateCanonicalData.Committees
 
 open Chessie.ErrorHandling
-open FSharp.Collections.Se  
 open FSharp.Data
 open FSharp.Data.JsonExtensions
 open Ptp.Core
@@ -81,6 +80,8 @@ let invalidateCommitteeCache (metadata,newCommittees) = trial {
 let halfAssDescribe x = 
     "Committees and memberships updated!" |> ok
     
+
+
 // COMMITTEE MEMBERSHIPS
 
 /// Determine the makeup of a given committee.
