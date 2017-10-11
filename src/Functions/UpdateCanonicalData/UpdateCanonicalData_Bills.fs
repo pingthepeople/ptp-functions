@@ -136,9 +136,9 @@ let addOrUpdateBills metadata = trial {
 // UPDATE BILL / SUBJECT RELATIONSHIPS
 
 let getKnownSubjectsQuery = sprintf "SELECT Id,Link From [Subject] WHERE SessionId = %s" SessionIdSubQuery
-let getKnownBillSubjectsQuery = "SELECT Id,BillId,SubjectId FROM BillSubjects WHERE BillId IN (@Ids)"
-let insertBillSubjectsCommand = "INSERT INTO BillSubject(BillId,SubjectId) VALUES (@BillId,@SubjectId)"
-let deleteBillSubjectsCommand = "DELETE FROM BillSubjects WHERE Id IN (@Ids)"
+let getKnownBillSubjectsQuery = "SELECT Id, BillId, SubjectId FROM BillSubjects WHERE BillId IN @Ids"
+let insertBillSubjectsCommand = "INSERT INTO BillSubject (BillId,SubjectId) VALUES (@BillId,@SubjectId)"
+let deleteBillSubjectsCommand = "DELETE FROM BillSubjects WHERE Id IN @Ids"
 
 let findBill bills metadata =
     let billLink = metadata?link.AsString()
@@ -177,9 +177,9 @@ let reconcileBillSubjects (metadata,knownBills) = trial {
 // UPDATE BILL / LEGISLATOR RELATIONSHIPS
 
 let getKnownLegislatorsQuery = sprintf "SELECT Id,Link From [Legislator] WHERE SessionId = %s" SessionIdSubQuery
-let getKnownBillMemberQuery = "SELECT Id,BillId,LegislatorId FROM BillLegislator WHERE BillId IN (@Ids)"
-let insertBillMemberCommand = "INSERT INTO BillLegislator(BillId,LegislatorId) VALUES (@BillId,@LegislatorId)"
-let deleteBillMemberCommand = "DELETE FROM BillLegislator WHERE Id IN (@Ids)"
+let getKnownBillMemberQuery = "SELECT Id, BillId, LegislatorId FROM BillLegislator WHERE BillId IN @Ids"
+let insertBillMemberCommand = "INSERT INTO BillLegislator (BillId,LegislatorId) VALUES (@BillId,@LegislatorId)"
+let deleteBillMemberCommand = "DELETE FROM BillLegislator WHERE Id IN @Ids"
 
 let parseLatestBillMembers legislators bills json = 
     let bill = json |> findBill bills
