@@ -48,15 +48,22 @@ let isEmpty str = str |> String.IsNullOrWhiteSpace
 let timestamp() = System.DateTime.Now.ToString("HH:mm:ss.fff")
 let datestamp() = System.DateTime.Now.ToString("yyyy-MM-dd")
 
-let inline except' b matchPredicate a =
-    let notInB a' = 
-        b 
-        |> Seq.exists (fun b' -> matchPredicate a' b') 
-        |> not
-    a |> Seq.filter notInB
+let inline except'' a aKey bKey b =
+    let b' = b |> Seq.map bKey
+    let a' = a |> Seq.map aKey
+    let pairs = Seq.zip b' b |> Seq.toList
+    let keyDiff = (set b')-(set a') |> Set.toList
+    keyDiff
+    |> List.map (fun k -> 
+        pairs 
+        |> List.find (fun (k',value) -> k = k')
+        |> snd)
 
-let inline except b a =
-    a |> except' b (fun a' b' -> a' = b') 
+let inline except' a key b =
+    b |> except'' a key key
+
+let inline except a b =
+    b |> except' a (fun x -> x)
 
 let inline intersect' b matchPredicate a =
     let inB a' = 

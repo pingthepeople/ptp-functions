@@ -110,7 +110,7 @@ let matchOnLink (a:Bill) b =
     a.Link = b.Link
 
 let addNewBills knownBills latestBills =
-    let toAdd = latestBills |> except' knownBills matchOnLink
+    let toAdd = latestBills |> except'' knownBills (fun a -> a.Link) (fun (b:Bill) -> b.Link)
     dbCommand insertBillCommand toAdd
 
 let getUpdateModels knownBills latestBills =
@@ -151,9 +151,7 @@ let parseLatestBillSubjects subjects bills json =
     let billSubjects =    any "subjects" 0
     billSubjects |> List.toSeq
 
-let matchOnSubjectAndBill a b = 
-    a.SubjectId = b.SubjectId
-    && a.BillId = b.BillId
+let matchOnSubjectAndBill b = (b.SubjectId,b.BillId)
 
 let addBillSubjects known latest =
     let toAdd = latest |> except' known matchOnSubjectAndBill
@@ -192,10 +190,7 @@ let parseLatestBillMembers legislators bills json =
     authors @ coAuthors @ sponsors @ coSponsors
     |> List.toSeq
 
-let matchBillMember a b = 
-    a.LegislatorId = b.LegislatorId
-    && a.BillId = b.BillId
-    && a.Position = b.Position
+let matchBillMember b = (b.LegislatorId,b.BillId,b.Position)
 
 let addBillMembers known latest =
     let toAdd = latest |> except' known matchBillMember

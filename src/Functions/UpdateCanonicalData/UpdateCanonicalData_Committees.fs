@@ -11,6 +11,7 @@ open Ptp.Database
 open Ptp.Cache
 open Ptp.UpdateCanonicalData_Common
 open System
+open Microsoft.Azure.WebJobs.Host
 
 // COMMITTEES
 let committeeModel (url,c:JsonValue) =
@@ -60,7 +61,7 @@ let resolveNewCommittees (metadata:(string*JsonValue) list) = trial {
     let comparer (url,_) knownUrl = url = knownUrl
     let! newCommittees =    
         metadata 
-        |> except' knownCommitteeUrls comparer
+        |> except'' knownCommitteeUrls (fun url -> url) (fun (url,_) -> url)
         |> deserializeAs committeeModel
     return (metadata,newCommittees)
     }
@@ -100,7 +101,7 @@ let determineCommitteeComposition legislators (committee,json) =
         let leadership = chair @ viceChair @ ranking
         let rankAndFileMembers =
             any "members" CommitteePosition.Member
-            |> except' leadership (fun a b -> a.LegislatorId = b.LegislatorId)
+            |> except' leadership (fun a -> a.LegislatorId)
             |> Seq.toList
         leadership @ rankAndFileMembers
 
@@ -158,32 +159,28 @@ let matchPredicate a b =
     && a.LegislatorId = b.LegislatorId
     && a.Position = b.Position
 
-let getMembershipsToAdd (allMemberships, knownMemberships) = 
-    allMemberships |> except' knownMemberships matchPredicate
-
-let addNewMemberships (allMemberships, knownMemberships) = 
-    (allMemberships, knownMemberships)
-    |> getMembershipsToAdd
-    |> dbCommand insertQuery
-
-let getMembershipsToDelete (allMemberships, knownMemberships) = 
-    knownMemberships |> except' allMemberships matchPredicate
+let addNewMemberships (allMemberships, knownMemberships) = trial {
+    let s = 
+        allMemberships
+        |> except' knownMemberships (fun x -> (x.CommitteeId, x.LegislatorId, x.Position))
+        |> Seq.toList
+    let! added = dbCommand insertQuery s
+    return added
+    }
 
 let deleteOldMemberships (allMemberships, knownMemberships) = trial {
-    let toDelete = 
-        (allMemberships, knownMemberships)
-        |> getMembershipsToDelete
-    let! deleted = 
-        toDelete
+    let ids = 
+        knownMemberships
+        |> except' allMemberships (fun x -> (x.CommitteeId, x.LegislatorId, x.Position))
         |> Seq.map (fun toDelete -> toDelete.Id)
         |> Seq.toArray
-        |> fun ids -> dbCommand deleteQuery {Ids=ids}
-    return toDelete
+    let! deleted = dbCommand deleteQuery {Ids=ids}
+    return deleted.Ids
     }
 
 let updateMemberships (allMemberships, knownMemberships) = trial {
     let! added = (allMemberships, knownMemberships) |> addNewMemberships 
-    let! deleted = (allMemberships, knownMemberships) |> deleteOldMemberships 
+    let! deleted = (allMemberships, knownMemberships) |> deleteOldMemberships
     return (added,deleted)
     }
 
@@ -201,7 +198,7 @@ let updateCommittees =
     >> bind persistNewCommittees
     >> bind invalidateCommitteeCache
     >> bind getKnownLegislatorsFromDb
-    >> bind resolveMembershipsFromMetadata
+    >> bind resolveMembershipsFromMetadata 
     >> bind getKnownMemberships
     >> bind updateMemberships
     >> bind clearMembershipCache

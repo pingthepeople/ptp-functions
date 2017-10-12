@@ -2,10 +2,16 @@
 
 open Swensen.Unquote
 open Xunit
+open Xunit.Abstractions
 open Ptp.Core
 
 let a = [1; 2; 3]
 let b = [   2; 3; 4] 
+
+type TestEntity = {Id:int; Val:int}
+
+let a' = [ {Id=1; Val=1}; {Id=2; Val=2}; {Id=3; Val=3} ]
+let b' = [                {Id=0; Val=2}; {Id=0; Val=3}; {Id=0; Val=4} ]
 
 [<Fact>]
 let ``a except b``() =
@@ -22,6 +28,21 @@ let ``b except b``() =
 [<Fact>]
 let ``a except empty``() =
     test <@ a |> except [] |> Seq.toList = a @>
+
+let key x = x.Val
+let compare x y = x.Val = y.Val
+
+[<Fact>]
+let ``a' except b'``() =
+    test <@ a' |> except' b' key |> Seq.toList = [{Id=1; Val=1}] @>
+
+[<Fact>]
+let ``b' except a'``() =
+    test <@ b' |> except' a' key |> Seq.toList = [{Id=0; Val=4}] @>
+
+[<Fact>]
+let ``a' except a'``() =
+    test <@ a' |> except' a' key |> Seq.toList = [] @>
 
 [<Fact>]
 let ``a intersect b``() =

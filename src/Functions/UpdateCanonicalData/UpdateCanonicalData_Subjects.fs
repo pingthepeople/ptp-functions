@@ -31,9 +31,8 @@ let fetchKnownSubjectsFromDb allSubjects = trial {
     }
 /// Fetch all subject metadata from the IGA API for the specified session year
 let filterOutKnownSubjects (allSubjects:Subject seq, knownSubjects: LinkAndId seq) =
-    let matchOnUrl (a:Subject) b = a.Link = b.Link
     allSubjects 
-    |> except' knownSubjects matchOnUrl 
+    |> except'' knownSubjects (fun ks -> ks.Link) (fun s -> s.Link) 
     |> Seq.toList
     |> ok
 
