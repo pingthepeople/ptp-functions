@@ -61,15 +61,15 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Content Include="packages.config" />
-    <Compile Include="GetLegislatorsTests.fs" />
     <Content Include="App.config" />
-    <Compile Include="GenerateBillReportTests.fs" />
-    <Compile Include="UpdateCanonicalDataTests.fs" />
     <Compile Include="CoreTests.fs" />
-    <Compile Include="UpdateCanonicalData_SubjectsTests.fs" />
     <Compile Include="HttpTests.fs" />
-    <Compile Include="CommitteeTests.fs" />
     <Compile Include="DatabaseTests.fs" />
+    <Compile Include="GenerateBillReportTests.fs" />
+    <Compile Include="GetLegislatorsTests.fs" />
+    <Compile Include="WorkflowTests.fs" />
+    <Compile Include="Workflow.SubjectTests.fs" />
+    <Compile Include="Workflow.CommitteeTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Chessie">

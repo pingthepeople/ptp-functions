@@ -51,7 +51,6 @@
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Content Include="packages.config" />
     <None Include="Scaffolding\createDbTables.sql" />
     <Compile Include="Common\Core.fs" />
     <Compile Include="Common\Model.fs" />
@@ -59,22 +58,22 @@
     <Compile Include="Common\Http.fs" />
     <Compile Include="Common\Database.fs" />
     <Compile Include="Common\Cache.fs" />
-    <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Common.fs" />
-    <Compile Include="UpdateCanonicalData\Workflow.Bill.fs" />
-    <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Bills.fs" />
-    <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Committees.fs" />
-    <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Legislators.fs" />
-    <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Subjects.fs" />
-    <Compile Include="UpdateCanonicalData\UpdateCanonicalData.fs" />
-    <None Include="UpdateCanonicalData\function.json" />
-    <Compile Include="GetLegislators\GetLegislators.fs" />
-    <None Include="GetLegislators\function.json" />
-    <None Include="host.json" />
-    <None Include="local.settings.json" />
-    <None Include="UpdateCanonicalDataDaily\function.json" />
-    <Compile Include="UpdateCanonicalDataDaily\UpdateCanonicalDataDaily.fs" />
     <Compile Include="GenerateBillReport\GenerateBillReport.fs" />
     <None Include="GenerateBillReport\function.json" />
+    <Compile Include="GetLegislators\GetLegislators.fs" />
+    <None Include="GetLegislators\function.json" />
+    <None Include="UpdateCanonicalDataDaily\function.json" />
+    <Compile Include="UpdateCanonicalDataDaily\UpdateCanonicalDataDaily.fs" />
+    <Compile Include="Workflow\Workflow.Common.fs" />
+    <Compile Include="Workflow\Workflow.Bill.fs" />
+    <Compile Include="Workflow\Workflow.Bills.fs" />
+    <Compile Include="Workflow\Workflow.Committees.fs" />
+    <Compile Include="Workflow\Workflow.Legislators.fs" />
+    <Compile Include="Workflow\Workflow.Subjects.fs" />
+    <Compile Include="Workflow\Workflow.fs" />
+    <None Include="host.json" />
+    <None Include="local.settings.json" />
+    <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Chessie">

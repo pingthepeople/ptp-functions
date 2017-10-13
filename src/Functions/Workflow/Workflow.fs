@@ -1,11 +1,7 @@
-﻿module Ptp.UpdateCanonicalData.Function
+﻿module Ptp.Workflow.Function
 
 open Microsoft.Azure.WebJobs
 open Microsoft.Azure.WebJobs.Host
-open Ptp.UpdateCanonicalData.Subjects
-open Ptp.UpdateCanonicalData.Committees
-open Ptp.UpdateCanonicalData.Legislators
-open Ptp.UpdateCanonicalData.Bills
 open Ptp.Core
 open Ptp.Workflow
 open System
@@ -22,7 +18,7 @@ let chooseWorkflow msg =
     | UpdateCommittees  -> Committees.workflow
     | UpdateSubjects    -> Subjects.workflow
     | UpdateBills       -> Bills.workflow
-    | UpdateBill link   -> (fun () -> Bill.workflow link)
+    | UpdateBill link   -> Bill.workflow link
     | _ -> raise (NotImplementedException())
 
 let enqueueNext (log:TraceWriter) (queue:ICollector<string>) result =

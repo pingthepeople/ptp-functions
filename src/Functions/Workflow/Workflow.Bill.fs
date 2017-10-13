@@ -9,7 +9,7 @@ open Ptp.Queries
 open Ptp.Http
 open Ptp.Database
 open Ptp.Cache
-open Ptp.UpdateCanonicalData_Common
+open Ptp.Workflow.Common
 
 // ADD/UPDATE BILL
 
@@ -86,10 +86,8 @@ JOIN #BillUpdate u ON b.Id = u.Id
 DROP TABLE #BillUpdate
 """
 
-let updateExistingBill (bill:Bill) = trial { 
-    let! update = dbCommand updateBillCommand bill
-    return bill
-    }
+let updateExistingBill (bill:Bill) =
+    dbCommand updateBillCommand bill
 
 let addNewBill (bill:Bill) = trial {
     let! result = dbParameterizedQueryOne<int> insertBillQuery bill
@@ -204,10 +202,11 @@ let nextSteps result =
     | Bad msgs ->       Next.FailWith(msgs)
 
 let workflow link = 
-    fetchBillMetadata link
-    >>= deserializeBillModel
-    >>= getExistingBillRecord
-    >>= addOrUpdateBillRecord
-    >>= reconcileBillSubjects
-    >>= reconcileBillMembers
-    |> nextSteps
+    fun () ->
+        fetchBillMetadata link
+        >>= deserializeBillModel
+        >>= getExistingBillRecord
+        >>= addOrUpdateBillRecord
+        >>= reconcileBillSubjects
+        >>= reconcileBillMembers
+        |> nextSteps

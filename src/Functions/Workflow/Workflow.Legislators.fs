@@ -1,4 +1,4 @@
-﻿module Ptp.UpdateCanonicalData.Legislators
+﻿module Ptp.Workflow.Legislators
 
 open Chessie.ErrorHandling
 open FSharp.Data

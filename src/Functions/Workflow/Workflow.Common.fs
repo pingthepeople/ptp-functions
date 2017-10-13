@@ -1,4 +1,4 @@
-﻿module Ptp.UpdateCanonicalData_Common
+﻿module Ptp.Workflow.Common
 
 open FSharp.Data
 open FSharp.Data.JsonExtensions

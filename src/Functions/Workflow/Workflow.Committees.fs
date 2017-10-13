@@ -1,4 +1,4 @@
-﻿module Ptp.UpdateCanonicalData.Committees
+﻿module Ptp.Workflow.Committees
 
 open Chessie.ErrorHandling
 open FSharp.Data
@@ -9,9 +9,8 @@ open Ptp.Queries
 open Ptp.Http
 open Ptp.Database
 open Ptp.Cache
-open Ptp.UpdateCanonicalData_Common
+open Ptp.Workflow.Common
 open System
-open Ptp.UpdateCanonicalData.Bills
 
 // COMMITTEES
 let committeeModel (url,c:JsonValue) =

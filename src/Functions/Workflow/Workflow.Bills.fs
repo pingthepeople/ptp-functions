@@ -1,4 +1,4 @@
-﻿module Ptp.UpdateCanonicalData.Bills
+﻿module Ptp.Workflow.Bills
 
 open Chessie.ErrorHandling
 open FSharp.Data

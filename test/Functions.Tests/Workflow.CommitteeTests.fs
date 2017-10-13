@@ -3,10 +3,7 @@
 open Swensen.Unquote
 open Xunit
 open Xunit.Abstractions
-open Ptp.UpdateCanonicalData.Committees
-open Ptp.Core
 open Chessie.ErrorHandling
-open FSharp.Data
 open Ptp.Http
 
 type CommitteeTests(output:ITestOutputHelper) =

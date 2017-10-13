@@ -1,4 +1,4 @@
-﻿module Ptp.UpdateCanonicalData.Subjects
+﻿module Ptp.Workflow.Subjects
 
 open Chessie.ErrorHandling
 open FSharp.Data

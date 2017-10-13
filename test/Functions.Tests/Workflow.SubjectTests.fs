@@ -2,8 +2,7 @@
 
 open Chessie.ErrorHandling
 open Ptp.Model
-open Ptp.Core
-open Ptp.UpdateCanonicalData.Subjects
+open Ptp.Workflow.Subjects
 open Swensen.Unquote
 open Xunit
 open System.Net.Http
