@@ -9,7 +9,6 @@ open Ptp.Queries
 open Ptp.Http
 open Ptp.Database
 open Ptp.Cache
-open Ptp.Logging
 open System
 
 let legislatorModel (url,json) = 

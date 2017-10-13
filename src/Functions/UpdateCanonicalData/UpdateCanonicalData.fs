@@ -9,7 +9,6 @@ open Ptp.UpdateCanonicalData.Bills
 open Ptp.Core
 open System
 open Chessie.ErrorHandling
-open Ptp.Logging
 open Newtonsoft.Json
 
 type WorkflowMessage = { Command:Workflow; State:string }

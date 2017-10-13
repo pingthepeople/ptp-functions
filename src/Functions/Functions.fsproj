@@ -54,7 +54,6 @@
     <Content Include="packages.config" />
     <None Include="Scaffolding\createDbTables.sql" />
     <Compile Include="Common\Core.fs" />
-    <Compile Include="Common\Logging.fs" />
     <Compile Include="Common\Model.fs" />
     <Compile Include="Common\Queries.fs" />
     <Compile Include="Common\Http.fs" />

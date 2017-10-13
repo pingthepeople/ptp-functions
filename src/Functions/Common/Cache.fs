@@ -1,6 +1,5 @@
 ﻿module Ptp.Cache
 
-open Ptp.Logging
 open Ptp.Core
 open StackExchange.Redis
 

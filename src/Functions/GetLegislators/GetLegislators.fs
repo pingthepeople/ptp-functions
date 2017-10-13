@@ -7,7 +7,6 @@ open Microsoft.Azure.WebJobs.Host
 open Ptp.Core
 open Ptp.Model
 open Ptp.Http
-open Ptp.Logging
 open System
 open System.Net
 open System.Net.Http
@@ -97,5 +96,4 @@ let workflow req =
 let Run(req: HttpRequestMessage, log: TraceWriter) = 
     req
     |> workflow
-    |> executeWorkflow log Workflow.HttpGetLegislators
-    |> constructHttpResponse
+    |> executeHttpWorkflow log HttpWorkflow.GetLegislators

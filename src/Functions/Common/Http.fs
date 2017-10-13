@@ -5,11 +5,11 @@ open FSharp.Data
 open FSharp.Data.JsonExtensions
 open Newtonsoft.Json
 open Ptp.Core
-open Ptp.Logging
 open System
 open System.Net
 open System.Net.Http
 open FSharp.Collections.ParallelSeq
+open Microsoft.Azure.WebJobs.Host
 
 let get (endpoint:string) = 
     let uri =
@@ -72,6 +72,10 @@ let constructHttpResponse twoTrackResult =
     | Warn (WorkflowSuccess s,msg) -> 
         s |> httpResponse HttpStatusCode.OK
 
+let executeHttpWorkflow (log:TraceWriter) source workflow =
+    executeWorkflow log source workflow
+    |> constructHttpResponse
+
 let validationError errorMessage = RequestValidationError(errorMessage) |> fail
 
 let validateBody<'T> (errorMessage:string) (req:HttpRequestMessage) =
@@ -114,8 +118,6 @@ let fetchAllParallel (urls:string seq) =
     |> PSeq.map fetchOne
     |> seq
     |> collect
-
-
 
 let deserializeAs domainModel jsonValues =
     let op() = jsonValues |> Seq.map domainModel
