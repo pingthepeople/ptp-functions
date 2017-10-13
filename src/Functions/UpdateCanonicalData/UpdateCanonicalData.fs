@@ -10,19 +10,22 @@ open Ptp.Core
 open System
 open Chessie.ErrorHandling
 open Ptp.Logging
+open Newtonsoft.Json
 
-let chooseWorkflow command =
-    match command with
-    | Workflow.UpdateLegislators -> updateLegislators
-    | Workflow.UpdateCommittees  -> updateCommittees
-    | Workflow.UpdateSubjects    -> updateSubjects
-    | Workflow.UpdateBills       -> updateBills
+type WorkflowMessage = { Command:Workflow; State:string }
+
+let chooseWorkflow msg =
+    match msg.Command with
+    | Workflow.UpdateLegislators -> Legislators.workflow
+    | Workflow.UpdateCommittees  -> Committees.workflow
+    | Workflow.UpdateSubjects    -> Subjects.workflow
+    | Workflow.UpdateBills       -> Bills.workflow
     | _ -> raise (NotImplementedException())
 
-let chooseNextOnFailure command errs =
+let chooseNextOnFailure msg errs =
     match errs with
     | [ UnknownBill _ ] ->
-        match command with
+        match msg.Command with
         | Workflow.UpdateActions      -> Some Workflow.UpdateBills
         | Workflow.UpdateChamberCal   -> Some Workflow.UpdateBills
         | Workflow.UpdateCommitteeCal -> Some Workflow.UpdateBills
@@ -30,8 +33,8 @@ let chooseNextOnFailure command errs =
         | _ -> failwith "fffff"
     | _ -> failwith "fffff"
 
-let chooseNextOnSuccess command =
-    match command with
+let chooseNextOnSuccess msg =
+    match msg.Command with
     | Workflow.UpdateLegislators  -> None // Workflow.UpdateCommittees
     | Workflow.UpdateCommittees   -> None // Some Workflow.UpdateComMembers
     | Workflow.UpdateSubjects     -> None // Some Workflow.UpdateBills
@@ -40,14 +43,14 @@ let chooseNextOnSuccess command =
     | Workflow.UpdateChamberCal   -> Some Workflow.UpdateCommitteeCal
     | Workflow.UpdateCommitteeCal -> Some Workflow.UpdateDeadBills
     | Workflow.UpdateDeadBills    -> None
-    | _ -> raise (NotImplementedException (command.ToString()))
+    | _ -> raise (NotImplementedException (msg.ToString()))
 
 let chooseNext command result =
     match result with
     | Fail (errs) -> chooseNextOnFailure command errs
     | _ -> chooseNextOnSuccess command
 
-let enqueue (log:TraceWriter) (queue:ICollector<string>) command=
+let enqueueNext (log:TraceWriter) (queue:ICollector<string>) command=
     match command with
     | Some c -> 
         sprintf "Enqueueing next command: %A" command |> log.Info
@@ -56,17 +59,17 @@ let enqueue (log:TraceWriter) (queue:ICollector<string>) command=
         "Enqueueing no next command." |> log.Info
         ()
 
-let tryParse command =
-    let parsed = Enum.Parse(typedefof<Workflow>, command) :?> Workflow
-    match int parsed with
-    | 0 -> failwith "Could not parse Workflow" 
-    | _ -> parsed
+
+let deserialize command =
+    command 
+    |> JsonConvert.DeserializeObject<WorkflowMessage>
+
 
 let Run(log: TraceWriter, command: string, nextCommand: ICollector<string>) =
     sprintf "Received command '%s'" command |> log.Info
-    let parsedCommand = tryParse command
-    parsedCommand
+    let msg = deserialize command
+    msg
     |> chooseWorkflow
-    |> runWorkflow log parsedCommand
-    |> chooseNext parsedCommand
-    |> enqueue log nextCommand
+    |> executeWorkflow log msg
+    |> chooseNext msg
+    |> enqueueNext log nextCommand

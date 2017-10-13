@@ -4,20 +4,22 @@ open Chessie.ErrorHandling
 open System
 
 type Workflow =
-    | UpdateBills=1
-    | UpdateSubjects=2
-    | UpdateLegislators=3
-    | UpdateCommittees=4
-    | UpdateActions=5
-    | UpdateChamberCal=6
-    | UpdateCommitteeCal=7
-    | UpdateDeadBills=8
+    | UpdateBills=10
+    | UpdateSubjects=20
+    | UpdateLegislators=30
+    | UpdateCommittees=40
+    | UpdateActions=50
+    | UpdateChamberCal=60
+    | UpdateCommitteeCal=70
+    | UpdateDeadBills=80
     // HTTP
-    | HttpGenerateBillReport=10
-    | HttpGetLegislators=11
+    | HttpGenerateBillReport=90
+    | HttpGetLegislators=100
 
 type QueryText = QueryText of string
 type CommandText = CommandText of string
+
+type WorkflowSuccess = WorkflowSuccess of string
 
 type WorkFlowFailure =
     | DatabaseCommandError of CommandText * string
@@ -84,8 +86,14 @@ let tryF' f failure =
     with 
         ex ->
             ex.ToString()
-            |> failure
-            |> fail
+            |> failure            |> fail
+
+
+let success a =
+    WorkflowSuccess "Success!" |> ok
+
+let successWithData data = 
+    WorkflowSuccess data |> ok
 
 /// Given a tuple of 'a and an option 'b, 
 /// unwrap and return only the 'b where 'b is Some value

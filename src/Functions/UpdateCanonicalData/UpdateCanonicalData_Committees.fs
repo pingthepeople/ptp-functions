@@ -11,7 +11,6 @@ open Ptp.Database
 open Ptp.Cache
 open Ptp.UpdateCanonicalData_Common
 open System
-open Microsoft.Azure.WebJobs.Host
 
 // COMMITTEES
 let committeeModel (url,c:JsonValue) =
@@ -191,7 +190,7 @@ let clearMembershipCache (added,deleted) = trial {
     }
 
 /// Find, add, and log new committees
-let updateCommittees =
+let workflow =
     getCurrentSessionYear
     >> bind fetchAllCommitteesFromAPI
     >> bind resolveNewCommittees
@@ -202,4 +201,4 @@ let updateCommittees =
     >> bind getKnownMemberships
     >> bind updateMemberships
     >> bind clearMembershipCache
-    >> bind halfAssDescribe
+    >> bind success

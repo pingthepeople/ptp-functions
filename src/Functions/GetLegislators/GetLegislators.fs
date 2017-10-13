@@ -92,9 +92,10 @@ let workflow req =
     >> bind fetchLegislatorsHtml
     >> bind parseLegislators
     >> bind serialize
+    >> bind successWithData
 
 let Run(req: HttpRequestMessage, log: TraceWriter) = 
     req
     |> workflow
-    |> runWorkflow log Workflow.HttpGetLegislators
+    |> executeWorkflow log Workflow.HttpGetLegislators
     |> constructHttpResponse

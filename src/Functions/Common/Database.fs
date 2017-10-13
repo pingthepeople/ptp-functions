@@ -60,7 +60,7 @@ let expectOne query results =
     | Some value -> 
         ok value
 
-let queryOne<'Result> (queryText:string) = trial {
+let dbQueryOne<'Result> (queryText:string) = trial {
     let! results = dbQuery<'Result> queryText
     let! ret = results |> expectOne queryText
     return ret
@@ -74,4 +74,16 @@ let dbCommand (commandText:string) items =
     tryF' op (fun e -> DatabaseCommandError (CommandText(commandText),e))
 
 let getCurrentSessionYear () =
-    queryOne<string> "SELECT TOP 1 Name FROM Session WHERE Active = 1"
+    dbQueryOne<string> "SELECT TOP 1 Name FROM Session WHERE Active = 1"
+
+let dbQueryById<'Result> (queryText:string) ids = 
+    let idList = {Ids=(Seq.toArray ids)}
+    dbParameterizedQuery<'Result> queryText idList
+
+let dbQueryByLinks<'Result> (queryText:string) links = 
+    let linksList = {Links=(Seq.toArray links)}
+    dbParameterizedQuery<'Result> queryText linksList
+
+let dbCommandById<'Result> (queryText:string) ids = 
+    let idList = {Ids=(Seq.toArray ids)}
+    dbCommand queryText idList

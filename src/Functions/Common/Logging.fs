@@ -5,9 +5,6 @@ open Chessie.ErrorHandling
 open Microsoft.Azure.WebJobs.Host
 open System
 
-let success msg = 
-    sprintf "[SUCCESS] %s" msg
-
 let flatten (msgs:WorkFlowFailure list) = 
     msgs 
     |> List.rev 
@@ -15,19 +12,19 @@ let flatten (msgs:WorkFlowFailure list) =
     |> String.concat "\n" 
 
 /// Log succesful or failed completion of the function, along with any warnings.
-let runWorkflow (log:TraceWriter) source workflow = 
+let executeWorkflow (log:TraceWriter) source workflow = 
 
     log.Info(sprintf "[START] %A" source)
 
     let result = workflow()
     match result with
-    | Fail (boo) ->  
-        boo |> flatten |> log.Error
-    | Warn (yay,boo) ->  
-        boo |> flatten |> log.Warning
-        yay |> success |> log.Info
-    | Pass (yay) -> 
-        yay |> success |> log.Info
+    | Fail (errs) ->  
+        errs |> flatten |> log.Error
+    | Warn (WorkflowSuccess s, errs) ->  
+        errs |> flatten |> log.Warning
+        s |> log.Info
+    | Pass (WorkflowSuccess s) -> 
+        s |> log.Info
     
     log.Info(sprintf "[FINISH] %A" source)
     

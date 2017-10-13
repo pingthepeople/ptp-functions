@@ -37,25 +37,22 @@ let resolveLastUpdateTimestamp results =
     | Some datetime -> ok datetime
     | None -> ok (DateTime(2000,1,1))
 
+let queryText = sprintf "select IsNull((SELECT max(ApiUpdated) FROM Bill WHERE SessionId = %s),'2000-1-1')" SessionIdSubQuery
+
 let getLastUpdateTimestamp sessionYear = trial {
-    let queryText = sprintf "GET MAX(ApiUpdated) FROM Bills WHERE SessionId = %s" SessionIdSubQuery
-    let! results = dbQuery<DateTime> queryText
-    let lastUpdate = 
-        match results |> Seq.tryHead with
-        | Some datetime -> datetime
-        | None -> DateTime(2000,1,1)
+    let! lastUpdate = dbQueryOne<DateTime> queryText
     return (sessionYear, lastUpdate)
     }
 
 let fetchRecentlyUpdatedBillsFromApi (sessionYear, lastUpdate) = trial {
     // get a listing of all bills
-    let url = sprintf "/%s/bills" sessionYear
+    let url = sprintf "/%s/bills?per_page=200" sessionYear
     let! pages = url |> fetchAllPages 
     // parse the url for each bill
     let billLink json = json?link.AsString()
     let! billUrls = pages |> deserializeAs billLink
     // grab the full bill metadata from each bill url
-    let! metadata = billUrls |> fetchAllParallel
+    let! metadata = billUrls |> Seq.take 20 |> fetchAllParallel
     // find the recently updated metadata based on the 'latestVersion.updated' timestamp
     let wasRecentlyUpdated json = 
         json?latestVersion?updated.AsDateTime() > lastUpdate
@@ -65,7 +62,7 @@ let fetchRecentlyUpdatedBillsFromApi (sessionYear, lastUpdate) = trial {
 
 // UPDATE BILL RECORDS
 
-let getKnownBillsQuery = "SELECT Id, Link FROM Bills WHERE Link IN (@Links)"
+let getKnownBillsQuery = "SELECT Id, Link FROM Bill WHERE Link IN @Links"
 
 let insertBillCommand = sprintf """INSERT INTO Bill(Name,Link,Title,Description,Chamber,SessionId) 
 VALUES (@Name,@Link,@Title,@Description,@Chamber,%s)""" SessionIdSubQuery
@@ -91,7 +88,7 @@ SET
     b.Description = u.Description,
     b.Version = u.Version
     b.ApiUpdated = u.ApiUpdated
-FROM Bills b
+FROM Bill b
 JOIN #BillUpdate u ON b.Id = u.Id
 
 -- Cleanup
@@ -101,8 +98,7 @@ DROP TABLE #BillUpdate
 let getKnownBills metadata = trial {
     let billLink json = json?link.AsString()
     let! billLinks = metadata |> deserializeAs billLink
-    let billLinksArray = billLinks |> Seq.toArray
-    let! result = dbParameterizedQuery<LinkAndId> getKnownBillsQuery {Links=billLinksArray}
+    let! result = dbQueryByLinks<LinkAndId> getKnownBillsQuery billLinks
     return result
     }
 
@@ -136,9 +132,9 @@ let addOrUpdateBills metadata = trial {
 // UPDATE BILL / SUBJECT RELATIONSHIPS
 
 let getKnownSubjectsQuery = sprintf "SELECT Id,Link From [Subject] WHERE SessionId = %s" SessionIdSubQuery
-let getKnownBillSubjectsQuery = "SELECT Id, BillId, SubjectId FROM BillSubjects WHERE BillId IN @Ids"
-let insertBillSubjectsCommand = "INSERT INTO BillSubject (BillId,SubjectId) VALUES (@BillId,@SubjectId)"
-let deleteBillSubjectsCommand = "DELETE FROM BillSubjects WHERE Id IN @Ids"
+let getKnownBillSubjectsQuery = "SELECT Id, BillId, SubjectId FROM BillSubject WHERE BillId IN @Ids"
+let insertBillSubjectsCommand = "INSERT INTO BillSubject (BillId, SubjectId) VALUES (@BillId, @SubjectId)"
+let deleteBillSubjectsCommand = "DELETE FROM BillSubject WHERE Id IN @Ids"
 
 let findBill bills metadata =
     let billLink = metadata?link.AsString()
@@ -158,15 +154,18 @@ let addBillSubjects known latest =
     dbCommand insertBillSubjectsCommand toAdd
 
 let deleteBillSubjects known latest =
-    let toDelete = known |> except' latest matchOnSubjectAndBill
-    dbCommand deleteBillSubjectsCommand toDelete
+    let toDelete = 
+        known 
+        |> except' latest matchOnSubjectAndBill
+        |> Seq.map (fun td -> td.Id)
+    dbCommandById deleteBillSubjectsCommand toDelete
     
 let reconcileBillSubjects (metadata,knownBills) = trial {
     let! knownSubjects = dbQuery<LinkAndId> getKnownSubjectsQuery
     let parseLatestBillSubjects = parseLatestBillSubjects knownSubjects knownBills
     let latestBillSubjects = metadata |> Seq.collect parseLatestBillSubjects
-    let knownBillIds = knownBills |> Seq.map (fun b -> b.Id) |> Seq.toArray
-    let! knownBillSubjects = dbParameterizedQuery<BillSubject> getKnownSubjectsQuery {Ids=knownBillIds}
+    let knownBillIds = knownBills |> Seq.map (fun b -> b.Id)
+    let! knownBillSubjects = dbQueryById<BillSubject> getKnownBillSubjectsQuery knownBillIds
     let! a' = addBillSubjects knownBillSubjects latestBillSubjects
     let! b' = deleteBillSubjects knownBillSubjects latestBillSubjects
     return (metadata,knownBills)
@@ -175,9 +174,9 @@ let reconcileBillSubjects (metadata,knownBills) = trial {
 // UPDATE BILL / LEGISLATOR RELATIONSHIPS
 
 let getKnownLegislatorsQuery = sprintf "SELECT Id,Link From [Legislator] WHERE SessionId = %s" SessionIdSubQuery
-let getKnownBillMemberQuery = "SELECT Id, BillId, LegislatorId FROM BillLegislator WHERE BillId IN @Ids"
-let insertBillMemberCommand = "INSERT INTO BillLegislator (BillId,LegislatorId) VALUES (@BillId,@LegislatorId)"
-let deleteBillMemberCommand = "DELETE FROM BillLegislator WHERE Id IN @Ids"
+let getKnownBillMemberQuery = "SELECT Id, BillId, LegislatorId FROM LegislatorBill WHERE BillId IN @Ids"
+let insertBillMemberCommand = "INSERT INTO LegislatorBill (BillId,LegislatorId) VALUES (@BillId,@LegislatorId)"
+let deleteBillMemberCommand = "DELETE FROM LegislatorBill WHERE Id IN @Ids"
 
 let parseLatestBillMembers legislators bills json = 
     let bill = json |> findBill bills
@@ -197,29 +196,28 @@ let addBillMembers known latest =
     dbCommand insertBillMemberCommand toAdd
 
 let deleteBillMembers known latest =
-    let toDelete = known |> except' latest matchBillMember
-    dbCommand deleteBillMemberCommand toDelete
+    let toDelete = 
+        known 
+        |> except' latest matchBillMember
+        |> Seq.map (fun td -> td.Id)
+        |> Seq.toArray
+    dbCommandById deleteBillMemberCommand toDelete
 
 let reconcileBillMembers (metadata,knownBills) = trial {
     let! knownLegislators = dbQuery<LinkAndId> getKnownLegislatorsQuery
     let parseLatestBillMembers = parseLatestBillMembers knownLegislators knownBills
     let latestBillMembers = metadata |> Seq.collect parseLatestBillMembers
-    let knownBillIds = knownBills |> Seq.map (fun b -> b.Id) |> Seq.toArray
-    let! knownBillMembers = dbParameterizedQuery<BillMember> getKnownSubjectsQuery {Ids=knownBillIds}
+    let knownBillIds = knownBills |> Seq.map (fun b -> b.Id)
+    let! knownBillMembers = dbQueryById<BillMember> getKnownBillMemberQuery knownBillIds
     let! a' = addBillMembers knownBillMembers latestBillMembers
     let! b' = deleteBillMembers knownBillMembers latestBillMembers
-    return (metadata,knownBills)
+    return metadata
     }
 
-let invalidateBillCache (metadata,knownBills) = 
+let invalidateBillCache metadata = 
     metadata |> invalidateCache' BillsKey
 
-/// Log the addition of any new bill subjects
-let describeNewBills metadata = 
-    let describer json = json?billName.AsString()
-    metadata |> describeNewItems describer
-
-let updateBills =
+let workflow =
     getCurrentSessionYear
     >> bind getLastUpdateTimestamp
     >> bind fetchRecentlyUpdatedBillsFromApi
@@ -227,4 +225,4 @@ let updateBills =
     >> bind reconcileBillSubjects
     >> bind reconcileBillMembers
     >> bind invalidateBillCache
-    >> bind describeNewBills
+    >> bind success

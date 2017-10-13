@@ -31,7 +31,8 @@ let Run(req: HttpRequestMessage, log: TraceWriter) =
     let workflow =
         deserializeId
         >> bind generateReport
+        >> bind successWithData
     
     workflow
-    |> runWorkflow log Workflow.HttpGenerateBillReport
+    |> executeWorkflow log Workflow.HttpGenerateBillReport
     |> constructHttpResponse

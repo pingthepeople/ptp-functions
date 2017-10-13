@@ -24,10 +24,14 @@ let fetchAllSubjectsFromApi sessionYear = trial {
     let! models = pages |> deserializeAs subjectModel
     return models
     }
+
+let fetchKnownSubjectsQuery = sprintf "SELECT Id, Link from Subject WHERE SessionId = %s" SessionIdSubQuery
+let persisSubjectsQuery = sprintf """INSERT INTO Subject(Name,Link,SessionId) 
+VALUES (@Name,@Link,%s)""" SessionIdSubQuery
+
 let fetchKnownSubjectsFromDb allSubjects = trial {
-        let queryText = sprintf "SELECT Id, Link from Subject WHERE SessionId = %s" SessionIdSubQuery
-        let! knownSubjects = dbQuery<LinkAndId> queryText
-        return (allSubjects, knownSubjects)
+    let! knownSubjects = dbQuery<LinkAndId> fetchKnownSubjectsQuery
+    return (allSubjects, knownSubjects)
     }
 /// Fetch all subject metadata from the IGA API for the specified session year
 let filterOutKnownSubjects (allSubjects:Subject seq, knownSubjects: LinkAndId seq) =
@@ -37,25 +41,18 @@ let filterOutKnownSubjects (allSubjects:Subject seq, knownSubjects: LinkAndId se
     |> ok
 
 let persistNewSubjects subjects = 
-    let foo = sprintf """INSERT INTO Subject(Name,Link,SessionId) 
-VALUES (@Name,@Link,%s)""" SessionIdSubQuery
-    dbCommand foo subjects
+    dbCommand persisSubjectsQuery subjects
 
 /// Invalidate the Redis cache key for bill subjects
 let invalidateSubjectsCache (subjects: Subject seq) =
     invalidateCache' SubjectsKey subjects
 
-/// Log the addition of any new bill subjects
-let describeNewSubjects (subjects: Subject seq) = 
-    let describer (s:Subject) = sprintf "%s" s.Name
-    subjects |> describeNewItems describer
-
 /// Find, add, and log new subjects
-let updateSubjects =
+let workflow =
     getCurrentSessionYear
     >> bind fetchAllSubjectsFromApi
     >> bind fetchKnownSubjectsFromDb
     >> bind filterOutKnownSubjects
     >> bind persistNewSubjects
     >> bind invalidateSubjectsCache
-    >> bind describeNewSubjects
+    >> bind success

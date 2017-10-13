@@ -67,14 +67,9 @@ let persistNewLegislators legislators =
 let invalidateLegislatorCache legislators = 
     invalidateCache' LegislatorsKey legislators
 
-/// Log the addition of any new legislators
-let logNewLegislators legislators = 
-    let describer l = 
-        sprintf "%s %s (%A, %A)" l.FirstName l.LastName l.Chamber l.Party
-    legislators |> describeNewItems describer
 
 /// Define afetchAllLegislatorsLinksFromApikflow
-let updateLegislators =
+let workflow =
     getCurrentSessionYear
     >> bind fetchAllLegislatorsLinksFromApi
     >> bind fetchKnownLegislatorsFromDb
@@ -82,4 +77,4 @@ let updateLegislators =
     >> bind resolveNewLegislators
     >> bind persistNewLegislators
     >> bind invalidateLegislatorCache
-    >> bind logNewLegislators
+    >> bind success

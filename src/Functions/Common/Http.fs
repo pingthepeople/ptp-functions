@@ -67,10 +67,10 @@ let constructHttpResponse twoTrackResult =
             httpResponse HttpStatusCode.BadRequest validationErrors
         | _ -> 
             httpResponse HttpStatusCode.InternalServerError "An internal error occurred"
-    | Pass resp -> 
-        resp |> httpResponse HttpStatusCode.OK
-    | Warn (resp,msg) -> 
-        resp |> httpResponse HttpStatusCode.OK
+    | Pass (WorkflowSuccess s) -> 
+        s |> httpResponse HttpStatusCode.OK
+    | Warn (WorkflowSuccess s,msg) -> 
+        s |> httpResponse HttpStatusCode.OK
 
 let validationError errorMessage = RequestValidationError(errorMessage) |> fail
 
