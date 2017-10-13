@@ -24,7 +24,6 @@ let deserializeId =
 let workflow req =
     (fun _ -> deserializeId req)
     >> bind generateReport
-    >> bind successWithData
 
 let Run(req: HttpRequestMessage, log: TraceWriter) =
     req

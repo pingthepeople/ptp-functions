@@ -91,7 +91,6 @@ let workflow req =
     >> bind fetchLegislatorsHtml
     >> bind parseLegislators
     >> bind serialize
-    >> bind successWithData
 
 let Run(req: HttpRequestMessage, log: TraceWriter) = 
     req

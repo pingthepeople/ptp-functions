@@ -11,6 +11,7 @@ open Ptp.Database
 open Ptp.Cache
 open Ptp.UpdateCanonicalData_Common
 open System
+open Ptp.UpdateCanonicalData.Bills
 
 // COMMITTEES
 let committeeModel (url,c:JsonValue) =
@@ -189,16 +190,22 @@ let clearMembershipCache (added,deleted) = trial {
     return (added, deleted)
     }
 
+let nextSteps result =
+    match result with
+    | Ok (_, msgs) ->   
+        Next.Succeed(terminalState,msgs)
+    | Bad msgs ->       Next.FailWith(msgs)
+
 /// Find, add, and log new committees
-let workflow =
-    getCurrentSessionYear
-    >> bind fetchAllCommitteesFromAPI
-    >> bind resolveNewCommittees
-    >> bind persistNewCommittees
-    >> bind invalidateCommitteeCache
-    >> bind getKnownLegislatorsFromDb
-    >> bind resolveMembershipsFromMetadata 
-    >> bind getKnownMemberships
-    >> bind updateMemberships
-    >> bind clearMembershipCache
-    >> bind success
+let workflow() =
+    getCurrentSessionYear()
+    >>= fetchAllCommitteesFromAPI
+    >>= resolveNewCommittees
+    >>= persistNewCommittees
+    >>= invalidateCommitteeCache
+    >>= getKnownLegislatorsFromDb
+    >>= resolveMembershipsFromMetadata 
+    >>= getKnownMemberships
+    >>= updateMemberships
+    >>= clearMembershipCache
+    |>  nextSteps

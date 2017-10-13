@@ -66,14 +66,19 @@ let persistNewLegislators legislators =
 let invalidateLegislatorCache legislators = 
     invalidateCache' LegislatorsKey legislators
 
+let nextSteps result =
+    match result with
+    | Ok (_, msgs) ->   
+        let next = [ UpdateCommittees ]
+        Next.Succeed(NextWorkflow next,msgs)
+    | Bad msgs ->       Next.FailWith(msgs)
 
-/// Define afetchAllLegislatorsLinksFromApikflow
-let workflow =
-    getCurrentSessionYear
-    >> bind fetchAllLegislatorsLinksFromApi
-    >> bind fetchKnownLegislatorsFromDb
-    >> bind filterOutKnownLegislators
-    >> bind resolveNewLegislators
-    >> bind persistNewLegislators
-    >> bind invalidateLegislatorCache
-    >> bind success
+let workflow() =
+    getCurrentSessionYear()
+    >>= fetchAllLegislatorsLinksFromApi
+    >>= fetchKnownLegislatorsFromDb
+    >>= filterOutKnownLegislators
+    >>= resolveNewLegislators
+    >>= persistNewLegislators
+    >>= invalidateLegislatorCache
+    |>  nextSteps

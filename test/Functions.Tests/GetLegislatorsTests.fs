@@ -99,7 +99,7 @@ let ``get legislators`` () =
 
     let req = new HttpRequestMessage(Content=new StringContent(TestLocation |> JsonConvert.SerializeObject))
     let noErrors = List.empty<WorkFlowFailure>
-    let expectedBody = [expectedSenator; expectedRepresentative] |> JsonConvert.SerializeObject |> WorkflowSuccess
+    let expectedBody = [expectedSenator; expectedRepresentative] |> JsonConvert.SerializeObject
     let expected = Ok(expectedBody, noErrors)
 
     test <@ (GetLegislators.workflow req)() = expected @>

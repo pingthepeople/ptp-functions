@@ -4,15 +4,19 @@ open Chessie.ErrorHandling
 open Microsoft.Azure.WebJobs.Host
 open System
 
+type Link = Link of String
+
 type Workflow =
-    | UpdateBills=10
-    | UpdateSubjects=20
-    | UpdateLegislators=30
-    | UpdateCommittees=40
-    | UpdateActions=50
-    | UpdateChamberCal=60
-    | UpdateCommitteeCal=70
-    | UpdateDeadBills=80
+    | UpdateBills
+    | UpdateBill of string
+    | UpdateSubjects
+    | UpdateLegislators
+    | UpdateCommittees
+    | UpdateCommittee of string
+    | UpdateActions
+    | UpdateChamberCal
+    | UpdateCommitteeCal
+    | UpdateDeadBills
     
 type HttpWorkflow =
     | GenerateBillReport=90
@@ -20,8 +24,6 @@ type HttpWorkflow =
 
 type QueryText = QueryText of string
 type CommandText = CommandText of string
-
-type WorkflowSuccess = WorkflowSuccess of string
 
 type WorkFlowFailure =
     | DatabaseCommandError of CommandText * string
@@ -35,6 +37,12 @@ type WorkFlowFailure =
     | UnknownBill of string
     | UnknownEntity of string
     | RequestValidationError of string
+
+type NextWorkflow = NextWorkflow of Workflow seq
+
+type Next = Result<NextWorkflow,WorkFlowFailure>
+
+let terminalState = NextWorkflow List.empty<Workflow>
 
 let (|StartsWith|_|) (p:string) (s:string) =
     if s.StartsWith(p) then
@@ -91,12 +99,6 @@ let tryF' f failure =
             |> failure            |> fail
 
 
-let success a =
-    WorkflowSuccess "Success!" |> ok
-
-let successWithData data = 
-    WorkflowSuccess data |> ok
-
 /// Given a tuple of 'a and an option 'b, 
 /// unwrap and return only the 'b where 'b is Some value
 let chooseSnd (items:list<('a*'b option)>) =
@@ -112,25 +114,26 @@ let chooseBoth (items:list<('a*'b option)>) =
         | None -> None)
     |> List.choose id
 
-let flatten (msgs:WorkFlowFailure list) = 
+let flatten msgs = 
     msgs 
-    |> List.rev 
-    |> List.map (fun wf -> wf.ToString())
+    |> Seq.map (fun wf -> wf.ToString())
     |> String.concat "\n" 
 
 /// Log succesful or failed completion of the function, along with any warnings.
-let executeWorkflow (log:TraceWriter) source workflow = 
+let executeWorkflow (log:TraceWriter) source (workflow: unit -> Next) = 
 
     log.Info(sprintf "[START] %A" source)
+    
     let result = workflow()
     match result with
     | Fail (errs) ->  
-        errs |> flatten |> log.Error
-    | Warn (WorkflowSuccess s, errs) ->  
-        errs |> flatten |> log.Warning
-        s |> log.Info
-    | Pass (WorkflowSuccess s) -> 
-        s |> log.Info
+        errs |> List.rev |> flatten |> log.Error
+    | Warn (NextWorkflow steps, errs) ->  
+        errs |> List.rev |> flatten |> log.Warning
+        steps |> flatten |> log.Info
+    | Pass (NextWorkflow steps) -> 
+        steps |> flatten  |> log.Info
+
     log.Info(sprintf "[FINISH] %A" source)
     result
 

@@ -60,6 +60,7 @@
     <Compile Include="Common\Database.fs" />
     <Compile Include="Common\Cache.fs" />
     <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Common.fs" />
+    <Compile Include="UpdateCanonicalData\Workflow.Bill.fs" />
     <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Bills.fs" />
     <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Committees.fs" />
     <Compile Include="UpdateCanonicalData\UpdateCanonicalData_Legislators.fs" />

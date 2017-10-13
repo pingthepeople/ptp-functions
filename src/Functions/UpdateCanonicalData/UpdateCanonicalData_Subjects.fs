@@ -46,12 +46,20 @@ let persistNewSubjects subjects =
 let invalidateSubjectsCache (subjects: Subject seq) =
     invalidateCache' SubjectsKey subjects
 
+
+let nextSteps result =
+    match result with
+    | Ok (_, msgs) ->   
+        let next = [ UpdateBills ]
+        Next.Succeed(NextWorkflow next,msgs)
+    | Bad msgs ->       Next.FailWith(msgs)
+
 /// Find, add, and log new subjects
-let workflow =
-    getCurrentSessionYear
-    >> bind fetchAllSubjectsFromApi
-    >> bind fetchKnownSubjectsFromDb
-    >> bind filterOutKnownSubjects
-    >> bind persistNewSubjects
-    >> bind invalidateSubjectsCache
-    >> bind success
+let workflow() =
+    getCurrentSessionYear()
+    >>= fetchAllSubjectsFromApi
+    >>= fetchKnownSubjectsFromDb
+    >>= filterOutKnownSubjects
+    >>= persistNewSubjects
+    >>= invalidateSubjectsCache
+    |>  nextSteps

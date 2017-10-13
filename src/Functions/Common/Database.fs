@@ -56,7 +56,8 @@ let dbParameterizedQuery<'Result> (queryText:string) (param:obj)=
 let expectOne query results = 
     match Seq.tryHead results with
     | None -> 
-        fail (DatabaseQueryError(QueryText(query), "Expected query to return one value but got none."))
+        let msg = "Expected query to return one value but got none."
+        fail (DatabaseQueryError(QueryText(query), msg))
     | Some value -> 
         ok value
 
@@ -66,7 +67,13 @@ let dbQueryOne<'Result> (queryText:string) = trial {
     return ret
     }
 
-let dbCommand (commandText:string) items =
+let dbParameterizedQueryOne<'Result> (queryText:string) (param:obj) = trial {
+    let! results = dbParameterizedQuery<'Result> queryText param
+    let! ret = results |> expectOne queryText
+    return ret
+    }
+
+let dbCommand (commandText:string) items = 
     let op() =
         sqlConnection() 
         |> dapperParameterizedCommand commandText items

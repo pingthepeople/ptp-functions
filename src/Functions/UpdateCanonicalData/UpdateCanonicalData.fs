@@ -7,62 +7,45 @@ open Ptp.UpdateCanonicalData.Committees
 open Ptp.UpdateCanonicalData.Legislators
 open Ptp.UpdateCanonicalData.Bills
 open Ptp.Core
+open Ptp.Workflow
 open System
 open Chessie.ErrorHandling
 open Newtonsoft.Json
 
-type WorkflowMessage = { Command:Workflow; State:string }
-
-let chooseWorkflow msg =
-    match msg.Command with
-    | Workflow.UpdateLegislators -> Legislators.workflow
-    | Workflow.UpdateCommittees  -> Committees.workflow
-    | Workflow.UpdateSubjects    -> Subjects.workflow
-    | Workflow.UpdateBills       -> Bills.workflow
-    | _ -> raise (NotImplementedException())
-
-let chooseNextOnFailure msg errs =
-    match errs with
-    | [ UnknownBill _ ] ->
-        match msg.Command with
-        | Workflow.UpdateActions      -> Some Workflow.UpdateBills
-        | Workflow.UpdateChamberCal   -> Some Workflow.UpdateBills
-        | Workflow.UpdateCommitteeCal -> Some Workflow.UpdateBills
-        | Workflow.UpdateDeadBills    -> Some Workflow.UpdateBills
-        | _ -> failwith "fffff"
-    | _ -> failwith "fffff"
-
-let chooseNextOnSuccess msg =
-    match msg.Command with
-    | Workflow.UpdateLegislators  -> None // Workflow.UpdateCommittees
-    | Workflow.UpdateCommittees   -> None // Some Workflow.UpdateComMembers
-    | Workflow.UpdateSubjects     -> None // Some Workflow.UpdateBills
-    | Workflow.UpdateBills        -> None
-    | Workflow.UpdateActions      -> Some Workflow.UpdateChamberCal
-    | Workflow.UpdateChamberCal   -> Some Workflow.UpdateCommitteeCal
-    | Workflow.UpdateCommitteeCal -> Some Workflow.UpdateDeadBills
-    | Workflow.UpdateDeadBills    -> None
-    | _ -> raise (NotImplementedException (msg.ToString()))
-
-let chooseNext command result =
-    match result with
-    | Fail (errs) -> chooseNextOnFailure command errs
-    | _ -> chooseNextOnSuccess command
-
-let enqueueNext (log:TraceWriter) (queue:ICollector<string>) command=
-    match command with
-    | Some c -> 
-        sprintf "Enqueueing next command: %A" command |> log.Info
-        (c.ToString()) |> queue.Add
-    | None -> 
-        "Enqueueing no next command." |> log.Info
-        ()
-
-
 let deserialize command =
     command 
-    |> JsonConvert.DeserializeObject<WorkflowMessage>
+    |> JsonConvert.DeserializeObject<Workflow>
 
+let chooseWorkflow msg =
+    match msg with
+    | UpdateLegislators -> Legislators.workflow
+    | UpdateCommittees  -> Committees.workflow
+    | UpdateSubjects    -> Subjects.workflow
+    | UpdateBills       -> Bills.workflow
+    | UpdateBill link   -> (fun () -> Bill.workflow link)
+    | _ -> raise (NotImplementedException())
+
+let enqueueNext (log:TraceWriter) (queue:ICollector<string>) result =
+    match result with
+    | Ok (NextWorkflow next, _) ->
+        match next with 
+        | EmptySeq    -> 
+            "This is a terminal step. Enqueueing no next step." 
+            |> log.Info 
+            |> ignore
+        | steps ->
+            let next = 
+                steps 
+                |> Seq.map JsonConvert.SerializeObject
+            next 
+            |> Seq.map (sprintf "Enqueueing next step: %s") 
+            |> Seq.iter log.Info
+            next 
+            |> Seq.iter queue.Add
+    | Bad _ ->
+        "The workflow failed. Enqueueing no next step." 
+        |> log.Info 
+        |> ignore
 
 let Run(log: TraceWriter, command: string, nextCommand: ICollector<string>) =
     sprintf "Received command '%s'" command |> log.Info
@@ -70,5 +53,4 @@ let Run(log: TraceWriter, command: string, nextCommand: ICollector<string>) =
     msg
     |> chooseWorkflow
     |> executeWorkflow log msg
-    |> chooseNext msg
     |> enqueueNext log nextCommand

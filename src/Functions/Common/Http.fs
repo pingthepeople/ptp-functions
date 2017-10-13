@@ -58,23 +58,25 @@ let httpResponse status content =
     |> (fun j -> new StringContent(j, System.Text.Encoding.UTF8, "application/json"))
     |> (fun c -> new HttpResponseMessage(StatusCode = status, Content=c))
 
-let constructHttpResponse twoTrackResult =
-    match twoTrackResult with
-    | Fail msgs -> 
-        match List.head msgs with
-        | RequestValidationError _ -> 
-            let validationErrors = flatten msgs
-            httpResponse HttpStatusCode.BadRequest validationErrors
-        | _ -> 
-            httpResponse HttpStatusCode.InternalServerError "An internal error occurred"
-    | Pass (WorkflowSuccess s) -> 
-        s |> httpResponse HttpStatusCode.OK
-    | Warn (WorkflowSuccess s,msg) -> 
-        s |> httpResponse HttpStatusCode.OK
-
 let executeHttpWorkflow (log:TraceWriter) source workflow =
-    executeWorkflow log source workflow
-    |> constructHttpResponse
+    log.Info(sprintf "[START] %A" source)
+    let response = 
+        match workflow() with
+        | Fail (errs) ->  
+            errs |> flatten |> log.Error
+            match List.head errs with
+            | RequestValidationError _ -> 
+                let validationErrors = flatten errs
+                httpResponse HttpStatusCode.BadRequest validationErrors
+            | _ -> 
+                httpResponse HttpStatusCode.InternalServerError "An internal error occurred"
+        | Warn (resp, errs) ->  
+            errs |> flatten |> log.Warning
+            resp |> httpResponse HttpStatusCode.OK
+        | Pass (resp) ->
+            resp |> httpResponse HttpStatusCode.OK
+    log.Info(sprintf "[FINISH] %A" source)
+    response
 
 let validationError errorMessage = RequestValidationError(errorMessage) |> fail
 
@@ -121,6 +123,10 @@ let fetchAllParallel (urls:string seq) =
 
 let deserializeAs domainModel jsonValues =
     let op() = jsonValues |> Seq.map domainModel
+    tryF' op DTOtoDomainConversionFailure
+
+let deserializeOneAs domainModel jsonValue = 
+    let op() = jsonValue |> domainModel
     tryF' op DTOtoDomainConversionFailure
 
 let serialize resp = 
