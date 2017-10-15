@@ -8,6 +8,49 @@ open System
 open Chessie.ErrorHandling
 open Newtonsoft.Json
 
+(* A diagram showing how how workflows are triggered.
+   Once daily all legislators, subjects, committees, and bills are updated.
+   Every 10 minutes, actions and committee/chamber calendars are updated.
+   In the event that an action, or committee/chamber calendar refers to an 
+     unkonwn bill or committee, an out-of-band update request is made for that
+     bill or committee. New actions/events will be picked up ~10 minutes later.
+
+                                                                                    |--------------------| 
+                                                                                  |--------------------| |
+                |--------------------|            |-------------------|         |--------------------| |-|
+Once Daily:     | Update Legislators |  ---+----> | Update Committees | ------> | Update Committee X |-|   -----> [STOP]
+                |--------------------|     |      |-------------------|         |--------------------|  
+                                           |                ^                     
+                                           |                |                        
+                                           |                |             
+                                           |                +------------------------------------------------------------------------------+
+                                           |                                                                                               |
+                                           |                                                             |---------------|                 |
+                                           |                                                           |---------------| |                 |
+                                           |      |-----------------|        |--------------|        |---------------| |-|                 |
+                                           +--->  | Update Subjects | -----> | Update Bills | -----> | Update Bill X |-| -----> [STOP]     |
+                                                  |-----------------|        |--------------|        |---------------|                     |
+                                                                                                               ^                           |
+                                                                                                               |                           |
+                                                                                                               |                           |
+                                                                                                               +--------------------+      |
+                                                                                                                                    |      |
+                                                                                                             //===============//    |      |
+                                      +-----------------------------+-------------------------------+-----> // Unknown Bill? // ----+      |
+                                      |                             |                               |      //===============//             |
+                                      |                             |                               |                                      |
+                                      |                             |                               |        //====================//      |
+                                      |                             |                               +-----> // Unknown Committee? // ------+ 
+                                      |                             |                               |      //====================//  
+                                      |                             |                               |  
+                |----------------|    |    |--------------------|   |    |-----------------------|  |
+Every 10 Mins:  | Update Actions | ---+--> | Update Chamber Cal | --+--> | Update Committeee Cal |--+-----> [STOP]
+                |----------------|         |--------------------|        |-----------------------|
+
+
+*)
+
+
 let deserialize command =
     command 
     |> JsonConvert.DeserializeObject<Workflow>
