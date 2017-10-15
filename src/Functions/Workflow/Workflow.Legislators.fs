@@ -11,18 +11,23 @@ open Ptp.Database
 open Ptp.Cache
 open System
 
-let legislatorModel (url,json) = 
+let legislatorModel json = 
     let firstName = json?firstName.AsString();
     let lastName = json?lastName.AsString();
+    let link = json?link.AsString();
     let partyName = json?party.AsString()
     let party = Enum.Parse(typedefof<Party>, partyName) :?> Party
-    let chamberName =  json?chamber?name.AsString()
-    let chamber = Enum.Parse(typedefof<Chamber>, chamberName) :?> Chamber
+    let chamber =  
+        let pos = json?position_title.AsString()
+        match pos with
+        | "Senator" -> Chamber.Senate
+        | "Representative" -> Chamber.House
+        | _ -> sprintf "Could not determine chamber for '%s'" pos |> failwith
 
     { Legislator.Id=0; 
       FirstName=firstName; 
       LastName=lastName; 
-      Link=url;
+      Link=link;
       Party=party;
       Chamber=chamber;
       Image=""; 
@@ -30,11 +35,10 @@ let legislatorModel (url,json) =
       District=0; }
 
 /// Fetch URLs for all legislators in the current session.
-let fetchAllLegislatorsLinksFromApi sessionYear = trial {
+let fetchAllLegislatorsFromApi sessionYear = trial {
     let url = sprintf "/%s/legislators" sessionYear
-    let legislatorUrl result = result?link.AsString()
-    let! pages = url |> fetchAllPages
-    let! result = pages |> deserializeAs legislatorUrl
+    let! items = url |> fetchAllPages
+    let! result = items |> deserializeAs legislatorModel
     return result
     }
 
@@ -47,20 +51,13 @@ let fetchKnownLegislatorsFromDb allLegs = trial {
     return (allLegs,knownLegs)
     }
 
-/// Filter out URLs for any legislator that we already have in the database    
-let filterOutKnownLegislators (allLegs,knownLegs) = 
-    allLegs |> except knownLegs |> ok
-
-/// Get full metadata for legislators that we don't yet know about
-let resolveNewLegislators urls = trial {
-    let! metadata = urls |> fetchAllParallel
-    let! models = metadata |> chooseBoth |> deserializeAs legislatorModel
-    return models
-    }
-
 /// Add new legislator records to the databsasase
-let persistNewLegislators legislators = 
-    dbCommand insertLegislator legislators
+let persistNewLegislators (allLegs,knownLegs) = 
+    let stringKey (a:string) = a
+    let modelKey (a:Legislator) = a.Link
+    allLegs 
+    |> except'' knownLegs stringKey modelKey   
+    |> dbCommand insertLegislator
 
 /// Invalidate the Redis cache key for legislators
 let invalidateLegislatorCache legislators = 
@@ -69,16 +66,14 @@ let invalidateLegislatorCache legislators =
 let nextSteps result =
     match result with
     | Ok (_, msgs) ->   
-        let next = [ UpdateCommittees ]
+        let next = [ UpdateCommittees; UpdateSubjects ]
         Next.Succeed(NextWorkflow next,msgs)
     | Bad msgs ->       Next.FailWith(msgs)
 
 let workflow() =
     getCurrentSessionYear()
-    >>= fetchAllLegislatorsLinksFromApi
+    >>= fetchAllLegislatorsFromApi
     >>= fetchKnownLegislatorsFromDb
-    >>= filterOutKnownLegislators
-    >>= resolveNewLegislators
     >>= persistNewLegislators
     >>= invalidateLegislatorCache
     |>  nextSteps
