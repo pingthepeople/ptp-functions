@@ -42,9 +42,10 @@ let deserializeBillModel json = trial {
     return (bill,json)
     }
 
+let selectBillIdQuery = "SELECT Id FROM Bill WHERE Link = @Link"
+
 let getExistingBillRecord (bill,json) = trial {
-    let queryText = sprintf """SELECT Id FROM Bill WHERE Link = @Link"""
-    let! result = dbParameterizedQuery<int> queryText bill
+    let! result = dbParameterizedQuery<int> selectBillIdQuery bill
     let ret = 
         match result |> Seq.tryHead with
         | Some id -> {bill with Bill.Id=id}
@@ -58,32 +59,14 @@ VALUES (@Name,@Link,@Title,@Description,@Chamber,%s);
 SELECT Id FROM Bill WHERE Link = @Link""" SessionIdSubQuery
 
 let updateBillCommand = """
--- Create temporary update table
-CREATE TABLE #BillUpdate(
-    Id int,
-    Name nvarchar(256),
-    Title nvarchar(256),
-    Description nvarchar(max),
-	ApiUpdated DATETIME)
-
--- Populate update table
-INSERT INTO 
-#BillUpdate(Id,Name,Title,Description,Version,ApiUpdated) 
-VALUES (@Id,@Name,@Title,@Description,@Version,@ApiUpdated)
-
--- Update existing records by joining into update table
-UPDATE b
+UPDATE Bill
 SET 
-    b.Name = u.Name,
-    b.Title = u.Title,
-    b.Description = u.Description,
-    b.Version = u.Version
-    b.ApiUpdated = u.ApiUpdated
-FROM Bill b
-JOIN #BillUpdate u ON b.Id = u.Id
-
--- Cleanup
-DROP TABLE #BillUpdate
+    Name = @Name
+    , Title = @Title
+    , Description = @Description
+    , Version = @Version
+    , ApiUpdated = @ApiUpdated
+WHERE Id = @Id
 """
 
 let updateExistingBill (bill:Bill) =
@@ -150,10 +133,13 @@ let reconcileBillSubjects (bill:Bill,json) = trial {
 
 let getKnownLegislatorsQuery = 
     sprintf "SELECT Id,Link From [Legislator] WHERE SessionId = %s" SessionIdSubQuery
-let getKnownBillMemberQuery = 
-    "SELECT Id, BillId, LegislatorId FROM LegislatorBill WHERE BillId = @Id"
+let getKnownBillMemberQuery = """SELECT Id, BillId, LegislatorId, Position 
+    FROM LegislatorBill 
+    WHERE BillId = @Id"""
 let insertBillMemberCommand = 
-    "INSERT INTO LegislatorBill (BillId,LegislatorId) VALUES (@BillId,@LegislatorId)"
+    """INSERT INTO LegislatorBill 
+    (BillId,LegislatorId,Position) 
+    VALUES (@BillId,@LegislatorId,@Position)"""
 let deleteBillMemberCommand = 
     "DELETE FROM LegislatorBill WHERE Id IN @Ids"
 
@@ -193,7 +179,7 @@ let reconcileBillMembers (bill:Bill,json) = trial {
     }
 
 let invalidateBillCache metadata = 
-    metadata |> invalidateCache' BillsKey
+    [metadata] |> invalidateCache' BillsKey
 
 let nextSteps result =
     match result with
@@ -209,4 +195,5 @@ let workflow link =
         >>= addOrUpdateBillRecord
         >>= reconcileBillSubjects
         >>= reconcileBillMembers
+        >>= invalidateBillCache
         |> nextSteps
