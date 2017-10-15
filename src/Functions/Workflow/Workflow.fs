@@ -14,19 +14,21 @@ let deserialize command =
 
 let chooseWorkflow msg =
     match msg with
-    | UpdateLegislators -> Legislators.workflow
-    | UpdateCommittees  -> Committees.workflow
-    | UpdateSubjects    -> Subjects.workflow
-    | UpdateBills       -> Bills.workflow
-    | UpdateBill link   -> Bill.workflow link
+    | UpdateLegislators     -> Legislators.workflow
+    | UpdateCommittees      -> Committees.workflow
+    | UpdateCommittee link  -> Committee.workflow link
+    | UpdateSubjects        -> Subjects.workflow
+    | UpdateBills           -> Bills.workflow
+    | UpdateBill link       -> Bill.workflow link
     | _ -> raise (NotImplementedException())
 
 let enqueueNext (log:TraceWriter) (queue:ICollector<string>) result =
     match result with
     | Ok (NextWorkflow next, _) ->
+        "The workflow succeeded." |> log.Info
         match next with 
         | EmptySeq    -> 
-            "This is a terminal step. Enqueueing no next step." 
+            "This is a terminal step." 
             |> log.Info 
             |> ignore
         | steps ->
@@ -42,6 +44,7 @@ let enqueueNext (log:TraceWriter) (queue:ICollector<string>) result =
         "The workflow failed. Enqueueing no next step." 
         |> log.Info 
         |> ignore
+    result
 
 let Run(log: TraceWriter, command: string, nextCommand: ICollector<string>) =
     sprintf "Received command '%s'" command |> log.Info
@@ -50,3 +53,4 @@ let Run(log: TraceWriter, command: string, nextCommand: ICollector<string>) =
     |> chooseWorkflow
     |> executeWorkflow log msg
     |> enqueueNext log nextCommand
+    |> throwOnFail msg

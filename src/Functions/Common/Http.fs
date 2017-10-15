@@ -11,12 +11,16 @@ open System.Net.Http
 open FSharp.Collections.ParallelSeq
 open Microsoft.Azure.WebJobs.Host
 
+let contentType = "application/json"
+let apiKey =  sprintf "Token %s" (env "IgaApiKey")
+let apiRoot = "https://api.iga.in.gov"
+
 let get (endpoint:string) = 
     let uri =
         match endpoint.StartsWith("http") with
         | true -> endpoint
-        | false -> "https://api.iga.in.gov" + endpoint
-    let standardHeaders = [ "Accept", "application/json"; "Authorization", "Token " + Environment.GetEnvironmentVariable("IgaApiKey") ]
+        | false -> apiRoot + endpoint
+    let standardHeaders = [ "Accept", contentType; "Authorization", apiKey ]
     Http.RequestString(uri, httpMethod = "GET", headers = standardHeaders) 
     |> JsonValue.Parse
 
@@ -53,29 +57,29 @@ let fetchAll endpoint =
 type Error = { Error:string; }
 
 let httpResponse status content =
+    let contentEncoding = System.Text.Encoding.UTF8
     content
     |> JsonConvert.SerializeObject 
-    |> (fun j -> new StringContent(j, System.Text.Encoding.UTF8, "application/json"))
-    |> (fun c -> new HttpResponseMessage(StatusCode = status, Content=c))
+    |> (fun j -> new StringContent(j, contentEncoding, contentType))
+    |> (fun sc -> new HttpResponseMessage(StatusCode = status, Content=sc))
 
 let executeHttpWorkflow (log:TraceWriter) source workflow =
-    log.Info(sprintf "[START] %A" source)
     let response = 
         match workflow() with
         | Fail (errs) ->  
-            errs |> flatten |> log.Error
             match List.head errs with
             | RequestValidationError _ -> 
-                let validationErrors = flatten errs
+                let validationErrors = flatten source errs
                 httpResponse HttpStatusCode.BadRequest validationErrors
             | _ -> 
-                httpResponse HttpStatusCode.InternalServerError "An internal error occurred"
+                errs |> flatten source |> log.Warning
+                let genericError = "An internal error occurred"
+                httpResponse HttpStatusCode.InternalServerError genericError
         | Warn (resp, errs) ->  
-            errs |> flatten |> log.Warning
+            errs |> flatten source |> log.Warning
             resp |> httpResponse HttpStatusCode.OK
         | Pass (resp) ->
             resp |> httpResponse HttpStatusCode.OK
-    log.Info(sprintf "[FINISH] %A" source)
     response
 
 let validationError errorMessage = RequestValidationError(errorMessage) |> fail

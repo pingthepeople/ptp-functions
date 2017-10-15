@@ -87,7 +87,7 @@ let addOrUpdateBillRecord (bill:Bill, json) = trial {
 
 // UPDATE BILL / SUBJECT RELATIONSHIPS
 
-let getKnownSubjectsQuery = 
+let getSessionSubjectsQuery = 
     sprintf "SELECT Id,Link From [Subject] WHERE SessionId = %s" SessionIdSubQuery
 let getKnownBillSubjectsQuery = 
     "SELECT Id, BillId, SubjectId FROM BillSubject WHERE BillId = @Id"
@@ -120,7 +120,7 @@ let deleteBillSubjects known latest =
     dbCommandById deleteBillSubjectsCommand toDelete
     
 let reconcileBillSubjects (bill:Bill,json) = trial {
-    let! knownSubjects = dbQuery<LinkAndId> getKnownSubjectsQuery
+    let! knownSubjects = dbQuery<LinkAndId> getSessionSubjectsQuery
     let latestBillSubjects = parseLatestBillSubjects knownSubjects bill json
     let! knownBillSubjects = 
         dbParameterizedQuery<BillSubject> getKnownBillSubjectsQuery bill
@@ -131,7 +131,7 @@ let reconcileBillSubjects (bill:Bill,json) = trial {
 
 // UPDATE BILL / LEGISLATOR RELATIONSHIPS
 
-let getKnownLegislatorsQuery = 
+let getSessionLegislatorsQuery = 
     sprintf "SELECT Id,Link From [Legislator] WHERE SessionId = %s" SessionIdSubQuery
 let getKnownBillMemberQuery = """SELECT Id, BillId, LegislatorId, Position 
     FROM LegislatorBill 
@@ -169,7 +169,7 @@ let deleteBillMembers known latest =
     dbCommandById deleteBillMemberCommand toDelete
 
 let reconcileBillMembers (bill:Bill,json) = trial {
-    let! knownLegislators = dbQuery<LinkAndId> getKnownLegislatorsQuery
+    let! knownLegislators = dbQuery<LinkAndId> getSessionLegislatorsQuery
     let latestBillMembers = parseLatestBillMembers knownLegislators bill json
     let! knownBillMembers = 
         dbParameterizedQuery<BillMember> getKnownBillMemberQuery bill

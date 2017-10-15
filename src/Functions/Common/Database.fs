@@ -12,8 +12,7 @@ type IdSelect = {Id:int}
 type IdListSelect = {Ids:int[]}
 type LinksListSelect = {Links:string[]}
 
-let sqlConStr() = System.Environment.GetEnvironmentVariable("SqlServer.ConnectionString")
-let sqlConnection() = new SqlConnection(sqlConStr())
+let sqlConStr = env "SqlServer.ConnectionString"
 
 let expand (param : Map<string,_>) =
     let expando = ExpandoObject()
@@ -25,15 +24,15 @@ let expand (param : Map<string,_>) =
 let dapperQuery<'Result> (query:string) (connection:SqlConnection) =
     connection.Query<'Result>(query)
     
-let dapperParametrizedQuery<'Result> (query:string) (param:obj) (connection:SqlConnection) : 'Result seq =
+let dapperParameterizedQuery<'Result> (query:string) (param:obj) (connection:SqlConnection) : 'Result seq =
     connection.Query<'Result>(query, param)
     
-let dapperMapParametrizedQuery<'Result> (query:string) (param : Map<string,_>) (connection:SqlConnection) : 'Result seq =
+let dapperMapParameterizedQuery<'Result> (query:string) (param : Map<string,_>) (connection:SqlConnection) : 'Result seq =
     let expando = ExpandoObject()
     let expandoDictionary = expando :> IDictionary<string,obj>
     for paramValue in param do
         expandoDictionary.Add(paramValue.Key, paramValue.Value :> obj)
-    connection |> dapperParametrizedQuery query (expand param)
+    connection |> dapperParameterizedQuery query (expand param)
     
 let dapperParameterizedCommand (query:string) (param:obj) (connection:SqlConnection) =
     connection.Execute(query, param) |> ignore
@@ -41,15 +40,17 @@ let dapperParameterizedCommand (query:string) (param:obj) (connection:SqlConnect
 // ROP
 let dbQuery<'Result> (queryText:string) =
     let op() =
-        sqlConnection() 
+        use sqlCon = new SqlConnection(sqlConStr)
+        sqlCon
         |> dapperQuery<'Result> queryText
         |> Seq.cast<'Result>
     tryF' op (fun err -> DatabaseQueryError(QueryText(queryText), err))
 
 let dbParameterizedQuery<'Result> (queryText:string) (param:obj)=
     let op() =
-        sqlConnection() 
-        |> dapperParametrizedQuery<'Result> queryText param
+        use sqlCon = new SqlConnection(sqlConStr)
+        sqlCon
+        |> dapperParameterizedQuery<'Result> queryText param
         |> Seq.cast<'Result>
     tryF' op (fun err -> DatabaseQueryError(QueryText(queryText), err))
 
@@ -75,7 +76,8 @@ let dbParameterizedQueryOne<'Result> (queryText:string) (param:obj) = trial {
 
 let dbCommand (commandText:string) items = 
     let op() =
-        sqlConnection() 
+        use sqlCon = new SqlConnection(sqlConStr)
+        sqlCon
         |> dapperParameterizedCommand commandText items
         items
     tryF' op (fun e -> DatabaseCommandError (CommandText(commandText),e))

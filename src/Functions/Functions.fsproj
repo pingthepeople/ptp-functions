@@ -67,10 +67,12 @@
     <Compile Include="Workflow\Workflow.Common.fs" />
     <Compile Include="Workflow\Workflow.Bill.fs" />
     <Compile Include="Workflow\Workflow.Bills.fs" />
+    <Compile Include="Workflow\Workflow.Committee.fs" />
     <Compile Include="Workflow\Workflow.Committees.fs" />
     <Compile Include="Workflow\Workflow.Legislators.fs" />
     <Compile Include="Workflow\Workflow.Subjects.fs" />
     <Compile Include="Workflow\Workflow.fs" />
+    <None Include="Workflow\function.json" />
     <None Include="host.json" />
     <None Include="local.settings.json" />
     <Content Include="packages.config" />

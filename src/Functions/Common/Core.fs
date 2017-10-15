@@ -59,6 +59,7 @@ let (|EmptySeq|_|) a =
 let isEmpty str = str |> String.IsNullOrWhiteSpace
 let timestamp() = System.DateTime.Now.ToString("HH:mm:ss.fff")
 let datestamp() = System.DateTime.Now.ToString("yyyy-MM-dd")
+let env = System.Environment.GetEnvironmentVariable
 
 let inline except'' a aKey bKey b =
     let b' = b |> Seq.map bKey
@@ -114,31 +115,28 @@ let chooseBoth (items:list<('a*'b option)>) =
         | None -> None)
     |> List.choose id
 
-let flatten msgs = 
+let inline flatten source msgs = 
     msgs 
     |> Seq.map (fun wf -> wf.ToString())
     |> String.concat "\n" 
+    |> sprintf "%A\n%s" source
 
 /// Log succesful or failed completion of the function, along with any warnings.
 let executeWorkflow (log:TraceWriter) source (workflow: unit -> Next) = 
-
-    log.Info(sprintf "[START] %A" source)
-    
     let result = workflow()
     match result with
-    | Fail (errs) ->  
-        errs |> List.rev |> flatten |> log.Error
+    | Fail (errs) -> 
+        () // will be logged when exception is thrown.
     | Warn (NextWorkflow steps, errs) ->  
-        errs |> List.rev |> flatten |> log.Warning
-        steps |> flatten |> log.Info
+        errs |> flatten source |> log.Warning
+        steps |> flatten source |> log.Info
     | Pass (NextWorkflow steps) -> 
-        steps |> flatten  |> log.Info
-
+        steps |> flatten source |> log.Info
     log.Info(sprintf "[FINISH] %A" source)
     result
 
-let throwOnFail result =
-    match result with   
-    | Fail (boo) ->
-        boo |> flatten |> Exception |> raise
+let throwOnFail source result =
+    match result with
+    | Fail (errs) ->
+        errs |> flatten source |> Exception |> raise
     | _ -> ignore
