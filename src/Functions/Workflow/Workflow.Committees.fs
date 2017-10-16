@@ -23,6 +23,7 @@ let nextSteps result =
     | Ok (links, msgs) ->
         let next = 
             links
+            |> Seq.take 32
             |> Seq.map UpdateCommittee
             |> NextWorkflow
         Next.Succeed(next,msgs)
