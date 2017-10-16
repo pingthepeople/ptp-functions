@@ -12,7 +12,7 @@
     {
       "name": "nextCommand",
       "queueName": "command",
-      "connection": "CommandQueue.ConnectionString",
+      "connection": "ServiceBus.ConnectionString",
       "accessRights": "manage",
       "type": "serviceBus",
       "direction": "out"

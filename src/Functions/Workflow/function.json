@@ -6,7 +6,7 @@
     {
       "name": "command",
       "queueName": "command",
-      "connection": "CommandQueue.ConnectionString",
+      "connection": "ServiceBus.ConnectionString",
       "accessRights": "manage",
       "type": "serviceBusTrigger",
       "direction": "in"
@@ -14,7 +14,7 @@
     {
       "name": "nextCommand",
       "queueName": "command",
-      "connection": "CommandQueue.ConnectionString",
+      "connection": "ServiceBus.ConnectionString",
       "accessRights": "manage",
       "type": "serviceBus",
       "direction": "out"

@@ -70,13 +70,12 @@ let chooseWorkflow msg =
     | UpdateBill link       -> Bill.workflow link
     | _ -> raise (NotImplementedException())
 
-let enqueueNext (log:TraceWriter) (queue:ICollector<string>) result =
+let enqueueNext (log:TraceWriter) source elapsed (queue:ICollector<string>) result =
     match result with
     | Ok (NextWorkflow next, _) ->
-        "The workflow succeeded." |> log.Info
         match next with 
         | EmptySeq    -> 
-            "This is a terminal step." 
+            sprintf "[%A] succeeded in %d ms. This is a terminal step." source elapsed
             |> log.Info 
             |> ignore
         | steps ->
@@ -84,25 +83,27 @@ let enqueueNext (log:TraceWriter) (queue:ICollector<string>) result =
                 steps 
                 |> Seq.map JsonConvert.SerializeObject
             next 
-            |> Seq.map (sprintf "Enqueueing next step: %s") 
-            |> Seq.iter log.Info
+            |> Seq.map (fun n -> n.ToString())
+            |> String.concat "\n"
+            |> sprintf "[%A] succeeded in %d ms. Next steps:\n%s" source elapsed
+            |> log.Info
             next 
             |> Seq.iter queue.Add
     | Bad _ ->
-        "The workflow failed. Enqueueing no next step." 
+        sprintf "[%A] failed in %d ms. Enqueueing no next step." source elapsed
         |> log.Info 
         |> ignore
     result
 
 let Run(log: TraceWriter, command: string, nextCommand: ICollector<string>) =
     try
+        let stopwatch = Diagnostics.Stopwatch.StartNew()
         match deserialize command with 
         | Some cmd ->
-            sprintf "Received command: %A" cmd |> log.Info
             cmd
             |> chooseWorkflow
             |> executeWorkflow log cmd
-            |> enqueueNext log nextCommand
+            |> enqueueNext log cmd (stopwatch.ElapsedMilliseconds) nextCommand
             |> throwOnFail cmd
             |> ignore
         | None -> 
