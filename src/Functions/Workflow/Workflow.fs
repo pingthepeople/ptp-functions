@@ -76,6 +76,7 @@ let enqueueNext (log:TraceWriter) source elapsed (queue:ICollector<string>) resu
         match next with 
         | EmptySeq    -> 
             sprintf "[%A] succeeded in %d ms. This is a terminal step." source elapsed
+            |> timestamped
             |> log.Info 
             |> ignore
         | steps ->
@@ -86,11 +87,13 @@ let enqueueNext (log:TraceWriter) source elapsed (queue:ICollector<string>) resu
             |> Seq.map (fun n -> n.ToString())
             |> String.concat "\n"
             |> sprintf "[%A] succeeded in %d ms. Next steps:\n%s" source elapsed
+            |> timestamped
             |> log.Info
             next 
             |> Seq.iter queue.Add
     | Bad _ ->
         sprintf "[%A] failed in %d ms. Enqueueing no next step." source elapsed
+        |> timestamped
         |> log.Info 
         |> ignore
     result
@@ -100,6 +103,9 @@ let Run(log: TraceWriter, command: string, nextCommand: ICollector<string>) =
         let stopwatch = Diagnostics.Stopwatch.StartNew()
         match deserialize command with 
         | Some cmd ->
+            sprintf "Start workflow: [%A]" cmd 
+            |> timestamped
+            |> log.Info
             cmd
             |> chooseWorkflow
             |> executeWorkflow log cmd
@@ -107,7 +113,9 @@ let Run(log: TraceWriter, command: string, nextCommand: ICollector<string>) =
             |> throwOnFail cmd
             |> ignore
         | None -> 
-            "Received empty command" |> log.Warning
+            "Received empty command"
+            |> timestamped 
+            |> log.Warning
     with ex -> 
         ex.ToString() |> log.Warning
         raise ex

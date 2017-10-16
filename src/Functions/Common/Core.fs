@@ -72,6 +72,7 @@ let right (p:string) (s:string) =
 
 let isEmpty str = str |> String.IsNullOrWhiteSpace
 let timestamp() = System.DateTime.Now.ToString("HH:mm:ss.fff")
+let timestamped s = sprintf "%s %s" (timestamp()) s
 let datestamp() = System.DateTime.Now.ToString("yyyy-MM-dd")
 let env = System.Environment.GetEnvironmentVariable
 
