@@ -23,7 +23,7 @@ let get (endpoint:string) =
         match endpoint.StartsWith("http") with
         | true -> endpoint
         | false -> apiRoot + endpoint
-    Http.RequestString(uri, httpMethod = "GET", headers = standardHeaders) 
+    Http.RequestString(uri, httpMethod = "GET", headers = standardHeaders, timeout=5000) 
     |> JsonValue.Parse
 
 let tryGet endpoint =
@@ -39,7 +39,7 @@ let tryGet endpoint =
         | 3 -> failwith errors
         | x ->
             try
-                System.Threading.Thread.Sleep(x * 1000)
+                System.Threading.Thread.Sleep(x * 2000)
                 get endpoint
             with
             | ex -> tryGet' (x+1) endpoint (ex.ToString() :: errors)
