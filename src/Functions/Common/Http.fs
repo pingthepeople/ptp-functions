@@ -11,16 +11,18 @@ open System.Net.Http
 open FSharp.Collections.ParallelSeq
 open Microsoft.Azure.WebJobs.Host
 
-let contentType = "application/json"
-let apiKey =  sprintf "Token %s" (env "IgaApiKey")
 let apiRoot = "https://api.iga.in.gov"
+let contentType = "application/json"
+let standardHeaders = 
+  [ "Accept", contentType
+    "Accept-Encoding", "gzip, deflate, compress"
+    "Authorization", sprintf "Token %s" (env "IgaApiKey") ]
 
 let get (endpoint:string) = 
     let uri =
         match endpoint.StartsWith("http") with
         | true -> endpoint
         | false -> apiRoot + endpoint
-    let standardHeaders = [ "Accept", contentType; "Authorization", apiKey ]
     Http.RequestString(uri, httpMethod = "GET", headers = standardHeaders) 
     |> JsonValue.Parse
 
@@ -105,11 +107,11 @@ let inline validateInt x f (errorMessage:string) (param:int) =
 
 let fetch (url:string) =
     let op() = tryGet url
-    tryF' op (fun e -> APIQueryError (QueryText(url),e))
+    tryFail op (fun e -> APIQueryError (QueryText(url),e))
 
 let fetchAllPages (url:string) =
     let op() = fetchAll url
-    tryF' op (fun e -> APIQueryError (QueryText(url),e))
+    tryFail op (fun e -> APIQueryError (QueryText(url),e))
 
 /// Fetch all URLs in parallel and pair the responses with their URL
 let fetchAllParallel (urls:string seq) =
@@ -127,12 +129,12 @@ let fetchAllParallel (urls:string seq) =
 
 let deserializeAs domainModel jsonValues =
     let op() = jsonValues |> Seq.map domainModel
-    tryF' op DTOtoDomainConversionFailure
+    tryFail op DTOtoDomainConversionFailure
 
 let deserializeOneAs domainModel jsonValue = 
     let op() = jsonValue |> domainModel
-    tryF' op DTOtoDomainConversionFailure
+    tryFail op DTOtoDomainConversionFailure
 
 let serialize resp = 
     let op() = resp |> JsonConvert.SerializeObject
-    tryF' op DomainToDTOConversionFailure
+    tryFail op DomainToDTOConversionFailure

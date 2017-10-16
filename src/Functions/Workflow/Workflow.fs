@@ -18,7 +18,7 @@ open Newtonsoft.Json
                                                                                                 |--------------------| 
                                                                                               |--------------------| |
                             |--------------------|            |-------------------|         |--------------------| |-|
-Once Daily: [TIMER] ------> | Update Legislators | ----+----> | Update Committees | ------> | Update Committee X |-|   -----> [STOP]
+Once Daily: [TIMER] ------> | Update Legislators | ----+----> | Update Committees | ------> | Update Committee X |-|   ---> [STOP]
                             |--------------------|     |      |-------------------|         |--------------------|  
                                                        |                ^                     
                                                        |                |                        
@@ -27,7 +27,7 @@ Once Daily: [TIMER] ------> | Update Legislators | ----+----> | Update Committee
                                                        |                                                             |---------------|                 |
                                                        |                                                           |---------------| |                 |
                                                        |      |-----------------|        |--------------|        |---------------| |-|                 |
-                                                       +--->  | Update Subjects | -----> | Update Bills | -----> | Update Bill X |-| -----> [STOP]     |
+                                                       +--->  | Update Subjects | -----> | Update Bills | -----> | Update Bill X |-|   ---> [STOP]     |
                                                               |-----------------|        |--------------|        |---------------|                     |
                                                                                                                            ^                           |
                                                                                                                            |                           |
@@ -50,8 +50,15 @@ Every 10 Mins: [TIMER] ---> | Update Actions | ---+--> | Update Chamber Cal | --
 
 
 let deserialize command =
-    command 
-    |> JsonConvert.DeserializeObject<Workflow>
+    try
+        match command with 
+        | "" -> None
+        | _  -> 
+            command 
+            |> JsonConvert.DeserializeObject<Workflow>
+            |> Some
+    with ex -> None
+    
 
 let chooseWorkflow msg =
     match msg with
@@ -88,10 +95,18 @@ let enqueueNext (log:TraceWriter) (queue:ICollector<string>) result =
     result
 
 let Run(log: TraceWriter, command: string, nextCommand: ICollector<string>) =
-    sprintf "Received command '%s'" command |> log.Info
-    let msg = deserialize command
-    msg
-    |> chooseWorkflow
-    |> executeWorkflow log msg
-    |> enqueueNext log nextCommand
-    |> throwOnFail msg
+    try
+        match deserialize command with 
+        | Some cmd ->
+            sprintf "Received command: %A" cmd |> log.Info
+            cmd
+            |> chooseWorkflow
+            |> executeWorkflow log cmd
+            |> enqueueNext log nextCommand
+            |> throwOnFail cmd
+            |> ignore
+        | None -> 
+            "Received empty command" |> log.Warning
+    with ex -> 
+        ex.ToString() |> log.Warning
+        raise ex

@@ -24,13 +24,21 @@ let LegislatorsKey = """laravel:legislators"""
 [<Literal>]
 let MembershipsKey = """laravel:memberships"""
 
-let delete (key:string) =
-    let cacheKey = sprintf "%s%s" key (System.Environment.GetEnvironmentVariable("Redis.CacheKeyPostfix"))
-    let muxer  = 
-        System.Environment.GetEnvironmentVariable("Redis.ConnectionString")
-        |> ConnectionMultiplexer.Connect
+let envPostfix = env "Redis.CacheKeyPostfix"
+
+let config = 
+    let cfg = 
+        env "Redis.ConnectionString" 
+        |> ConfigurationOptions.Parse
+    cfg.ConnectTimeout <- 15000
+    cfg
+
+let delete key =
+    let cacheKey = sprintf "%s%s" key envPostfix
+    use muxer = config |> ConnectionMultiplexer.Connect
     let db = muxer.GetDatabase(0)
-    (RedisKey.op_Implicit cacheKey) 
+    cacheKey
+    |> RedisKey.op_Implicit
     |> db.KeyDeleteAsync
     |> muxer.Wait
     |> ignore
@@ -44,4 +52,4 @@ let invalidateCache key seq =
 let invalidateCache' key seq =
     let op() =
         invalidateCache key seq
-    tryF' op CacheInvalidationError
+    tryWarn op seq CacheInvalidationError

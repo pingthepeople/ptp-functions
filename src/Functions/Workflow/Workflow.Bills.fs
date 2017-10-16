@@ -31,20 +31,19 @@ let fetchRecentlyUpdatedBillsFromApi (sessionYear, lastUpdate) = trial {
     let billLink json = json?link.AsString()
     let! billUrls = pages |> deserializeAs billLink
     // grab the full bill metadata from each bill url
-    let! metadata = billUrls |> Seq.take 20 |> fetchAllParallel
+    //let! metadata = billUrls |> fetchAllParallel
     // find the recently updated metadata based on the 'latestVersion.updated' timestamp
-    let wasRecentlyUpdated json = 
-        json?latestVersion?updated.AsDateTime() > lastUpdate
-    let recentlyUpdated = metadata |> chooseSnd |> Seq.filter wasRecentlyUpdated
-    return recentlyUpdated
+    //let wasRecentlyUpdated json = 
+    // json?latestVersion?updated.AsDateTime() > lastUpdate
+    //let recentlyUpdated = metadata |> chooseSnd |> Seq.filter wasRecentlyUpdated
+    return billUrls
     }
 
 let nextSteps result =
     match result with
-    | Ok (bills, msgs) ->
+    | Ok (urls, msgs) ->
         let next = 
-            bills 
-            |> Seq.map (fun json -> json?Link.AsString())
+            urls 
             |> Seq.map UpdateBill
             |> NextWorkflow
         Next.Succeed(next,msgs)

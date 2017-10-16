@@ -22,11 +22,12 @@ let nextSteps result =
     match result with
     | Ok (links, msgs) ->
         let next = 
-            links 
+            links
             |> Seq.map UpdateCommittee
             |> NextWorkflow
         Next.Succeed(next,msgs)
-    | Bad msgs ->       Next.FailWith(msgs)
+    | Bad msgs ->       
+        Next.FailWith(msgs)
 
 /// Fetch and enqueue all commitees for processing
 let workflow() =

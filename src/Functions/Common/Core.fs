@@ -37,6 +37,7 @@ type WorkFlowFailure =
     | UnknownBill of string
     | UnknownEntity of string
     | RequestValidationError of string
+    | NextStepResolution of string
 
 type NextWorkflow = NextWorkflow of Workflow seq
 
@@ -91,13 +92,20 @@ let tee f x =
     f(x)
     x
 
-let tryF' f failure =
+let tryExec f failure handle = 
     try 
         f() |> ok 
-    with 
-        ex ->
-            ex.ToString()
-            |> failure            |> fail
+    with ex ->
+        ex.ToString()
+        |> failure
+        |> handle
+
+let tryFail f failure =
+    tryExec f failure fail
+    
+let tryWarn f x failure = 
+    let warn msg = warn msg x
+    tryExec f failure warn
 
 
 /// Given a tuple of 'a and an option 'b, 
@@ -126,13 +134,10 @@ let executeWorkflow (log:TraceWriter) source (workflow: unit -> Next) =
     let result = workflow()
     match result with
     | Fail (errs) -> 
-        () // will be logged when exception is thrown.
-    | Warn (NextWorkflow steps, errs) ->  
         errs |> flatten source |> log.Warning
-        steps |> flatten source |> log.Info
-    | Pass (NextWorkflow steps) -> 
-        steps |> flatten source |> log.Info
-    log.Info(sprintf "[FINISH] %A" source)
+    | Warn (NextWorkflow steps, errs) ->  
+        errs |> flatten source |> log.Warning        
+    | Pass (NextWorkflow steps) -> ()            
     result
 
 let throwOnFail source result =

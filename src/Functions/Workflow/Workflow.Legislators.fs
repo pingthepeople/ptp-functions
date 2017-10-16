@@ -67,8 +67,9 @@ let nextSteps result =
     match result with
     | Ok (_, msgs) ->   
         let next = [ UpdateCommittees; UpdateSubjects ]
-        Next.Succeed(NextWorkflow next,msgs)
-    | Bad msgs ->       Next.FailWith(msgs)
+        Next.Succeed(NextWorkflow next, msgs)
+    | Bad msgs ->       
+        Next.FailWith(msgs)
 
 let workflow() =
     getCurrentSessionYear()

@@ -118,11 +118,6 @@ let updateMemberships (allMemberships, knownMemberships) = trial {
     return added @ deleted
     }
 
-let nextSteps result =
-    match result with
-    | Ok (_, msgs) ->   
-        Next.Succeed(terminalState,msgs)
-    | Bad msgs ->       Next.FailWith(msgs)
 
 let fetchCommitteeMetadata link =
     fetch link
@@ -176,6 +171,12 @@ let clearCommitteeCache updatedMemberships =
 /// Invalidate the Redis cache key for committees
 let clearMembershipCache updatedMemberships =
     updatedMemberships |> invalidateCache' MembershipsKey
+
+let nextSteps result =
+    match result with
+    | Ok (_, msgs) ->   
+        Next.Succeed(terminalState,msgs)
+    | Bad msgs ->       Next.FailWith(msgs)
 
 /// Find, add, and log new committees
 let workflow link =

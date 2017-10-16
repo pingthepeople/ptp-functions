@@ -70,7 +70,7 @@ let fetchLegislatorsHtml location =
     let zip = location.Zip |> WebUtility.UrlEncode
     let url = sprintf "http://iga.in.gov/legislative/%d/legislators/search/?txtAddress=%s&txtCity=%s&txtZip1=%s" year address city zip
     let op() = url |> HtmlDocument.Load
-    tryF' op (fun err -> (APIQueryError(QueryText(url), err)))
+    tryFail op (fun err -> (APIQueryError(QueryText(url), err)))
 
 let parseLegislators (document:HtmlDocument) =
     let legislators = 

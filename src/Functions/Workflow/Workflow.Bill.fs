@@ -10,29 +10,43 @@ open Ptp.Http
 open Ptp.Database
 open Ptp.Cache
 open Ptp.Workflow.Common
+open System
 
 // ADD/UPDATE BILL
 
 let billModel (bill:JsonValue) = 
+    let name = bill?billName.AsString()
+    let link = bill?link.AsString()
+    let title = bill?latestVersion?shortDescription.AsString()
+    let description = bill?latestVersion?digest.AsString()
+
     let printVersion =
         match bill.TryGetProperty("printVersion") with
         | None      -> 1
         | Some x    -> x.AsInteger()
+
     let chamber =
         if bill?originChamber.AsString() = "house" 
         then Chamber.House 
         else Chamber.Senate
+
+    let apiUpdated = 
+        let updated = bill?latestVersion?updated
+        if updated = JsonValue.Null
+        then bill?latestVersion?created.AsDateTime()
+        else updated.AsDateTime()
+
     { Bill.Id=0; 
     SessionId=0; 
-    Name=bill?billName.AsString(); 
-    Link=bill?link.AsString(); 
-    Title=bill?latestVersion?shortDescription.AsString(); 
-    Description=bill?latestVersion?digest.AsString();
+    Name=name; 
+    Link=link; 
+    Title=title; 
+    Description=description;
     Chamber=chamber;
     Authors="";
     IsDead=false;
     Version=printVersion;
-    ApiUpdated = bill?latestVersion?updated.AsDateTime()}
+    ApiUpdated = apiUpdated }
 
 let fetchBillMetadata link =
     fetch link
@@ -185,7 +199,8 @@ let nextSteps result =
     match result with
     | Ok (_, msgs) ->   
         Next.Succeed(terminalState,msgs)
-    | Bad msgs ->       Next.FailWith(msgs)
+    | Bad msgs ->       
+        Next.FailWith(msgs)
 
 let workflow link = 
     fun () ->

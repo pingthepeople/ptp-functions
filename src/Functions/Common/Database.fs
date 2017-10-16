@@ -44,7 +44,7 @@ let dbQuery<'Result> (queryText:string) =
         sqlCon
         |> dapperQuery<'Result> queryText
         |> Seq.cast<'Result>
-    tryF' op (fun err -> DatabaseQueryError(QueryText(queryText), err))
+    tryFail op (fun err -> DatabaseQueryError(QueryText(queryText), err))
 
 let dbParameterizedQuery<'Result> (queryText:string) (param:obj)=
     let op() =
@@ -52,7 +52,7 @@ let dbParameterizedQuery<'Result> (queryText:string) (param:obj)=
         sqlCon
         |> dapperParameterizedQuery<'Result> queryText param
         |> Seq.cast<'Result>
-    tryF' op (fun err -> DatabaseQueryError(QueryText(queryText), err))
+    tryFail op (fun err -> DatabaseQueryError(QueryText(queryText), err))
 
 let expectOne query results = 
     match Seq.tryHead results with
@@ -80,7 +80,7 @@ let dbCommand (commandText:string) items =
         sqlCon
         |> dapperParameterizedCommand commandText items
         items
-    tryF' op (fun e -> DatabaseCommandError (CommandText(commandText),e))
+    tryFail op (fun e -> DatabaseCommandError (CommandText(commandText),e))
 
 let getCurrentSessionYear () =
     dbQueryOne<string> "SELECT TOP 1 Name FROM Session WHERE Active = 1"
