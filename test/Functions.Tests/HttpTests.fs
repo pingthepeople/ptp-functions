@@ -23,7 +23,7 @@ type Shape =
 
 type HttpTests(output:ITestOutputHelper) =
 
-    [<Fact>] 
+    //[<Fact>] 
     member __.``parallel fetch with errors`` ()=
         let urls = [
             "https://api.status.iu.edu/notices";

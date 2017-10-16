@@ -64,7 +64,6 @@
     <Content Include="App.config" />
     <Compile Include="CoreTests.fs" />
     <Compile Include="HttpTests.fs" />
-    <Compile Include="DatabaseTests.fs" />
     <Compile Include="GenerateBillReportTests.fs" />
     <Compile Include="GetLegislatorsTests.fs" />
     <Compile Include="WorkflowTests.fs" />

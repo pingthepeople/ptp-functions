@@ -8,7 +8,7 @@ open Ptp.Http
 
 type CommitteeTests(output:ITestOutputHelper) =
 
-    [<Fact>] 
+    //[<Fact>] 
     member __.``parallel fetch with errors`` ()=
         System.Environment.SetEnvironmentVariable("IgaApiKey", "CHANGEME")
 
