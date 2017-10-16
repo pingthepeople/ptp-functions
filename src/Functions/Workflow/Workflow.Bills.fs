@@ -44,7 +44,7 @@ let nextSteps result =
     | Ok (urls, msgs) ->
         let next = 
             urls 
-            |> Seq.take 32
+            |> Seq.take 64
             |> Seq.map UpdateBill
             |> NextWorkflow
         Next.Succeed(next,msgs)
