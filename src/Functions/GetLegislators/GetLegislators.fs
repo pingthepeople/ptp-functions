@@ -10,6 +10,7 @@ open Ptp.Http
 open System
 open System.Net
 open System.Net.Http
+open Ptp.Database
 
 let detail side (node:HtmlNode) =
     node.CssSelect(sprintf ".legislator-lookup-details-%s" side)
@@ -19,18 +20,22 @@ let detail side (node:HtmlNode) =
     |> (fun n -> n.InnerText().Trim())
 
 let parse chamber (node:HtmlNode)  =
+    let trim (s:string) = s.Trim([|' '; '/'|])
     let person = 
         node.Descendants ["h3"]
         |> Seq.head
         |> (fun h3 -> h3.Descendants ["a"])
         |> Seq.head
-    let name = person.InnerText().Trim()
-    let url = sprintf "https://iga.in.gov%s" (person.AttributeValue("href").Trim())
+    let name = person.InnerText() |> trim
+    let url = 
+        person.AttributeValue("href")
+        |> trim
+        |> sprintf "https://iga.in.gov/%s"
     let image =
         node.CssSelect (".legislator-lookup-portrait > img")
         |> Seq.head
-        |> (fun n -> n.AttributeValue("src").Trim())
-        |> sprintf "https://iga.in.gov%s"
+        |> (fun n -> n.AttributeValue("src") |> trim)
+        |> sprintf "https://iga.in.gov/%s"
     let party =
         node 
         |> detail "left"
@@ -40,7 +45,7 @@ let parse chamber (node:HtmlNode)  =
         |> detail "right" 
         |> Int32.Parse
 
-    {Name=name; Link=url; Chamber=chamber; Image=image; Party=party; District=district}
+    {Name=name; Link=url; Chamber=chamber; Image=image; Party=party; District=district; Id=0}
 
 let setReasonableDefaults loc = 
     match loc.Year with 
@@ -72,14 +77,38 @@ let fetchLegislatorsHtml location =
     let op() = url |> HtmlDocument.Load
     tryFail op (fun err -> (APIQueryError(QueryText(url), err)))
 
+type Representation = {Senator:Body; Representative:Body}
+
 let parseLegislators (document:HtmlDocument) =
     let legislators = 
         document.CssSelect ("div.legislator-wrapper") 
         |> Seq.toArray
-    if legislators |> Seq.isEmpty 
-    then fail (UnknownEntity "No legislators found for that address")
-    else ok [ legislators.[0] |> parse Chamber.Senate;
-              legislators.[1] |> parse Chamber.House ]
+    match legislators with
+    | EmptySeq -> fail (UnknownEntity "No legislators found for that address")
+    | _ ->
+        let sen = legislators.[0] |> parse Chamber.Senate
+        let rep = legislators.[1] |> parse Chamber.House
+        {Senator=sen; Representative=rep} |> ok
+
+let parseLink (body:Body) = 
+    let queryLink = body.Link |> right "legislator_"
+    match queryLink with
+    | Some l -> l |> ok
+    | None -> (UnknownEntity "No legislators found for that address") |> fail
+
+
+let lookupLegislatorId (body:Body) = trial {
+    let! queryLink = parseLink body
+    let query = sprintf "SELECT Id FROM Legislator WHERE Link LIKE '%%%s'" queryLink
+    let! result = dbParameterizedQueryOne<int> query {Link=queryLink; Id=0}
+    return { body with Id=result }
+    }
+
+let associateWithKnownLegislators reps = trial {
+    let! sen = reps.Senator |> lookupLegislatorId
+    let! rep = reps.Representative |> lookupLegislatorId
+    return { Senator = sen; Representative = rep }
+    }
 
 let deserializeBody = 
     validateBody<Location> "Please provide a location of ContentType 'application/json' in the form '{ Address:string, City:string, Zip:string, Year:int (optional)}'"
@@ -90,6 +119,7 @@ let workflow req =
     >> bind validateRequest
     >> bind fetchLegislatorsHtml
     >> bind parseLegislators
+    >> bind associateWithKnownLegislators
     >> bind serialize
 
 let Run(req: HttpRequestMessage, log: TraceWriter) = 

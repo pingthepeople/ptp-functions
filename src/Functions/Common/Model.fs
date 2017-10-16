@@ -246,6 +246,7 @@ type Location =
 
 type Body = 
     {
+        Id:int;
         Name:string;
         Chamber:Chamber;
         District:int;

@@ -57,6 +57,19 @@ let (|Contains|_|) (p:string) (s:string) =
 let (|EmptySeq|_|) a = 
     if Seq.isEmpty a then Some () else None
 
+let right (p:string) (s:string) =
+    if String.IsNullOrWhiteSpace(p) || String.IsNullOrWhiteSpace(s)
+    then None
+    else 
+        let lastIndex = s.LastIndexOf(p)
+        if lastIndex = -1 
+        then None
+        else
+            let start = lastIndex + p.Length
+            let length = s.Length - start
+            let result = s.Substring(start, length)
+            Some result
+
 let isEmpty str = str |> String.IsNullOrWhiteSpace
 let timestamp() = System.DateTime.Now.ToString("HH:mm:ss.fff")
 let datestamp() = System.DateTime.Now.ToString("yyyy-MM-dd")

@@ -55,3 +55,15 @@ let ``b intersect a``() =
 [<Fact>]
 let ``a intersect empty``() =
     test <@ a |> intersect [] |> Seq.toList = [] @>
+
+[<Fact>]
+let ``right some``() =
+    test <@ right "foo" "foobar" = Some "bar" @>
+
+[<Fact>]
+let ``right none``() =
+    test <@ right "baz" "foobar"  = None @>
+
+[<Fact>]
+let ``right duplicate``() =
+    test <@ right "foo" "foofoobar"  = Some "bar" @>
