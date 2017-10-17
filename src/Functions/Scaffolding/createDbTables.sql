@@ -3,7 +3,8 @@ CREATE TABLE [Session]
     Id int IDENTITY(1,1) PRIMARY KEY,
     Name nvarchar(256) NOT NULL,
     Link nvarchar(256) NOT NULL,
-    Created DATETIME NOT NULL DEFAULT GetUtcDate()
+    Created DATETIME NOT NULL DEFAULT GetUtcDate(),
+	Active bit not null
 )
 
 CREATE TABLE Committee
