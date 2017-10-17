@@ -78,12 +78,14 @@ let queryCurrentSessionYear req = trial {
     return (req,year)
     }
 
-let deserializeBody = 
-    validateBody<Location> "Please provide a location of ContentType 'application/json' in the form '{ Address:string, City:string, Zip:string }'"
+let deserializeLocationError = """Please provide a location of ContentType 'application/json' in the form '{ Address:string, City:string, Zip:string }'"""
+
+let deserializeLocation = 
+    validateBody<Location> deserializeLocationError
 
 let workflow req =
     fun () ->
-        deserializeBody req
+        deserializeLocation req
         >>= validateRequest
         >>= queryCurrentSessionYear
         >>= fetchLegislatorsHtml

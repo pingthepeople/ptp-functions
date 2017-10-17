@@ -54,19 +54,17 @@ let resolveDistrict (legislator:Legislator, html:HtmlDocument) =
     let elements = html.CssSelect(".district-heading")
     match elements with
     | EmptySeq ->
-        let msg = 
-            sprintf "No district found for %s" legislator.Link
-            |> DTOtoDomainConversionFailure
-        warn msg legislator 
+        sprintf "No district found for %s" legislator.Link
+        |> DTOtoDomainConversionFailure
+        |> warn' legislator
     | results ->
-        let district = 
-            results
-            |> Seq.head
-            |> (fun dh -> dh.InnerText()) // "District 42"
-            |> split " "                  // "District", "42"
-            |> Seq.item 1                 // "42"
-            |> int                        // 42
-        {legislator with District = district}
+        results
+        |> Seq.head
+        |> fun dh -> dh.InnerText() // "District 42"
+        |> split " "                // "District", "42"
+        |> Seq.item 1               // "42"
+        |> int                      // 42
+        |> fun d -> {legislator with District = d}
         |> ok
 
 let insertLegislatorIfNotExists= sprintf """

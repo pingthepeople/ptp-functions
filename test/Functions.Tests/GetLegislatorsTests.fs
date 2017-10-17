@@ -15,14 +15,14 @@ let TestLocation = {Address="1000 S Grant St"; City="Bloomington"; Zip="47071" }
 [<Fact>] 
 let ``Location is required (no content)`` ()=
     let req = new HttpRequestMessage()
-    let expected = Result.FailWith((RequestValidationError("Please provide a location of ContentType 'application/json' in the form '{ Address:string, City:string, Zip:string, Year:int (optional)}'")))
-    test <@ deserializeBody req = expected @>
+    let expected = Result.FailWith((RequestValidationError(deserializeLocationError)))
+    test <@ deserializeLocation req = expected @>
 
 [<Fact>] 
 let ``Location is required (empty content)`` ()=
     let req = new HttpRequestMessage(Content=new StringContent(""))
-    let expected = Result.FailWith((RequestValidationError("Please provide a location of ContentType 'application/json' in the form '{ Address:string, City:string, Zip:string, Year:int (optional)}'")))
-    test <@ deserializeBody req = expected @>
+    let expected = Result.FailWith((RequestValidationError(deserializeLocationError)))
+    test <@ deserializeLocation  req = expected @>
 
 [<Fact>] 
 let ``Address is required`` ()=
