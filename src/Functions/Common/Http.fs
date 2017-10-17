@@ -10,6 +10,7 @@ open System.Net
 open System.Net.Http
 open FSharp.Collections.ParallelSeq
 open Microsoft.Azure.WebJobs.Host
+open Newtonsoft.Json.Converters
 
 let apiRoot = "https://api.iga.in.gov"
 let contentType = "application/json"
@@ -59,12 +60,12 @@ let fetchAll endpoint =
     fetchRec endpoint
 
 type Error = { Error:string; }
-
+let strEnumConverter = new StringEnumConverter()
 let httpResponse status content =
     content
-    |> JsonConvert.SerializeObject 
+    |> (fun c -> JsonConvert.SerializeObject(c, strEnumConverter))
     |> (fun j -> new StringContent(j, contentEncoding, contentType))
-    |> (fun sc -> new HttpResponseMessage(StatusCode = status, Content=sc))
+    |> (fun sc -> new HttpResponseMessage(StatusCode=status, Content=sc))
 
 let executeHttpWorkflow (log:TraceWriter) source workflow =
     let response = 
