@@ -13,6 +13,7 @@ type Workflow =
     | UpdateBill of string
     | UpdateSubjects
     | UpdateLegislators
+    | UpdateLegislator of string
     | UpdateCommittees
     | UpdateCommittee of string
     | UpdateActions
@@ -77,6 +78,9 @@ let timestamp() = System.DateTime.Now.ToString("HH:mm:ss.fff")
 let timestamped s = sprintf "%s %s" (timestamp()) s
 let datestamp() = System.DateTime.Now.ToString("yyyy-MM-dd")
 let env = System.Environment.GetEnvironmentVariable
+let split (delimiter:string) (s:string) = 
+    s.Split([|delimiter|], StringSplitOptions.RemoveEmptyEntries)
+let trimPath (s:string) = s.Trim([|' '; '/'|])
 
 let inline except'' a aKey bKey b =
     let b' = b |> Seq.map bKey
@@ -123,6 +127,8 @@ let tryWarn f x failure =
     let warn msg = warn msg x
     tryExec f failure warn
 
+let warn' success msg =
+    warn msg success
 
 /// Given a tuple of 'a and an option 'b, 
 /// unwrap and return only the 'b where 'b is Some value
@@ -189,3 +195,18 @@ let enqueueNext (log:TraceWriter) source (elapsed:int64) (queue:ICollector<strin
         |> log.Info 
         |> ignore
     result
+
+let inline workflowTerminates result = 
+    match result with
+    | Ok (_, msgs) ->   
+        Next.Succeed(terminalState, msgs)
+    | Bad msgs ->       
+        Next.FailWith(msgs)
+
+let inline workflowContinues steps result =
+    match result with
+    | Ok (success, msgs) ->
+        let next = steps success
+        Next.Succeed(NextWorkflow next,msgs)
+    | Bad msgs ->       
+        Next.FailWith(msgs)

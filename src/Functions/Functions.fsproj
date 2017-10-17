@@ -67,6 +67,7 @@
     <Compile Include="Workflow\Workflow.Bills.fs" />
     <Compile Include="Workflow\Workflow.Committee.fs" />
     <Compile Include="Workflow\Workflow.Committees.fs" />
+    <Compile Include="Workflow\Workflow.Legislator.fs" />
     <Compile Include="Workflow\Workflow.Legislators.fs" />
     <Compile Include="Workflow\Workflow.Subjects.fs" />
     <Compile Include="Workflow\Workflow.fs" />

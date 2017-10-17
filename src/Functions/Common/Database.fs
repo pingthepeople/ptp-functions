@@ -12,7 +12,8 @@ type IdSelect = {Id:int}
 type IdListSelect = {Ids:int[]}
 type LinksListSelect = {Links:string[]}
 
-let sqlConStr = env "SqlServer.ConnectionString"
+let sqlConnection() = 
+    new SqlConnection((env "SqlServer.ConnectionString"))
 
 let expand (param : Map<string,_>) =
     let expando = ExpandoObject()
@@ -40,7 +41,7 @@ let dapperParameterizedCommand (query:string) (param:obj) (connection:SqlConnect
 // ROP
 let dbQuery<'Result> (queryText:string) =
     let op() =
-        use sqlCon = new SqlConnection(sqlConStr)
+        use sqlCon = sqlConnection()
         sqlCon
         |> dapperQuery<'Result> queryText
         |> Seq.cast<'Result>
@@ -48,7 +49,7 @@ let dbQuery<'Result> (queryText:string) =
 
 let dbParameterizedQuery<'Result> (queryText:string) (param:obj)=
     let op() =
-        use sqlCon = new SqlConnection(sqlConStr)
+        use sqlCon = sqlConnection()
         sqlCon
         |> dapperParameterizedQuery<'Result> queryText param
         |> Seq.cast<'Result>
@@ -76,13 +77,13 @@ let dbParameterizedQueryOne<'Result> (queryText:string) (param:obj) = trial {
 
 let dbCommand (commandText:string) items = 
     let op() =
-        use sqlCon = new SqlConnection(sqlConStr)
+        use sqlCon = sqlConnection()
         sqlCon
         |> dapperParameterizedCommand commandText items
         items
     tryFail op (fun e -> DatabaseCommandError (CommandText(commandText),e))
 
-let getCurrentSessionYear () =
+let queryCurrentSessionYear () =
     dbQueryOne<string> "SELECT TOP 1 Name FROM Session WHERE Active = 1"
 
 let dbQueryById<'Result> (queryText:string) ids = 

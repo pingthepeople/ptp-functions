@@ -195,13 +195,6 @@ let reconcileBillMembers (bill:Bill,json) = trial {
 let invalidateBillCache metadata = 
     [metadata] |> invalidateCache' BillsKey
 
-let nextSteps result =
-    match result with
-    | Ok (_, msgs) ->   
-        Next.Succeed(terminalState,msgs)
-    | Bad msgs ->       
-        Next.FailWith(msgs)
-
 let workflow link = 
     fun () ->
         fetchBillMetadata link
@@ -211,4 +204,4 @@ let workflow link =
         >>= reconcileBillSubjects
         >>= reconcileBillMembers
         >>= invalidateBillCache
-        |> nextSteps
+        |> workflowTerminates

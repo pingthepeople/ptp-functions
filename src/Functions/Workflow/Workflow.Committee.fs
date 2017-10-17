@@ -172,12 +172,6 @@ let clearCommitteeCache updatedMemberships =
 let clearMembershipCache updatedMemberships =
     updatedMemberships |> invalidateCache' MembershipsKey
 
-let nextSteps result =
-    match result with
-    | Ok (_, msgs) ->   
-        Next.Succeed(terminalState,msgs)
-    | Bad msgs ->       Next.FailWith(msgs)
-
 /// Find, add, and log new committees
 let workflow link =
     fun () ->
@@ -188,4 +182,4 @@ let workflow link =
         >>= reconcileCommitteeMembers
         >>= clearCommitteeCache
         >>= clearMembershipCache
-        |>  nextSteps
+        |>  workflowTerminates

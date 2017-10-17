@@ -243,7 +243,6 @@ type Location =
         Address:string;
         City:string;
         Zip:string;
-        Year:int;
     }
 
 type Body = 
@@ -259,8 +258,8 @@ type Body =
 
 type Representation = 
     {
-        Senator:Body; 
-        Representative:Body
+        Senator:Legislator; 
+        Representative:Legislator
     }
 
 type LinkAndId = {Id:int; Link:string}

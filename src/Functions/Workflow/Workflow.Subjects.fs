@@ -48,15 +48,12 @@ let invalidateSubjectsCache (subjects: Subject seq) =
 
 
 let nextSteps result =
-    match result with
-    | Ok (_, msgs) ->   
-        let next = [ UpdateBills ]
-        Next.Succeed(NextWorkflow next,msgs)
-    | Bad msgs ->       Next.FailWith(msgs)
+    let steps _ = [UpdateBills]
+    result |> workflowContinues steps
 
 /// Find, add, and log new subjects
 let workflow() =
-    getCurrentSessionYear()
+    queryCurrentSessionYear()
     >>= fetchAllSubjectsFromApi
     >>= fetchKnownSubjectsFromDb
     >>= filterOutKnownSubjects

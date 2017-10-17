@@ -111,6 +111,10 @@ let fetch (url:string) =
     let op() = tryGet url
     tryFail op (fun e -> APIQueryError (QueryText(url),e))
 
+let fetchHtml (url:string) = 
+    let op() = url |> HtmlDocument.Load
+    tryFail op (fun err -> (APIQueryError(QueryText(url), err)))
+
 let fetchAllPages (url:string) =
     let op() = fetchAll url
     tryFail op (fun e -> APIQueryError (QueryText(url),e))

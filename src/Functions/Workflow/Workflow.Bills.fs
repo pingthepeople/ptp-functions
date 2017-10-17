@@ -40,17 +40,12 @@ let fetchRecentlyUpdatedBillsFromApi (sessionYear, lastUpdate) = trial {
     }
 
 let nextSteps result =
-    match result with
-    | Ok (urls, msgs) ->
-        let next = 
-            urls 
-            |> Seq.map UpdateBill
-            |> NextWorkflow
-        Next.Succeed(next,msgs)
-    | Bad msgs ->       Next.FailWith(msgs)
+    let steps links = 
+        links |> Seq.map UpdateBill
+    result |> workflowContinues steps
 
 let workflow() =
-    getCurrentSessionYear()
+    queryCurrentSessionYear()
     >>= getLastUpdateTimestamp
     >>= fetchRecentlyUpdatedBillsFromApi
     |>  nextSteps

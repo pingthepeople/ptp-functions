@@ -10,7 +10,7 @@ open System.Net.Http
 open Newtonsoft.Json
 open System
 
-let TestLocation = {Address="1000 S Grant St"; City="Bloomington"; Zip="47071"; Year=2017} 
+let TestLocation = {Address="1000 S Grant St"; City="Bloomington"; Zip="47071" } 
 
 [<Fact>] 
 let ``Location is required (no content)`` ()=
@@ -57,25 +57,8 @@ let ``Multiple validation`` ()=
 let ``Location is valid`` ()=
     test <@ TestLocation |> validateRequest = Ok(TestLocation, []) @>
 
-[<Fact>] 
-let ``Location defaults to current year`` ()=
-    let sut = { TestLocation with Year=0 }
-    let expected = { TestLocation with Year=DateTime.Now.Year }
-    test <@ sut |> setReasonableDefaults = Ok(expected, []) @>
-
-[<Fact>] 
-let ``Location year can be next year`` ()=
-    let future = { TestLocation with Year=DateTime.Now.AddYears(1).Year }
-    test <@ future |> validateRequest = Ok(future, []) @>
-
-[<Fact>] 
-let ``Location year cannot be past next year`` ()=
-    let nextYear = DateTime.UtcNow.Year + 1
-    let future = { TestLocation with Year=(nextYear+1) }
-    let expected = Result.FailWith((RequestValidationError(sprintf "Year can't be past %d" nextYear)))
-    test <@ future |> validateRequest = expected @>
-    
-//[<Fact>]    
+//[<Fact>]
+(*
 let ``get legislators`` () =
     
     let expectedSenator =
@@ -106,3 +89,4 @@ let ``get legislators`` () =
     let expected = Ok(expectedBody, noErrors)
 
     test <@ (workflow req)() = expected @>
+*)

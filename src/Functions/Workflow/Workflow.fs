@@ -63,6 +63,7 @@ let deserialize command =
 let chooseWorkflow msg =
     match msg with
     | UpdateLegislators     -> Legislators.workflow
+    | UpdateLegislator link -> Legislator.workflow link
     | UpdateCommittees      -> Committees.workflow
     | UpdateCommittee link  -> Committee.workflow link
     | UpdateSubjects        -> Subjects.workflow

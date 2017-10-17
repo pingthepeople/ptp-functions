@@ -19,18 +19,12 @@ let fetchAllCommitteesFromAPI sessionYear = trial {
     }
 
 let nextSteps result =
-    match result with
-    | Ok (links, msgs) ->
-        let next = 
-            links
-            |> Seq.map UpdateCommittee
-            |> NextWorkflow
-        Next.Succeed(next,msgs)
-    | Bad msgs ->       
-        Next.FailWith(msgs)
+    let steps links = 
+        links |> Seq.map UpdateCommittee
+    result |> workflowContinues steps
 
 /// Fetch and enqueue all commitees for processing
 let workflow() =
-    getCurrentSessionYear()
+    queryCurrentSessionYear()
     >>= fetchAllCommitteesFromAPI
     |>  nextSteps
