@@ -62,8 +62,6 @@
     <None Include="GenerateBillReport\function.json" />
     <Compile Include="GetLegislators\GetLegislators.fs" />
     <None Include="GetLegislators\function.json" />
-    <None Include="UpdateCanonicalDataDaily\function.json" />
-    <Compile Include="UpdateCanonicalDataDaily\UpdateCanonicalDataDaily.fs" />
     <Compile Include="Workflow\Workflow.Common.fs" />
     <Compile Include="Workflow\Workflow.Bill.fs" />
     <Compile Include="Workflow\Workflow.Bills.fs" />
@@ -76,6 +74,10 @@
     <None Include="host.json" />
     <None Include="local.settings.json" />
     <Content Include="packages.config" />
+    <None Include="DataUpdateDaily\function.json" />
+    <Compile Include="DataUpdateDaily\DataUpdateDaily.fs" />
+    <None Include="DataUpdateIncremental\function.json" />
+    <Compile Include="DataUpdateIncremental\DataUpdateIncremental.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Chessie">

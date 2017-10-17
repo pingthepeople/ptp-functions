@@ -1,4 +1,4 @@
-﻿module Ptp.UpdateCanonicalDataDaily
+﻿module Ptp.DataUpdateDaily
 
 open Microsoft.Azure.WebJobs
 open Microsoft.Azure.WebJobs.Host

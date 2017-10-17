@@ -1,8 +1,10 @@
 ﻿module Ptp.Core
 
 open Chessie.ErrorHandling
+open Microsoft.Azure.WebJobs
 open Microsoft.Azure.WebJobs.Host
 open System
+open Newtonsoft.Json
 
 type Link = Link of String
 
@@ -159,3 +161,31 @@ let throwOnFail source result =
     | Fail (errs) ->
         errs |> flatten source |> Exception |> raise
     | _ -> ignore
+
+let enqueueNext (log:TraceWriter) source (elapsed:int64) (queue:ICollector<string>) result =
+    match result with
+    | Ok (NextWorkflow next, _) ->
+        match next with 
+        | EmptySeq    -> 
+            sprintf "[Finish] [%A] succeeded in %d ms. This is a terminal step." source elapsed
+            |> timestamped
+            |> log.Info 
+            |> ignore
+        | steps ->
+            let next = 
+                steps 
+                |> Seq.map JsonConvert.SerializeObject
+            next 
+            |> Seq.map (fun n -> n.ToString())
+            |> String.concat "\n"
+            |> sprintf "[Finish] [%A] succeeded in %d ms. Next steps:\n%s" source elapsed
+            |> timestamped
+            |> log.Info
+            next 
+            |> Seq.iter queue.Add
+    | Bad _ ->
+        sprintf "[Finish] [%A] failed in %d ms. Enqueueing no next step." source elapsed
+        |> timestamped
+        |> log.Info 
+        |> ignore
+    result

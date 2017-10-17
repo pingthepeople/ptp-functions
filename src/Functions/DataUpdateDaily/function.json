@@ -1,7 +1,7 @@
 ﻿{
   "disabled": true,
   "scriptFile": "../bin/Functions.dll",
-  "entryPoint": "Ptp.UpdateCanonicalDataDaily.Run",
+  "entryPoint": "Ptp.DataUpdateDaily.Run",
   "bindings": [
     {
       "name": "myTimer",
