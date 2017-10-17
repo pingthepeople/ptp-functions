@@ -1,4 +1,4 @@
-﻿module GetLegislators
+﻿module Ptp.GetLegislators
 
 open Chessie.ErrorHandling
 open FSharp.Data
@@ -77,7 +77,6 @@ let fetchLegislatorsHtml location =
     let op() = url |> HtmlDocument.Load
     tryFail op (fun err -> (APIQueryError(QueryText(url), err)))
 
-type Representation = {Senator:Body; Representative:Body}
 
 let parseLegislators (document:HtmlDocument) =
     let legislators = 
@@ -120,7 +119,6 @@ let workflow req =
     >> bind fetchLegislatorsHtml
     >> bind parseLegislators
     >> bind associateWithKnownLegislators
-    >> bind serialize
 
 let Run(req: HttpRequestMessage, log: TraceWriter) = 
     req

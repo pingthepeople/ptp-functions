@@ -1,4 +1,4 @@
-﻿module GenerateBillReport
+﻿module Ptp.GenerateBillReport
 
 open Chessie.ErrorHandling
 open Microsoft.Azure.WebJobs.Host
@@ -15,7 +15,7 @@ type Body  = { Id : int }
 
 let generateReport body = trial { 
     let! result = dbParameterizedQuery<BillStatus> FetchBillStatusForUser {Id=body.Id}
-    return result |> JsonConvert.SerializeObject
+    return result
     }
 
 let deserializeId = 

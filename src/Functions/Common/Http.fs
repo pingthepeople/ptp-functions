@@ -13,6 +13,8 @@ open Microsoft.Azure.WebJobs.Host
 
 let apiRoot = "https://api.iga.in.gov"
 let contentType = "application/json"
+let contentEncoding = System.Text.Encoding.UTF8
+
 let standardHeaders = 
   [ "Accept", contentType
     "Accept-Encoding", "gzip, deflate, compress"
@@ -59,7 +61,6 @@ let fetchAll endpoint =
 type Error = { Error:string; }
 
 let httpResponse status content =
-    let contentEncoding = System.Text.Encoding.UTF8
     content
     |> JsonConvert.SerializeObject 
     |> (fun j -> new StringContent(j, contentEncoding, contentType))
@@ -134,7 +135,3 @@ let deserializeAs domainModel jsonValues =
 let deserializeOneAs domainModel jsonValue = 
     let op() = jsonValue |> domainModel
     tryFail op DTOtoDomainConversionFailure
-
-let serialize resp = 
-    let op() = resp |> JsonConvert.SerializeObject
-    tryFail op DomainToDTOConversionFailure

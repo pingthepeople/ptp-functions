@@ -1,7 +1,7 @@
 {
-  "disabled": true,
+  "disabled": false,
   "scriptFile": "../bin/Functions.dll",
-  "entryPoint": "GenerateBillReport.Run",
+  "entryPoint": "Ptp.GenerateBillReport.Run",
   "bindings": [
     {
       "authLevel": "admin",

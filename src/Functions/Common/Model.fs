@@ -236,6 +236,8 @@ type BillStatus = {
     CrossoverThirdReadingVote:string;
 }
 
+// DTOs
+
 type Location = 
     {
         Address:string;
@@ -253,6 +255,12 @@ type Body =
         Party:Party;
         Link:string;
         Image:string;
+    }
+
+type Representation = 
+    {
+        Senator:Body; 
+        Representative:Body
     }
 
 type LinkAndId = {Id:int; Link:string}

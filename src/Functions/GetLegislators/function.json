@@ -1,7 +1,7 @@
 ﻿{
   "disabled": false,
   "scriptFile": "../bin/Functions.dll",
-  "entryPoint": "GetLegislators.Run",
+  "entryPoint": "Ptp.GetLegislators.Run",
   "bindings": [
     {
       "authLevel": "admin",
