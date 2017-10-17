@@ -27,7 +27,7 @@ CREATE TABLE Subject
     SessionId int NOT NULL FOREIGN KEY REFERENCES [Session](Id)
 )
 
-CREATE TABLE [Users]
+CREATE TABLE [users]
 (
     Id int IDENTITY(1,1) PRIMARY KEY,
     Name nvarchar(256),
