@@ -11,14 +11,6 @@ open Ptp.Database
 open Ptp.Cache
 open System
 
-let igaWebUrl (link:string) replace = 
-    link.Replace("legislators/", replace)
-    |> trimPath
-    |> sprintf "http://iga.in.gov/legislative/%s"
-
-let infoUrl link = igaWebUrl link "legislators/legislator_"
-let portaitUrl link = igaWebUrl link "portraits/legislator_"
-
 let legislatorModel json = 
     let firstName = json?firstName.AsString();
     let lastName = json?lastName.AsString();
@@ -34,7 +26,7 @@ let legislatorModel json =
       Link=link;
       Party=party;
       Chamber=chamber;
-      Image=(portaitUrl link); 
+      Image=(legislatorPortraitUrl link); 
       SessionId=0; 
       District=0; }
 
@@ -45,7 +37,7 @@ let fetchLegislator link = trial {
     }
 
 let fetchLegislatorHtml (legislator:Legislator) = trial {
-    let url = legislator.Link |> infoUrl
+    let url = legislator.Link |> legislatorWebUrl
     let! html = fetchHtml url
     return (legislator, html)
     }

@@ -140,3 +140,13 @@ let deserializeAs domainModel jsonValues =
 let deserializeOneAs domainModel jsonValue = 
     let op() = jsonValue |> domainModel
     tryFail op DTOtoDomainConversionFailure
+
+// URL Formatting
+
+let igaLegislatorWebUrl (link:string) replace = 
+    link.Replace("legislators/", replace)
+    |> trimPath
+    |> sprintf "http://iga.in.gov/legislative/%s"
+
+let legislatorWebUrl link = igaLegislatorWebUrl link "legislators/legislator_"
+let legislatorPortraitUrl link = igaLegislatorWebUrl link "portraits/legislator_"

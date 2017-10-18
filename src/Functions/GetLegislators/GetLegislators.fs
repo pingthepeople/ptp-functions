@@ -64,7 +64,8 @@ WHERE
 let lookupLegislator (district, chamber) = trial {
     let query = {District=district; Chamber=chamber}
     let! result = dbParameterizedQueryOne<Legislator> legislatorQuery query
-    return result
+    let infoUrl = legislatorWebUrl result.Link
+    return {result with Link=infoUrl}
     }
 
 let associateWithKnownLegislators (senDistrict, repDistrict) = trial {
