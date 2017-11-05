@@ -43,10 +43,9 @@ let persistNewSubjects subjects =
     dbCommand persisSubjectsQuery subjects
 
 /// Invalidate the Redis cache key for bill subjects
-let invalidateSubjectsCache (subjects: Subject seq) =
-    invalidateCache' SubjectsKey subjects
-
-
+let invalidateSubjectsCache =
+    tryInvalidateCacheIfAny SubjectsKey
+    
 let nextSteps result =
     let steps _ = [UpdateBills]
     result |> workflowContinues steps

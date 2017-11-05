@@ -54,7 +54,7 @@ let resolveDistrict (legislator:Legislator, html:HtmlDocument) =
         |> Seq.head
         |> fun dh -> dh.InnerText() // "District 42"
         |> split " "                // "District", "42"
-        |> Seq.item 1               // "42"
+        |> List.item 1              // "42"
         |> int                      // 42
         |> fun d -> {legislator with District = d}
         |> ok
@@ -70,14 +70,14 @@ let insertIfNotExists legislator =
     dbCommand insertLegislatorIfNotExists legislator
 
 /// Invalidate the Redis cache key for legislators
-let invalidateLegislatorCache legislator = 
-    [legislator] |> invalidateCache' LegislatorsKey
+let invalidateLegislatorCache = 
+    tryInvalidateCache LegislatorsKey
 
 let workflow link =
-    (fun () ->
+    fun () ->
         fetchLegislator link
         >>= fetchLegislatorHtml
         >>= resolveDistrict
         >>= insertIfNotExists
         >>= invalidateLegislatorCache
-        |>  workflowTerminates)
+        |>  workflowTerminates

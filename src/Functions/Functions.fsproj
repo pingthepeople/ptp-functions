@@ -58,11 +58,14 @@
     <Compile Include="Common\Http.fs" />
     <Compile Include="Common\Database.fs" />
     <Compile Include="Common\Cache.fs" />
+    <Compile Include="Common\Notification.fs" />
     <Compile Include="GenerateBillReport\GenerateBillReport.fs" />
     <None Include="GenerateBillReport\function.json" />
     <Compile Include="GetLegislators\GetLegislators.fs" />
     <None Include="GetLegislators\function.json" />
     <Compile Include="Workflow\Workflow.Common.fs" />
+    <Compile Include="Workflow\Workflow.Action.fs" />
+    <Compile Include="Workflow\Workflow.Actions.fs" />
     <Compile Include="Workflow\Workflow.Bill.fs" />
     <Compile Include="Workflow\Workflow.Bills.fs" />
     <Compile Include="Workflow\Workflow.Committee.fs" />

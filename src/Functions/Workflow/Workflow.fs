@@ -60,7 +60,7 @@ let deserialize command =
     with ex -> None
     
 
-let chooseWorkflow msg =
+let chooseWorkflow notifications msg =
     match msg with
     | UpdateLegislators     -> Legislators.workflow
     | UpdateLegislator link -> Legislator.workflow link
@@ -69,20 +69,37 @@ let chooseWorkflow msg =
     | UpdateSubjects        -> Subjects.workflow
     | UpdateBills           -> Bills.workflow
     | UpdateBill link       -> Bill.workflow link
+    | UpdateActions         -> Actions.workflow
+    | UpdateAction link     -> Action.workflow link notifications
     | _ -> raise (NotImplementedException())
 
-let Run(log: TraceWriter, command: string, nextCommand: ICollector<string>) =
+
+let logStart (log: TraceWriter) cmd =
+    sprintf "[Start] [%A]" cmd 
+    |> timestamped
+    |> log.Info
+    cmd
+
+let logFinish (log: TraceWriter) cmd (stopwatch:Diagnostics.Stopwatch) msg =
+    sprintf "[Finish] (%d ms) [%A] %s" stopwatch.ElapsedMilliseconds cmd msg
+    |> timestamped
+    |> log.Info
+
+let Run(log: TraceWriter, command: string, nextCommand: ICollector<string>, notifications:ICollector<string>) =
     try
         let stopwatch = Diagnostics.Stopwatch.StartNew()
+        let notifications = tryEnqueue notifications
+        let nextCommand = enqueue nextCommand
+        
         match deserialize command with 
         | Some cmd ->
-            sprintf "[Start] [%A]" cmd 
-            |> timestamped
-            |> log.Info
+            
+            let logFinish msg = logFinish log cmd stopwatch msg
             cmd
-            |> chooseWorkflow
+            |> logStart log
+            |> (chooseWorkflow notifications)
             |> executeWorkflow log cmd
-            |> enqueueNext log cmd (stopwatch.ElapsedMilliseconds) nextCommand
+            |> enqueueNext logFinish nextCommand
             |> throwOnFail cmd
             |> ignore
         | None -> 

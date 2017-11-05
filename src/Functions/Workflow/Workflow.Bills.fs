@@ -9,6 +9,7 @@ open Ptp.Http
 open Ptp.Database
 open System
 
+(*
 let resolveLastUpdateTimestamp results = 
     let head = results |> Seq.tryHead
     match head with
@@ -22,20 +23,15 @@ let getLastUpdateTimestamp sessionYear = trial {
     let! lastUpdate = dbQueryOne<DateTime> queryText
     return (sessionYear, lastUpdate)
     }
+*)
 
-let fetchRecentlyUpdatedBillsFromApi (sessionYear, lastUpdate) = trial {
+let fetchRecentlyUpdatedBillsFromApi sessionYear = trial {
     // get a listing of all bills
     let url = sprintf "/%s/bills?per_page=200" sessionYear
     let! pages = url |> fetchAllPages 
     // parse the url for each bill
-    let billLink json = json?link.AsString()
-    let! billUrls = pages |> deserializeAs billLink
-    // grab the full bill metadata from each bill url
-    //let! metadata = billUrls |> fetchAllParallel
-    // find the recently updated metadata based on the 'latestVersion.updated' timestamp
-    //let wasRecentlyUpdated json = 
-    // json?latestVersion?updated.AsDateTime() > lastUpdate
-    //let recentlyUpdated = metadata |> chooseSnd |> Seq.filter wasRecentlyUpdated
+    let! billUrls = 
+        pages |> deserializeAs (fun json -> json?Link.AsString())
     return billUrls
     }
 
@@ -46,6 +42,5 @@ let nextSteps result =
 
 let workflow() =
     queryCurrentSessionYear()
-    >>= getLastUpdateTimestamp
     >>= fetchRecentlyUpdatedBillsFromApi
     |>  nextSteps

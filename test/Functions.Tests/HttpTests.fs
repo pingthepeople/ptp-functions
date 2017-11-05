@@ -91,9 +91,8 @@ type HttpTests(output:ITestOutputHelper) =
     [<Fact>]
     member __.``serialize DU`` ()=
         [
-            Circle(Radius 3)
-            Rectangle(Length 3, Width 4)
-            Square(Length 3)
+            UpdateAction "http://example.com"
+            UpdateActions 
         ]
         |> List.map JsonConvert.SerializeObject
         |> List.iter output.WriteLine

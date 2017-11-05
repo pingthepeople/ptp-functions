@@ -1,7 +1,7 @@
 ﻿module Ptp.Model
 
-open Ptp.Core
 open System
+open Ptp.Core 
 
 //  Database models
 type Chamber = None=0 | House=1 | Senate=2
@@ -75,10 +75,7 @@ type Bill = {
     IsDead:bool;
     Version:int;
     ApiUpdated:DateTime;
-} with
-    static member ParseNumber (billName:string) = billName.Substring(2,4).TrimStart('0')        
-    static member PrettyPrintName (billName:string) = sprintf "%s %s" (billName.Substring(0,2)) (Bill.ParseNumber billName)
-    member this.WebLink session = sprintf "[%s](https://iga.in.gov/legislative/%s/bills/%s/%s)" (Bill.PrettyPrintName this.Name) session (this.Chamber.ToString().ToLower()) (Bill.ParseNumber this.Name)
+} 
 
 [<CLIMutable>]
 type Action = {
@@ -89,42 +86,26 @@ type Action = {
     ActionType:ActionType;
     Chamber:Chamber;
     BillId:int;
-} with
-    static member FormatDescription title action =
-        let desc = action.Description.TrimEnd(';')
-        match action.ActionType with
-        | ActionType.AssignedToCommittee -> sprintf "%s was assigned to the %A Committee on %s." title action.Chamber desc
-        | ActionType.CommitteeReading -> sprintf "%s had a committee hearing in the %A. The vote was: %s." title action.Chamber desc
-        | ActionType.SecondReading -> sprintf "%s had a second reading in the %A. The vote was: %s." title action.Chamber desc
-        | ActionType.ThirdReading -> sprintf "%s had a third reading in the %A. The vote was: %s." title action.Chamber desc
-        | ActionType.SignedByPresidentOfSenate -> sprintf "%s has been signed by the President of the Senate. It will now be sent to the Governor to be signed into law or vetoed." title
-        | ActionType.SignedByGovernor -> sprintf "%s has been signed into law by the Governor." title
-        | ActionType.VetoedByGovernor -> sprintf "%s has been vetoed by the Governor. The Assembly now has the option to override that veto." title
-        | ActionType.VetoOverridden -> sprintf "The veto on %s has been overridden in the %A. The vote was: %s." title action.Chamber desc
-        | _ -> "(some other event type?)"
-    static member ParseType description =
-        match description with
-        | StartsWith "First reading: referred to Committee on " rest -> ActionType.AssignedToCommittee
-        | StartsWith "Committee report" rest -> ActionType.CommitteeReading
-        | StartsWith "Second reading" rest -> ActionType.SecondReading
-        | StartsWith "Third reading" rest -> ActionType.ThirdReading
-        | StartsWith "Signed by the President of the Senate" rest -> ActionType.SignedByPresidentOfSenate
-        | StartsWith "Signed by the Governor" rest -> ActionType.SignedByGovernor
-        | StartsWith "Vetoed by the Governor" rest -> ActionType.VetoedByGovernor
-        | StartsWith "Veto overridden" rest -> ActionType.VetoOverridden
-        | _ -> ActionType.Unknown
-    static member ParseDescription description =
-        match description with
-        | StartsWith "First reading: referred to Committee on " rest -> rest
-        | StartsWith "Committee report: " rest -> rest
-        | StartsWith "Second reading: " rest -> rest
-        | StartsWith "Third reading: " rest -> rest
-        | StartsWith "Signed by the President of the Senate" rest -> rest
-        | StartsWith "Signed by the Governor" rest -> rest
-        | StartsWith "Vetoed by the Governor" rest -> rest
-        | StartsWith "Veto overridden by the House; " rest -> rest
-        | StartsWith "Veto overridden by the Senate; " rest -> rest
-        | other -> other
+} 
+
+type CommitteeLink = CommitteeLink of string
+type VoteResult = VoteResult of string
+
+type Action' = 
+    | FirstReading of Chamber * CommitteeLink
+    | CommitteeReport of Chamber * VoteResult
+    | SecondReading of Chamber * VoteResult
+    | ThirdReading of Chamber * VoteResult
+    | ReturnedWithAmendments of Chamber
+    | MotionToConcur of Chamber
+    | MotionToDissent of Chamber
+    | ConfCommitteeReport of Chamber * VoteResult
+    | SignedBySpeaker
+    | SignedByPresident
+    | SignedByGovernor
+    | VetoedByGovernor
+    | VetoOverridden
+
 
 [<CLIMutable>]
 type ScheduledAction = {
@@ -137,7 +118,7 @@ type ScheduledAction = {
     ActionType:ActionType;
     Chamber:Chamber;
     BillId:int;
-} with
+} (* with
     member this.Describe includeLink =
         let formatTimeOfDay time = System.DateTime.Parse(time).ToString("h:mm tt")
         let eventRoom = 
@@ -156,7 +137,7 @@ type ScheduledAction = {
         | ActionType.SecondReading -> sprintf "is scheduled for a second reading on %s in %s" eventDate eventLocation 
         | ActionType.ThirdReading -> sprintf "is scheduled for a third reading on %s in %s" eventDate eventLocation
         | _ -> "(some other event type?)"
-
+*)
 [<CLIMutable>]
 type UserBill = {
     Id:int;

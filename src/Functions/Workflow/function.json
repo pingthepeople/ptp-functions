@@ -18,6 +18,14 @@
       "accessRights": "manage",
       "type": "serviceBus",
       "direction": "out"
+    },
+    {
+      "name": "notifications",
+      "queueName": "notification",
+      "connection": "ServiceBus.ConnectionString",
+      "accessRights": "manage",
+      "type": "serviceBus",
+      "direction": "out"
     }
   ]
 }

@@ -9,6 +9,7 @@ open Ptp.Core
 
 type DateSelectArgs = {Date:string}
 type IdSelect = {Id:int}
+type LinkSelect = {Link:string}
 type IdListSelect = {Ids:int[]}
 type LinksListSelect = {Links:string[]}
 
@@ -37,6 +38,11 @@ let dapperMapParameterizedQuery<'Result> (query:string) (param : Map<string,_>) 
     
 let dapperParameterizedCommand (query:string) (param:obj) (connection:SqlConnection) =
     connection.Execute(query, param) |> ignore
+
+let toSqlValuesList items =
+    items
+    |> Seq.map (sprintf "('%s')")
+    |> String.concat ", "
 
 // ROP
 let dbQuery<'Result> (queryText:string) =

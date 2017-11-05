@@ -5,6 +5,7 @@ open Microsoft.Azure.WebJobs
 open Microsoft.Azure.WebJobs.Host
 open System
 open Newtonsoft.Json
+open System.Diagnostics
 
 type Link = Link of String
 
@@ -17,6 +18,7 @@ type Workflow =
     | UpdateCommittees
     | UpdateCommittee of string
     | UpdateActions
+    | UpdateAction of string
     | UpdateChamberCal
     | UpdateCommitteeCal
     | UpdateDeadBills
@@ -36,16 +38,17 @@ type WorkFlowFailure =
     | APIQueryError of QueryText * string
     | DTOtoDomainConversionFailure of string
     | DomainToDTOConversionFailure of string
+    | EnqueueFailure of string
     | CacheInvalidationError of string
     | UnknownBill of string
     | UnknownEntity of string
     | RequestValidationError of string
     | NextStepResolution of string
+    | EntityAlreadyExists
+    | NotificationGenerationError of string
 
 type NextWorkflow = NextWorkflow of Workflow seq
-
 type Next = Result<NextWorkflow,WorkFlowFailure>
-
 let terminalState = NextWorkflow List.empty<Workflow>
 
 let (|StartsWith|_|) (p:string) (s:string) =
@@ -80,6 +83,7 @@ let datestamp() = System.DateTime.Now.ToString("yyyy-MM-dd")
 let env = System.Environment.GetEnvironmentVariable
 let split (delimiter:string) (s:string) = 
     s.Split([|delimiter|], StringSplitOptions.RemoveEmptyEntries)
+    |> Array.toList
 let trimPath (s:string) = s.Trim([|' '; '/'|])
 
 let inline except'' a aKey bKey b =
@@ -121,11 +125,21 @@ let tryExec f failure handle =
         |> handle
 
 let tryFail f failure =
-    tryExec f failure fail
+    try 
+        f() |> ok 
+    with ex ->
+        ex.ToString()
+        |> failure
+        |> fail
     
-let tryWarn f x failure = 
-    let warn msg = warn msg x
-    tryExec f failure warn
+let tryTee f x failure = 
+    try 
+        f()
+        x |> ok
+    with ex ->
+        ex.ToString()
+        |> failure
+        |> (fun msg -> warn msg x)
 
 let warn' success msg =
     warn msg success
@@ -168,14 +182,21 @@ let throwOnFail source result =
         errs |> flatten source |> Exception |> raise
     | _ -> ignore
 
-let enqueueNext (log:TraceWriter) source (elapsed:int64) (queue:ICollector<string>) result =
+
+let enqueue (queue:ICollector<string>) items =
+    items |> Seq.iter queue.Add
+
+let tryEnqueue (queue:ICollector<string>) items =
+    let op() = enqueue queue items
+    tryFail op EnqueueFailure
+
+let enqueueNext log enqueue result =
     match result with
     | Ok (NextWorkflow next, _) ->
         match next with 
         | EmptySeq    -> 
-            sprintf "[Finish] [%A] succeeded in %d ms. This is a terminal step." source elapsed
-            |> timestamped
-            |> log.Info 
+            "Success. This is a terminal step"
+            |> log
             |> ignore
         | steps ->
             let next = 
@@ -184,15 +205,14 @@ let enqueueNext (log:TraceWriter) source (elapsed:int64) (queue:ICollector<strin
             next 
             |> Seq.map (fun n -> n.ToString())
             |> String.concat "\n"
-            |> sprintf "[Finish] [%A] succeeded in %d ms. Next steps:\n%s" source elapsed
-            |> timestamped
-            |> log.Info
-            next 
-            |> Seq.iter queue.Add
+            |> sprintf "Success. Next steps:\n%s"
+            |> log
+
+            next
+            |> enqueue
     | Bad _ ->
-        sprintf "[Finish] [%A] failed in %d ms. Enqueueing no next step." source elapsed
-        |> timestamped
-        |> log.Info 
+        "Failed. Enqueueing no next step."
+        |> log
         |> ignore
     result
 

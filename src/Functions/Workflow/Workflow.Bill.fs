@@ -192,8 +192,8 @@ let reconcileBillMembers (bill:Bill,json) = trial {
     return (bill,json)
     }
 
-let invalidateBillCache metadata = 
-    [metadata] |> invalidateCache' BillsKey
+let invalidateBillCache = 
+    tryInvalidateCache BillsKey
 
 let workflow link = 
     fun () ->

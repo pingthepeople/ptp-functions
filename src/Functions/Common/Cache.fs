@@ -1,5 +1,6 @@
 ﻿module Ptp.Cache
 
+open Chessie.ErrorHandling
 open Ptp.Core
 open StackExchange.Redis
 
@@ -33,7 +34,7 @@ let config =
     cfg.ConnectTimeout <- 15000
     cfg
 
-let delete key =
+let invalidateCache key =
     let cacheKey = sprintf "%s%s" key envPostfix
     use muxer = config |> ConnectionMultiplexer.Connect
     let db = muxer.GetDatabase(0)
@@ -42,14 +43,12 @@ let delete key =
     |> db.KeyDeleteAsync
     |> muxer.Wait
     |> ignore
-    
-let invalidateCache key seq =
-    match (Seq.isEmpty seq) with
-    | true -> ()
-    | false -> delete key
-    seq
 
-let invalidateCache' key seq =
-    let op() =
-        invalidateCache key seq
-    tryWarn op seq CacheInvalidationError
+let tryInvalidateCache key a =
+    let op() = invalidateCache key
+    tryTee op a CacheInvalidationError
+
+let tryInvalidateCacheIfAny key seq =
+    match (Seq.isEmpty seq) with
+    | true -> ok seq
+    | false -> tryInvalidateCache key seq

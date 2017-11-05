@@ -165,21 +165,21 @@ let reconcileCommitteeMembers (comm:Committee,json) = trial {
     }
 
 /// Invalidate the Redis cache key for committees
-let clearCommitteeCache updatedMemberships =
-    updatedMemberships |> invalidateCache' CommitteesKey
+let invalidateCommitteeCache =
+    tryInvalidateCacheIfAny CommitteesKey
 
 /// Invalidate the Redis cache key for committees
-let clearMembershipCache updatedMemberships =
-    updatedMemberships |> invalidateCache' MembershipsKey
+let invalidateMembershipCache =
+    tryInvalidateCacheIfAny MembershipsKey
 
 /// Find, add, and log new committees
 let workflow link =
     fun () ->
-        (fetchCommitteeMetadata link)
+        fetchCommitteeMetadata link
         >>= deserializeCommitteeModel
         >>= queryForExistingCommittee
         >>= persistIfNotExists
         >>= reconcileCommitteeMembers
-        >>= clearCommitteeCache
-        >>= clearMembershipCache
+        >>= invalidateCommitteeCache
+        >>= invalidateMembershipCache
         |>  workflowTerminates
