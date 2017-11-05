@@ -1,4 +1,4 @@
-﻿module Ptp.Notification
+﻿module Ptp.Formatting
 
 open Ptp.Core
 open Ptp.Model

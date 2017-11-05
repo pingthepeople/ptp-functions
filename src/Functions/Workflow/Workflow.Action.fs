@@ -8,7 +8,7 @@ open Ptp.Model
 open Ptp.Queries
 open Ptp.Http
 open Ptp.Database
-open Ptp.Notification
+open Ptp.Formatting
 open Ptp.Cache
 open Ptp.Workflow.Common
 open Newtonsoft.Json

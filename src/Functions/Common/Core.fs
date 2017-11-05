@@ -230,3 +230,33 @@ let inline workflowContinues steps result =
         Next.Succeed(NextWorkflow next,msgs)
     | Bad msgs ->       
         Next.FailWith(msgs)
+
+let deserializeQueueItem<'t> (log: TraceWriter) str =
+    let error e =
+        e
+        |> timestamped 
+        |> log.Warning
+    try
+        match str with 
+        | null -> 
+            error "Received null message"
+            None
+        | "" -> 
+            error "Received empty message"
+            None
+        | _  -> 
+            str 
+            |> JsonConvert.DeserializeObject<'t>
+            |> Some
+    with ex -> 
+        sprintf "Exception when deserializing '%s': '%s'" str (ex.ToString())
+        |> error
+        None
+
+let processQueueItem<'t> (log: TraceWriter) str action  =
+    match deserializeQueueItem<'t> log str with
+    | Some item -> 
+        item |> action
+        ignore
+    | None -> 
+        ignore
