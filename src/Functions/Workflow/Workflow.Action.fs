@@ -5,14 +5,13 @@ open FSharp.Data
 open FSharp.Data.JsonExtensions
 open Ptp.Core
 open Ptp.Model
-open Ptp.Queries
 open Ptp.Http
 open Ptp.Database
 open Ptp.Formatting
 open Ptp.Cache
-open Ptp.Workflow.Common
 open Newtonsoft.Json
 
+/// Generate an informative sms/email message body for this action.
 let formatBody (action:Action) title =
     let desc = action.Description.TrimEnd(';')
     match action.ActionType with
@@ -26,6 +25,7 @@ let formatBody (action:Action) title =
     | ActionType.VetoOverridden -> sprintf "The veto on %s has been overridden in the %A. The vote was: %s." title action.Chamber desc
     | _ -> "(some other event type?)"
 
+/// Determine the action type based on the API description
 let parseType description =
     match description with
     | StartsWith "First reading: referred to Committee on " rest -> ActionType.AssignedToCommittee
@@ -38,6 +38,7 @@ let parseType description =
     | StartsWith "Veto overridden" rest -> ActionType.VetoOverridden
     | _ -> ActionType.Unknown
 
+/// Determine the interesting parts of the API description
 let parseDescription description =
     match description with
     | StartsWith "First reading: referred to Committee on " rest -> rest
@@ -53,13 +54,7 @@ let parseDescription description =
 
 
 // DB Query Text 
-
 let billQuery = "SELECT TOP 1 * FROM Bill WHERE Link = @Link"
-
-let selectRecipients = """
-SELECT u.Id, u.Email, u.Mobile 
-FROM Users u
-JOIN UserBill ub on ub.BillId = @Id"""
 
 let insertAction = """
 IF NOT EXISTS (SELECT Id from Action WHERE Link = @Link)
@@ -73,9 +68,21 @@ ELSE
 		SELECT 0
 	END"""
 
+let selectRecipients = """
+SELECT 
+    u.Email
+    , u.Mobile
+    , ub.ReceiveAlertEmail
+    , ub.ReceiveAlertSms
+FROM UserBill ub 
+JOIN Users u 
+    ON ub.UserId = u.Id
+WHERE ub.BillId = @Id"""
+
 let billLink json = 
     json?billName?link.AsString()
 
+/// Get the bill associated with this action (if known)
 let resolveBill json = trial {
     let! result = 
         {Link=(billLink json)}
@@ -84,11 +91,13 @@ let resolveBill json = trial {
     return (json, bill)
     }
 
+/// If the bill is not known, fail with an appropriate error
 let validateBill (json, bill:Bill option) =
     match bill with 
     | None -> fail (UnknownBill (billLink json))
     | Some b -> ok (json, b)
 
+/// Generate an Action model from the API metadata
 let resolveAction (json, bill:Bill) =
     let op() = 
         let desc = json?description.AsString()
@@ -109,34 +118,46 @@ let resolveAction (json, bill:Bill) =
         (action,bill)
     tryFail op DTOtoDomainConversionFailure
 
+/// Add the Action to the database if it's not already present
 let insertActionIfNotExists (action:Action, bill) = trial {
     let! id = dbParameterizedQueryOne<int> insertAction action
     let action' = {action with Id=id}
     return (action', bill)
     }
 
+/// If the Action is already in te DB, we're done.
 let haltIfActionAlreadyExists (action:Action,bill) =
     match action.Id with
     | 0 -> fail EntityAlreadyExists
     | _ -> ok (action,bill)
 
-type Recipient = {Email: string; Mobile:string; ReceiveEmail: bool; ReceiveSms: bool}
+[<CLIMutable>]
+type Recipient = {Email: string; Mobile:string; ReceiveAlertEmail: bool; ReceiveAlertSms: bool}
 
-let resolveRecipients (action,bill:Bill) = trial {
-    let! recipients = dbParameterizedQuery<Recipient> selectRecipients {Id=bill.Id}
-    return (action, bill, recipients)
+/// If this is a new action of a known type, generate a list of recipients for notifications.
+let resolveRecipients (action:Action,bill:Bill) = trial {
+    match int action.ActionType with
+    | 0 -> 
+        return (action, bill, Seq.empty)
+    | _ ->
+        let! recipients = dbParameterizedQuery<Recipient> selectRecipients {Id=bill.Id}
+        return (action, bill, recipients)
     }
 
+/// Generate email alerts for this action
 let emailNotification action (bill:Bill) = 
-    let link = webLink bill
-    let title = sprintf "%s ('%s')" link bill.Title
-    let subject = sprintf "Update on %s" title
-    let body = formatBody action title
+    let subject = 
+        sprintf "Update on %s" (printBillNameAndTitle bill)
+    let body = 
+        markdownBillHrefAndTitle bill
+        |> formatBody action
     {MessageType=MessageType.Email; Subject=subject; Body=body; Recipient=""; Attachment=""}
 
-let smsNotification action (bill:Bill) = 
-    let title = prettyPrintBillName bill
-    let body = formatBody action title
+/// Generate sms alerts for this action
+let smsNotification action (bill:Bill) =
+    let body = 
+        printBillNameAndTitle bill
+        |> formatBody action
     {MessageType=MessageType.SMS; Subject=""; Body=body; Recipient=""; Attachment=""}
     
 let generateNotifications (action, bill, recipients) =
@@ -144,12 +165,12 @@ let generateNotifications (action, bill, recipients) =
         let emails = 
             let message = emailNotification action bill
             recipients
-            |> Seq.filter (fun r -> r.ReceiveEmail)
+            |> Seq.filter (fun r -> r.ReceiveAlertEmail)
             |> Seq.map (fun r -> {message with Recipient=r.Email})
         let texts = 
             let message = smsNotification action bill
             recipients
-            |> Seq.filter (fun r -> r.ReceiveSms)
+            |> Seq.filter (fun r -> r.ReceiveAlertSms)
             |> Seq.map (fun r -> {message with Recipient=r.Mobile})
         emails 
         |> Seq.append texts
