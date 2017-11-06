@@ -9,7 +9,7 @@ open Ptp.Database
 
 /// Get all actions that occurred today
 let fetchRecentActions sessionYear = trial {
-    let minDate = "2017-04-30" // datestamp()
+    let minDate = datestamp()
     let url = sprintf "/%s/bill-actions?minDate=%s&per_page=200" sessionYear minDate
     let! actions = url |> fetchAllPages 
     let! actionLinks = actions |> deserializeAs (fun json -> json?link.AsString())
