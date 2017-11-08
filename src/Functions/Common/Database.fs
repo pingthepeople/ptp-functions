@@ -103,3 +103,14 @@ let dbQueryByLinks<'Result> (queryText:string) links =
 let dbCommandById<'Result> (queryText:string) ids = 
     let idList = {Ids=(Seq.toArray ids)}
     dbCommand queryText idList
+
+let queryAndFilterKnownLinks table links =
+    let query = 
+        links 
+        |> toSqlValuesList
+        |> (sprintf """
+SELECT a.Link FROM 
+( VALUES %s ) AS a(Link)
+EXCEPT SELECT Link FROM %s;
+""" table)
+    dbQuery<string> query

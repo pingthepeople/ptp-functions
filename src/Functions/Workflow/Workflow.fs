@@ -57,6 +57,8 @@ let chooseWorkflow notifications msg =
     | UpdateBill link       -> Bill.workflow link
     | UpdateActions         -> Actions.workflow
     | UpdateAction link     -> Action.workflow link notifications
+    | UpdateCalendars       -> Calendars.workflow
+    | UpdateCalendar link   -> Calendar.workflow link notifications
     | _ -> raise (NotImplementedException())
 
 let logStart (log: TraceWriter) cmd =

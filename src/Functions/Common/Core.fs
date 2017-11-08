@@ -19,8 +19,8 @@ type Workflow =
     | UpdateCommittee of string
     | UpdateActions
     | UpdateAction of string
-    | UpdateChamberCal
-    | UpdateCommitteeCal
+    | UpdateCalendars
+    | UpdateCalendar of string
     | UpdateDeadBills
     
 type HttpWorkflow =

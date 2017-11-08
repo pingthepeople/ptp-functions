@@ -150,3 +150,9 @@ let igaLegislatorWebUrl (link:string) replace =
 
 let legislatorWebUrl link = igaLegislatorWebUrl link "legislators/legislator_"
 let legislatorPortraitUrl link = igaLegislatorWebUrl link "portraits/legislator_"
+
+let fetchAllLinks (url:string) = trial {
+    let! results = url |> fetchAllPages 
+    let! links = results |> deserializeAs (fun json -> json?link.AsString())
+    return links
+    }
