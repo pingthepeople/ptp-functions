@@ -67,3 +67,4 @@ let ``right none``() =
 [<Fact>]
 let ``right duplicate``() =
     test <@ right "foo" "foofoobar"  = Some "bar" @>
+

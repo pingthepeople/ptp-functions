@@ -36,8 +36,7 @@ let fetchRecentlyUpdatedBillsFromApi sessionYear = trial {
     }
 
 let nextSteps result =
-    let steps links = 
-        links |> Seq.map UpdateBill
+    let steps links = links |> Seq.map UpdateBill
     result |> workflowContinues steps
 
 let workflow() =

@@ -21,6 +21,7 @@ type Workflow =
     | UpdateAction of string
     | UpdateCalendars
     | UpdateCalendar of string
+    | SendCalendarNotification of int
     | UpdateDeadBills
     
 type HttpWorkflow =
@@ -41,6 +42,7 @@ type WorkFlowFailure =
     | EnqueueFailure of string
     | CacheInvalidationError of string
     | UnknownBill of string
+    | UnknownBills of string seq
     | UnknownEntity of string
     | RequestValidationError of string
     | NextStepResolution of string
@@ -50,6 +52,7 @@ type WorkFlowFailure =
 type NextWorkflow = NextWorkflow of Workflow seq
 type Next = Result<NextWorkflow,WorkFlowFailure>
 let terminalState = NextWorkflow List.empty<Workflow>
+let mapNext m x = x |> Seq.map m |> NextWorkflow
 
 let (|StartsWith|_|) (p:string) (s:string) =
     if s.StartsWith(p) then

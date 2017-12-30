@@ -9,6 +9,7 @@ open Ptp.Http
 open Ptp.Database
 open Ptp.Formatting
 open Ptp.Cache
+open Ptp.Workflow.Common
 open Newtonsoft.Json
 
 /// Generate an informative sms/email message body for this action.
@@ -68,16 +69,7 @@ ELSE
 		SELECT 0
 	END"""
 
-let selectRecipients = """
-SELECT 
-    u.Email
-    , u.Mobile
-    , ub.ReceiveAlertEmail
-    , ub.ReceiveAlertSms
-FROM UserBill ub 
-JOIN Users u 
-    ON ub.UserId = u.Id
-WHERE ub.BillId = @Id"""
+
 
 let billLink json = 
     json?billName?link.AsString()
@@ -131,52 +123,6 @@ let haltIfActionAlreadyExists (action:Action,bill) =
     | 0 -> fail EntityAlreadyExists
     | _ -> ok (action,bill)
 
-[<CLIMutable>]
-type Recipient = {Email: string; Mobile:string; ReceiveAlertEmail: bool; ReceiveAlertSms: bool}
-
-/// If this is a new action of a known type, generate a list of recipients for notifications.
-let resolveRecipients (action:Action,bill:Bill) = trial {
-    match int action.ActionType with
-    | 0 -> 
-        return (action, bill, Seq.empty)
-    | _ ->
-        let! recipients = dbParameterizedQuery<Recipient> selectRecipients {Id=bill.Id}
-        return (action, bill, recipients)
-    }
-
-/// Generate email alerts for this action
-let emailNotification action (bill:Bill) = 
-    let subject = 
-        sprintf "Update on %s" (printBillNameAndTitle bill)
-    let body = 
-        markdownBillHrefAndTitle bill
-        |> formatBody action
-    {MessageType=MessageType.Email; Subject=subject; Body=body; Recipient=""; Attachment=""}
-
-/// Generate sms alerts for this action
-let smsNotification action (bill:Bill) =
-    let body = 
-        printBillNameAndTitle bill
-        |> formatBody action
-    {MessageType=MessageType.SMS; Subject=""; Body=body; Recipient=""; Attachment=""}
-    
-let generateNotifications (action, bill, recipients) =
-    let op() =
-        let emails = 
-            let message = emailNotification action bill
-            recipients
-            |> Seq.filter (fun r -> r.ReceiveAlertEmail)
-            |> Seq.map (fun r -> {message with Recipient=r.Email})
-        let texts = 
-            let message = smsNotification action bill
-            recipients
-            |> Seq.filter (fun r -> r.ReceiveAlertSms)
-            |> Seq.map (fun r -> {message with Recipient=r.Mobile})
-        emails 
-        |> Seq.append texts
-        |> Seq.map JsonConvert.SerializeObject
-    tryFail op NotificationGenerationError
-
 let invalidateActionsCache = 
     tryInvalidateCache ActionsKey
 
@@ -192,7 +138,7 @@ let inline nextSteps result =
     | Bad msgs ->
         Next.FailWith(msgs)
 
-let workflow link enqueueNotifications = 
+let workflow link = 
     fun () ->
         fetch link
         >>= resolveBill
@@ -201,7 +147,4 @@ let workflow link enqueueNotifications =
         >>= insertActionIfNotExists
         >>= haltIfActionAlreadyExists
         >>= invalidateActionsCache
-        >>= resolveRecipients
-        >>= generateNotifications
-        >>= enqueueNotifications
         |> nextSteps

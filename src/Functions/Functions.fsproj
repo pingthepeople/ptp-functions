@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>2df947a1-c352-4fb0-ba42-6a6e0e848e36</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>Functions</RootNamespace>
@@ -49,45 +48,6 @@
     </Otherwise>
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
-  <ItemGroup>
-    <Compile Include="AssemblyInfo.fs" />
-    <None Include="Scaffolding\createDbTables.sql" />
-    <Compile Include="Common\Core.fs" />
-    <Compile Include="Common\Model.fs" />
-    <Compile Include="Common\Queries.fs" />
-    <Compile Include="Common\Http.fs" />
-    <Compile Include="Common\Database.fs" />
-    <Compile Include="Common\Cache.fs" />
-    <Compile Include="Common\Formatting.fs" />
-    <Compile Include="GenerateBillReport\GenerateBillReport.fs" />
-    <None Include="GenerateBillReport\function.json" />
-    <Compile Include="GetLegislators\GetLegislators.fs" />
-    <None Include="GetLegislators\function.json" />
-    <Compile Include="Workflow\Workflow.Common.fs" />
-    <Compile Include="Workflow\Workflow.Events.fs" />
-    <Compile Include="Workflow\Workflow.Action.fs" />
-    <Compile Include="Workflow\Workflow.Actions.fs" />
-    <Compile Include="Workflow\Workflow.Bill.fs" />
-    <Compile Include="Workflow\Workflow.Bills.fs" />
-    <Compile Include="Workflow\Workflow.Calendar.fs" />
-    <Compile Include="Workflow\Workflow.Calendars.fs" />
-    <Compile Include="Workflow\Workflow.Committee.fs" />
-    <Compile Include="Workflow\Workflow.Committees.fs" />
-    <Compile Include="Workflow\Workflow.Legislator.fs" />
-    <Compile Include="Workflow\Workflow.Legislators.fs" />
-    <Compile Include="Workflow\Workflow.Subjects.fs" />
-    <Compile Include="Workflow\Workflow.fs" />
-    <None Include="Workflow\function.json" />
-    <None Include="host.json" />
-    <None Include="local.settings.json" />
-    <Content Include="packages.config" />
-    <None Include="DataUpdateDaily\function.json" />
-    <Compile Include="DataUpdateDaily\DataUpdateDaily.fs" />
-    <None Include="DataUpdateIncremental\function.json" />
-    <Compile Include="DataUpdateIncremental\DataUpdateIncremental.fs" />
-    <Compile Include="Notification\Notification.fs" />
-    <None Include="Notification\function.json" />
-  </ItemGroup>
   <ItemGroup>
     <Reference Include="Chessie">
       <HintPath>..\..\packages\Chessie.0.5.1\lib\net40\Chessie.dll</HintPath>
@@ -225,4 +185,42 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <None Include="Scaffolding\createDbTables.sql" />
+    <Compile Include="Common\Core.fs" />
+    <Compile Include="Common\Model.fs" />
+    <Compile Include="Common\Queries.fs" />
+    <Compile Include="Common\Http.fs" />
+    <Compile Include="Common\Database.fs" />
+    <Compile Include="Common\Cache.fs" />
+    <Compile Include="Common\Formatting.fs" />
+    <Compile Include="GenerateBillReport\GenerateBillReport.fs" />
+    <None Include="GenerateBillReport\function.json" />
+    <Compile Include="GetLegislators\GetLegislators.fs" />
+    <None Include="GetLegislators\function.json" />
+    <Compile Include="Workflow\Workflow.Common.fs" />
+    <Compile Include="Workflow\Workflow.Action.fs" />
+    <Compile Include="Workflow\Workflow.Actions.fs" />
+    <Compile Include="Workflow\Workflow.Bill.fs" />
+    <Compile Include="Workflow\Workflow.Bills.fs" />
+    <Compile Include="Workflow\Workflow.Calendar.fs" />
+    <Compile Include="Workflow\Workflow.Calendars.fs" />
+    <Compile Include="Workflow\Workflow.Committee.fs" />
+    <Compile Include="Workflow\Workflow.Committees.fs" />
+    <Compile Include="Workflow\Workflow.Legislator.fs" />
+    <Compile Include="Workflow\Workflow.Legislators.fs" />
+    <Compile Include="Workflow\Workflow.Subjects.fs" />
+    <Compile Include="Workflow\Workflow.fs" />
+    <None Include="Workflow\function.json" />
+    <None Include="host.json" />
+    <None Include="local.settings.json" />
+    <Content Include="packages.config" />
+    <None Include="DataUpdateDaily\function.json" />
+    <Compile Include="DataUpdateDaily\DataUpdateDaily.fs" />
+    <None Include="DataUpdateIncremental\function.json" />
+    <Compile Include="DataUpdateIncremental\DataUpdateIncremental.fs" />
+    <Compile Include="Notification\Notification.fs" />
+    <None Include="Notification\function.json" />
+  </ItemGroup>
 </Project>
