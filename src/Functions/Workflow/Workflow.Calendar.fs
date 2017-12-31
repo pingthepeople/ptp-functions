@@ -85,24 +85,38 @@ let resolveChamberEvents link json =
     |> Seq.collect (chamberEvents link json)
     |> ok
 
-let committeeEvent link date location startTime endTime billLink =
+let committeeEvent link date chamber location startTime endTime billLink =
     { 
       ActionType = ActionType.CommitteeReading;
       BillLink=billLink;
       CalendarLink=link;
       Date=date;
       Location=location;
-      Chamber=Chamber.None;
+      Chamber=chamber;
       Start=startTime;
       End=endTime;
     }
 
-let resolveCommitteeEvents link (json:JsonValue) =
+let resolveCommitteeChamber (json:JsonValue) =
+    let query = "SELECT * FROM Committee WHERE Link = @Link"
+    let link = 
+        json?committee?link
+            .AsString()
+            .Replace("standing-","")
+            .Replace("interim-","")
+            .Replace("conference-","")        
+    dbParameterizedQueryOne<Committee> query {Link=link}
+
+let generateCommitteeEvents link (json:JsonValue) (committee:Committee) =
+    let prettyPrintTime time =
+        System.DateTime.Parse(time).ToString("h:mm tt")
+    
     let date = json?meetingDate.AsDateTime()
     let location = json?location.AsString()
-    let startTime = json?starttime.AsString()
-    let endTime = json?endtime.AsString()
-    let toMeeting = committeeEvent link date location startTime endTime
+    let startTime = json?starttime.AsString() |> prettyPrintTime
+    let endTime = json?endtime.AsString() |> prettyPrintTime
+    let chamber = committee.Chamber
+    let toMeeting = committeeEvent link date chamber location startTime endTime
     let billLink json = 
         json?bill.AsArray().[0]?link.AsString() 
         |> split "/versions" 
@@ -113,6 +127,10 @@ let resolveCommitteeEvents link (json:JsonValue) =
     |> Seq.map billLink
     |> Seq.map toMeeting
     |> ok
+
+let resolveCommitteeEvents link (json:JsonValue) =
+    (resolveCommitteeChamber json)
+    >>= (generateCommitteeEvents link json)
 
 let resolveEvents link = trial {
     let! json = fetch link
@@ -180,9 +198,6 @@ let insertEvents (events:ScheduledActionDTO seq) = trial {
         return Seq.empty<ScheduledAction>
 }
 
-let invalidateCalendarCache = 
-    tryInvalidateCacheIfAny ScheduledActionsKey
-
 let nextSteps link (result:Result<seq<ScheduledAction>, WorkFlowFailure>) = 
     match result with
     | Ok (sas, msgs) ->   
@@ -221,5 +236,5 @@ let workflow link =
         >>= resolveEvents
         >>= ensureEventBillsKnown
         >>= insertEvents
-        >>= invalidateCalendarCache
+        >>= (tryInvalidateCacheIfAny ScheduledActionsKey)
         |> nextSteps link
