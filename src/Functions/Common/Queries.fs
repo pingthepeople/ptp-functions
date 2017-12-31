@@ -37,7 +37,14 @@ WHERE Date >= @Date"""
 	b.Name
 	, b.Title
 	, CASE WHEN LEN(b.Description) < 256 THEN b.Description ELSE LEFT(b.Description,256) + '...' END as 'Description'
-	, b.Authors
+	, STUFF( (SELECT '; ' + l.LastName 
+                            FROM [Legislator] l
+                            JOIN [LegislatorBill] lb 
+                                ON lb.LegislatorId = l.Id
+                                AND lb.BillId = b.Id                            
+                            ORDER by lb.Position, l.LastName 
+                            FOR XML PATH('')),
+                            1, 1, '') as 'Authors'
 	, CASE WHEN b.Chamber = 1 THEN 'House' ELSE 'Senate' END as 'OriginChamber'
 	, (Select oc.Name from Committee oc Join BillCommittee obc on oc.Chamber = b.Chamber and b.Id = obc.BillID and oc.Id = obc.CommitteeId) as 'OriginCommittee'
 	, (Select cc.Name from Committee cc Join BillCommittee cbc on cc.Chamber <> b.Chamber and b.Id = cbc.BillID and cc.Id = cbc.CommitteeId) as 'CrossoverCommittee'
@@ -73,13 +80,22 @@ outer apply (Select Top 1 CAST([Date] AS DATE) [Date] from [ScheduledAction] sa 
 outer apply (Select Top 1 CAST([Date] AS DATE) [Date] from [ScheduledAction] sa where sa.BillId = b.Id and ActionType = 3 and sa.Chamber = b.Chamber) so3r
 outer apply (Select Top 1 CAST([Date] AS DATE) [Date] from [ScheduledAction] sa where sa.BillId = b.Id and ActionType = 1 and sa.Chamber <> b.Chamber) sccr
 outer apply (Select Top 1 CAST([Date] AS DATE) [Date] from [ScheduledAction] sa where sa.BillId = b.Id and ActionType = 2 and sa.Chamber <> b.Chamber) sc2r
-outer apply (Select Top 1 CAST([Date] AS DATE) [Date] from [ScheduledAction] sa where sa.BillId = b.Id and ActionType = 3 and sa.Chamber <> b.Chamber) sc3r"""
+outer apply (Select Top 1 CAST([Date] AS DATE) [Date] from [ScheduledAction] sa where sa.BillId = b.Id and ActionType = 3 and sa.Chamber <> b.Chamber) sc3r
+"""
 
     [<Literal>]
-    let FetchBillStatusForBills = FetchAllBillStatus + """ WHERE b.Id IN @Ids"""
+    let FetchBillStatusForBills = FetchAllBillStatus + """ 
+ WHERE 
+    b.SessionId = (SELECT TOP 1 Id FROM Session WHERE Active = 1)
+    AND b.Id IN @Ids
+ORDER BY b.Name"""
 
     [<Literal>]
-    let FetchBillStatusForUser = FetchAllBillStatus + """ WHERE b.Id IN (SELECT BillId FROM UserBill WHERE UserId = @Id)"""
+    let FetchBillStatusForUser = FetchAllBillStatus + """ 
+ WHERE 
+    b.SessionId = (SELECT TOP 1 Id FROM Session WHERE Active = 1)
+    AND  b.Id IN (SELECT BillId FROM UserBill WHERE UserId = @Id)
+ ORDER BY b.Name"""
 
     [<Literal>]
     let FetchAllActions = """SELECT 
