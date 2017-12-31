@@ -11,6 +11,7 @@ open Ptp.Formatting
 open Ptp.Cache
 open Ptp.Workflow.Common
 open Newtonsoft.Json
+open Ptp.Queries
 
 /// Generate an informative sms/email message body for this action.
 let formatBody (action:Action) title =
@@ -127,15 +128,16 @@ let haltIfActionAlreadyExists (action:Action,bill) =
     | 0 -> fail EntityAlreadyExists
     | _ -> ok (action,bill)
 
-let assignCommitteeQuery = """
+let assignCommitteeQuery = (sprintf """
 INSERT INTO BillCommittee(BillId, Assigned, CommitteeId)
 VALUES (
     @BillId, 
     @Date,
     (SELECT Id FROM Committee 
         WHERE Chamber=@Chamber 
-        AND Name=@Description))
-"""
+        AND Name=@Description
+        AND SessionId = %s))
+""" SessionIdSubQuery)
 
 let updateCommitteeAssignment (action:Action,bill) = trial {
     if (action.ActionType = ActionType.AssignedToCommittee)
@@ -145,9 +147,6 @@ let updateCommitteeAssignment (action:Action,bill) = trial {
     else 
         return (action,bill)
 }
-
-let invalidateActionsCache = 
-    tryInvalidateCache ActionsKey
 
 let inline nextSteps link result = 
     match result with
@@ -170,5 +169,5 @@ let workflow link =
         >>= insertActionIfNotExists
         >>= haltIfActionAlreadyExists
         >>= updateCommitteeAssignment
-        >>= invalidateActionsCache
+        >>= (tryInvalidateCache ActionsKey)
         |> nextSteps link

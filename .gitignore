@@ -301,3 +301,4 @@ __pycache__/
 *.xsd.cs
 .DS_Store
 src/Functions/local.prod.settings.json
+src/Functions/local.test.settings.json
