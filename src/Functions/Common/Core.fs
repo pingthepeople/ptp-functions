@@ -84,6 +84,7 @@ let timestamp() = System.DateTime.Now.ToString("HH:mm:ss.fff")
 let timestamped s = sprintf "%s %s" (timestamp()) s
 let datestamp() = System.DateTime.Now.ToString("yyyy-MM-dd")
 let env = System.Environment.GetEnvironmentVariable
+/// Split a string return the results as a list.
 let split (delimiter:string) (s:string) = 
     s.Split([|delimiter|], StringSplitOptions.RemoveEmptyEntries)
     |> Array.toList

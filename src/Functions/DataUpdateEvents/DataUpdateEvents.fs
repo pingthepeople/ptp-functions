@@ -6,6 +6,6 @@ open Newtonsoft.Json
 open Ptp.Core
 
 let Run(myTimer: TimerInfo, log: TraceWriter, nextCommand: ICollector<string>) =
-    Workflow.UpdateActions
-    |> JsonConvert.SerializeObject
-    |> nextCommand.Add
+    [Workflow.UpdateCalendars; Workflow.UpdateActions]
+    |> List.map JsonConvert.SerializeObject
+    |> List.iter nextCommand.Add

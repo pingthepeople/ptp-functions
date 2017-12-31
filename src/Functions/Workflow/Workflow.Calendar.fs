@@ -25,7 +25,7 @@ type ScheduledActionDTO =
   }
 
 let query = """
-SELECT TOP 1 sa.Id 
+SELECT TOP 1 Id 
 FROM ScheduledAction 
 WHERE Link = @Link"""
 
@@ -33,22 +33,22 @@ let fetchExistingEntity link =
     dbParameterizedQuery<int> query {Link=link}    
 
 let ensureEntityNotPresent link seq =
-    match seq with
-    | EmptySeq -> ok link
-    | _ -> fail EntityAlreadyExists
+    if Seq.isEmpty seq 
+    then ok link
+    else fail EntityAlreadyExists
 
 let ensureNotAlreadyKnown link = 
     fetchExistingEntity link
     >>= ensureEntityNotPresent link
 
-let calendarHeadings = 
+let chamberHeadings = 
     dict [ 
         "hb2head", ActionType.SecondReading; 
         "hb3head", ActionType.ThirdReading;
         "sb2head", ActionType.SecondReading; 
         "sb3head", ActionType.ThirdReading; ]
 
-let calendarEvent link date actionType chamber bill =
+let chamberEvent link date actionType chamber bill =
   { 
     ScheduledActionDTO.ActionType = actionType;
     BillLink=bill?link.AsString();
@@ -60,15 +60,15 @@ let calendarEvent link date actionType chamber bill =
     End="";
   }
 
-let calendarEvents link (json:JsonValue) h =
+let chamberEvents link (json:JsonValue) h =
     let date = json?date.AsDateTime()
-    let actionType = calendarHeadings.Item(h)
+    let actionType = chamberHeadings.Item(h)
     let chamber = 
         if h.StartsWith("h") 
         then Chamber.House 
         else Chamber.Senate
     let toCalendarEvent = 
-        calendarEvent link date actionType chamber
+        chamberEvent link date actionType chamber
     
     match json.TryGetProperty(h) with
     | Some x -> 
@@ -80,12 +80,12 @@ let calendarEvents link (json:JsonValue) h =
        | None -> Seq.empty<ScheduledActionDTO>
     | None -> Seq.empty<ScheduledActionDTO>
        
-let resolveCalendarEvents link json =
-    calendarHeadings.Keys
-    |> Seq.collect (calendarEvents link json)
+let resolveChamberEvents link json =
+    chamberHeadings.Keys
+    |> Seq.collect (chamberEvents link json)
     |> ok
 
-let meetingEvent link date location startTime endTime billLink =
+let committeeEvent link date location startTime endTime billLink =
     { 
       ActionType = ActionType.CommitteeReading;
       BillLink=billLink;
@@ -97,18 +97,20 @@ let meetingEvent link date location startTime endTime billLink =
       End=endTime;
     }
 
-let resolveMeetingEvents link (json:JsonValue) =
-    let actionType = ActionType.CommitteeReading
+let resolveCommitteeEvents link (json:JsonValue) =
     let date = json?meetingDate.AsDateTime()
     let location = json?location.AsString()
-    let startTime = json?startTime.AsString()
-    let endTime = json?endTime.AsString()
-    let toMeeting = meetingEvent link date location startTime endTime
+    let startTime = json?starttime.AsString()
+    let endTime = json?endtime.AsString()
+    let toMeeting = committeeEvent link date location startTime endTime
+    let billLink json = 
+        json?bill.AsArray().[0]?link.AsString() 
+        |> split "/versions" 
+        |> List.head
 
     json?agenda.AsArray()
     |> Array.toSeq
-    |> Seq.map (fun j -> j?bill.AsArray().[0])
-    |> Seq.map (fun j -> j?link.AsString())
+    |> Seq.map billLink
     |> Seq.map toMeeting
     |> ok
 
@@ -116,8 +118,8 @@ let resolveEvents link = trial {
     let! json = fetch link
     let! result =
         if (link.Contains("/calendars")) 
-        then resolveCalendarEvents link json
-        else resolveMeetingEvents link json
+        then resolveChamberEvents link json
+        else resolveCommitteeEvents link json
     return result
     }
 
@@ -140,54 +142,54 @@ let ensureEventBillsKnown calEvents =
     fetchUnknownBills calEvents
     >>= (resolveUnknownBills calEvents)
 
-let insertCalendarEvent = """
+let insertEventQuery = (sprintf """
 IF NOT EXISTS
     ( SELECT Id from ScheduledAction 
-      WHERE CalendarLink=@CalendarLink
+      WHERE Link=@CalendarLink
         AND Date=@Date
-        AND Chamber=@Chamber
         AND ActionType=@ActionType
-        AND Description=@Description
-        AND BillId=(SELECT Id FROM Bill WHERE Link = @BillLink)))
-    BEGIN
-        INSERT INTO ScheduledAction
-        (Description,Link,Date,ActionType,Chamber,Start,End,BillId) 
+        AND Location=@Location
+        AND Chamber=@Chamber
+        AND Start=@Start
+        AND [End]=@End
+        AND BillId=(SELECT Id FROM Bill WHERE Link = @BillLink))
+    INSERT INTO ScheduledAction
+        (Link,Date,ActionType,Location,Chamber,Start,[End],BillId) 
         VALUES
-            (@Description
-            ,@CalendarLink
+            (@CalendarLink
             ,@Date
             ,@ActionType
+            ,@Location
             ,@Chamber
             ,@Start
             ,@End
-            ,(SELECT Id FROM Bill WHERE Link = @BillLink))
-        SELECT CAST(SCOPE_IDENTITY() as int)
-    END
-ELSE 
-    BEGIN
-        SELECT 0
-    END"""
+            ,(SELECT Id FROM Bill WHERE Link = @BillLink));""")
 
-let queryInserted = """
-SELECT * from ScheduledAction
-WHERE Id in @Ids
-"""
+let getInsertedEventsQuery = """
+SELECT * FROM ScheduledAction
+WHERE Link = @Link"""
 
 let insertEvents (events:ScheduledActionDTO seq) = trial {
-    let! ids = events |> Seq.map (dbParameterizedQueryOne<int> insertCalendarEvent) |> collect
-    let! sas = 
-        ids 
-        |> Seq.filter (fun id -> id <> 0) 
-        |> Seq.toArray
-        |> fun ids -> {Ids=ids} 
-        |> dbParameterizedQuery<ScheduledAction> query
-    return sas
+    match (Seq.tryHead events) with
+    | Some event ->
+        let link = event.CalendarLink
+        let! ignored = dbCommand insertEventQuery events
+        let! inserted = dbParameterizedQuery<ScheduledAction> getInsertedEventsQuery {Link=link}
+        return inserted
+    | None -> 
+        return Seq.empty<ScheduledAction>
 }
+
+let rollback link = 
+    let queryText = "DELETE FROM ScheduledAction WHERE Link=@Link"
+    let op() =
+        dbCommand queryText {Link=link}
+    tryFail op (fun e -> DatabaseCommandError(CommandText(queryText), e))
 
 let invalidateCalendarCache = 
     tryInvalidateCacheIfAny ScheduledActionsKey
 
-let nextSteps (result:Result<seq<ScheduledAction>, WorkFlowFailure>) = 
+let nextSteps link (result:Result<seq<ScheduledAction>, WorkFlowFailure>) = 
     match result with
     | Ok (sas, msgs) ->   
         let sendNotfications = 
@@ -195,14 +197,16 @@ let nextSteps (result:Result<seq<ScheduledAction>, WorkFlowFailure>) =
             |> Seq.map (fun sa -> sa.Id) 
             |> Seq.map SendCalendarNotification 
             |> NextWorkflow
-        Next.Succeed(sendNotfications, msgs)
+        Next.Succeed(terminalState, msgs)
     | Bad ((UnknownBills bills)::msgs) ->
         let updateBills = bills |> mapNext UpdateBill
         Next.Succeed(updateBills, msgs)
     | Bad (EntityAlreadyExists::msgs) ->       
         Next.Succeed(terminalState, msgs)
     | Bad msgs ->
-        Next.FailWith(msgs)
+        match rollback link with
+        | Ok _ -> Next.FailWith(msgs)
+        | Bad err -> Seq.append err msgs |> Next.FailWith       
 
 let formatBody event =
     let formatTimeOfDay time = System.DateTime.Parse(time).ToString("h:mm tt")
@@ -226,4 +230,4 @@ let workflow link =
         >>= ensureEventBillsKnown
         >>= insertEvents
         >>= invalidateCalendarCache
-        |> nextSteps
+        |> nextSteps link
