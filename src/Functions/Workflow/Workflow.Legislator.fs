@@ -27,6 +27,7 @@ let legislatorModel json =
       Party=party;
       Chamber=chamber;
       Image=(legislatorPortraitUrl link); 
+      WebUrl=(legislatorWebUrl link);
       SessionId=0; 
       District=0; }
 
@@ -59,11 +60,15 @@ let resolveDistrict (legislator:Legislator, html:HtmlDocument) =
         |> fun d -> {legislator with District = d}
         |> ok
 
-let insertLegislatorIfNotExists= sprintf """
-IF NOT EXISTS (SELECT Id FROM Legislator WHERE Link = @Link and SessionId = %s)
+let insertLegislatorIfNotExists = (sprintf """
+IF NOT EXISTS 
+    ( SELECT Id FROM Legislator 
+      WHERE Link = @Link )
 BEGIN
-INSERT INTO Legislator(FirstName,LastName,Link,Chamber,Party,District,Image,SessionId) 
-VALUES (@FirstName,@LastName,@Link,@Chamber,@Party,@District,@Image,%s) END""" SessionIdSubQuery SessionIdSubQuery
+    INSERT INTO Legislator 
+    (FirstName,LastName,Link,Chamber,Party,District,Image,WebUrl,SessionId) 
+    VALUES (@FirstName,@LastName,@Link,@Chamber,@Party,@District,@Image,@WebUrl,%s) 
+END""" SessionIdSubQuery)
 
 /// Add new legislator records to the databsasase
 let insertIfNotExists legislator = 

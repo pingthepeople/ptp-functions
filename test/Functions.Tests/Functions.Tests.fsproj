@@ -68,7 +68,6 @@
     <Compile Include="WorkflowTests.fs" />
     <Compile Include="Workflow.SubjectTests.fs" />
     <Compile Include="Workflow.CommitteeTests.fs" />
-    <Compile Include="Workflow.Integration.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Chessie">
@@ -142,12 +141,6 @@
     </Reference>
     <Reference Include="System.Net.WebSockets.Client">
       <HintPath>..\..\packages\System.Net.WebSockets.Client.4.0.0\lib\net46\System.Net.WebSockets.Client.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Azure.Amqp">
-      <HintPath>..\..\packages\Microsoft.Azure.Amqp.2.1.2\lib\net45\Microsoft.Azure.Amqp.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Azure.ServiceBus">
-      <HintPath>..\..\packages\Microsoft.Azure.ServiceBus.2.0.0\lib\net461\Microsoft.Azure.ServiceBus.dll</HintPath>
     </Reference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

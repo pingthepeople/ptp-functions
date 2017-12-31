@@ -1,13 +1,13 @@
 ﻿{
   "disabled": true,
   "scriptFile": "../bin/Functions.dll",
-  "entryPoint": "Ptp.DataUpdateIncremental.Run",
+  "entryPoint": "Ptp.DataUpdateSubjectsBills.Run",
   "bindings": [
     {
       "name": "myTimer",
       "type": "timerTrigger",
       "direction": "in",
-      "schedule": "0 */10 8-20 * * 1-5"
+      "schedule": "0 20 6 * * 1-5"
     },
     {
       "name": "nextCommand",

@@ -22,6 +22,7 @@ type Legislator =
         Party:Party;
         Link:string;
         Image:string;
+        WebUrl:string;
     }
 
 type ActionType = 

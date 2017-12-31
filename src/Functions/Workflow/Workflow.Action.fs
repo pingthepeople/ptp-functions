@@ -55,12 +55,18 @@ let parseDescription description =
 
 
 // DB Query Text 
-let billQuery = "SELECT TOP 1 * FROM Bill WHERE Link = @Link"
+let billQuery = """
+SELECT TOP 1 * 
+FROM Bill 
+WHERE Link = @Link"""
 
 let insertAction = """
-IF NOT EXISTS (SELECT Id from Action WHERE Link = @Link)
+IF NOT EXISTS 
+    ( SELECT Id FROM Action 
+      WHERE Link = @Link )
 	BEGIN
-		INSERT INTO Action(Description,Link,Date,ActionType,Chamber,BillId) 
+		INSERT INTO Action
+        (Description,Link,Date,ActionType,Chamber,BillId) 
 		VALUES (@Description,@Link,@Date,@ActionType,@Chamber,@BillId)
 		SELECT CAST(SCOPE_IDENTITY() as int)
 	END 
@@ -68,8 +74,6 @@ ELSE
 	BEGIN
 		SELECT 0
 	END"""
-
-
 
 let billLink json = 
     json?billName?link.AsString()

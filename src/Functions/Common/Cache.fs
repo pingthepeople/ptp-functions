@@ -5,25 +5,25 @@ open Ptp.Core
 open StackExchange.Redis
 
 [<Literal>]
-let BillsKey = """laravel:bills"""
+let BillsKey = """bills"""
 
 [<Literal>]
-let SubjectsKey = """laravel:subjects"""
+let SubjectsKey = """subjects"""
 
 [<Literal>]
-let CommitteesKey = """laravel:committees"""
+let CommitteesKey = """committees"""
 
 [<Literal>]
-let ActionsKey = """laravel:actions"""
+let ActionsKey = """actions"""
 
 [<Literal>]
-let ScheduledActionsKey = """laravel:scheduled_actions"""
+let ScheduledActionsKey = """scheduled_actions"""
 
 [<Literal>]
-let LegislatorsKey = """laravel:legislators"""
+let LegislatorsKey = """legislators"""
 
 [<Literal>]
-let MembershipsKey = """laravel:memberships"""
+let MembershipsKey = """memberships"""
 
 let envPostfix = env "Redis.CacheKeyPostfix"
 
@@ -35,7 +35,7 @@ let config =
     cfg
 
 let invalidateCache key =
-    let cacheKey = sprintf "%s%s" key envPostfix
+    let cacheKey = sprintf "%s:%s" envPostfix key 
     use muxer = config |> ConnectionMultiplexer.Connect
     let db = muxer.GetDatabase(0)
     cacheKey

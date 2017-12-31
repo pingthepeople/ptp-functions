@@ -213,14 +213,19 @@
     <Compile Include="Workflow\Workflow.Subjects.fs" />
     <Compile Include="Workflow\Workflow.fs" />
     <None Include="Workflow\function.json" />
-    <None Include="host.json" />
-    <None Include="local.settings.json" />
     <Content Include="packages.config" />
-    <None Include="DataUpdateDaily\function.json" />
-    <Compile Include="DataUpdateDaily\DataUpdateDaily.fs" />
-    <None Include="DataUpdateIncremental\function.json" />
-    <Compile Include="DataUpdateIncremental\DataUpdateIncremental.fs" />
     <Compile Include="Notification\Notification.fs" />
     <None Include="Notification\function.json" />
+    <None Include="host.json" />
+    <None Include="local.prod.settings.json" />
+    <None Include="local.settings.json" />
+    <Compile Include="DataUpdateLegislators\DataUpdateLegislators.fs" />
+    <None Include="DataUpdateLegislators\function.json" />
+    <Compile Include="DataUpdateCommittees\DataUpdateCommittees.fs" />
+    <None Include="DataUpdateCommittees\function.json" />
+    <Compile Include="DataUpdateEvents\DataUpdateEvents.fs" />
+    <None Include="DataUpdateEvents\function.json" />
+    <Compile Include="DataUpdateSubjectsBills\DataUpdateSubjectsBills.fs" />
+    <None Include="DataUpdateSubjectsBills\function.json" />
   </ItemGroup>
 </Project>

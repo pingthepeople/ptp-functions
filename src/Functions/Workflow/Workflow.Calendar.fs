@@ -24,7 +24,10 @@ type ScheduledActionDTO =
       End: string;
   }
 
-let query = "SELECT TOP 1 sa.Id FROM ScheduledAction WHERE Link = @Link"
+let query = """
+SELECT TOP 1 sa.Id 
+FROM ScheduledAction 
+WHERE Link = @Link"""
 
 let fetchExistingEntity link =
     dbParameterizedQuery<int> query {Link=link}    
@@ -138,33 +141,47 @@ let ensureEventBillsKnown calEvents =
     >>= (resolveUnknownBills calEvents)
 
 let insertCalendarEvent = """
-   INSERT INTO ScheduledAction
+IF NOT EXISTS
+    ( SELECT Id from ScheduledAction 
+      WHERE CalendarLink=@CalendarLink
+        AND Date=@Date
+        AND Chamber=@Chamber
+        AND ActionType=@ActionType
+        AND Description=@Description
+        AND BillId=(SELECT Id FROM Bill WHERE Link = @BillLink)))
+    BEGIN
+        INSERT INTO ScheduledAction
         (Description,Link,Date,ActionType,Chamber,Start,End,BillId) 
-    VALUES
-        (@Description
-        ,@CalendarLink
-        ,@Date
-        ,@ActionType
-        ,@Chamber
-        ,@Start
-        ,@End
-        ,(SELECT Id FROM Bill WHERE Link = @BillLink))
-"""
+        VALUES
+            (@Description
+            ,@CalendarLink
+            ,@Date
+            ,@ActionType
+            ,@Chamber
+            ,@Start
+            ,@End
+            ,(SELECT Id FROM Bill WHERE Link = @BillLink))
+        SELECT CAST(SCOPE_IDENTITY() as int)
+    END
+ELSE 
+    BEGIN
+        SELECT 0
+    END"""
 
 let queryInserted = """
-    SELECT Id from ScheduledAction sa
-    JOIN Bill b on sa.BillId = b.Id
-    JOIN UserBill ub on b.Id = ub.BillId
-         AND (ub.ReceiveAlertEmail = 1 
-              OR ub.ReceiveAlertSms = 1)
-    WHERE Link = @CalendarLink
-    """
+SELECT * from ScheduledAction
+WHERE Id in @Ids
+"""
 
 let insertEvents (events:ScheduledActionDTO seq) = trial {
-    let link = events |> Seq.head |> (fun e -> e.CalendarLink)
-    let! dtos = dbCommand insertCalendarEvent events
-    let! inserted = dbParameterizedQuery<ScheduledAction> queryInserted link
-    return inserted
+    let! ids = events |> Seq.map (dbParameterizedQueryOne<int> insertCalendarEvent) |> collect
+    let! sas = 
+        ids 
+        |> Seq.filter (fun id -> id <> 0) 
+        |> Seq.toArray
+        |> fun ids -> {Ids=ids} 
+        |> dbParameterizedQuery<ScheduledAction> query
+    return sas
 }
 
 let invalidateCalendarCache = 

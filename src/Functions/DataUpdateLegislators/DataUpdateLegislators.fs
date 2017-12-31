@@ -1,4 +1,4 @@
-﻿module Ptp.DataUpdateDaily
+﻿module Ptp.DataUpdateLegislators
 
 open Microsoft.Azure.WebJobs
 open Microsoft.Azure.WebJobs.Host

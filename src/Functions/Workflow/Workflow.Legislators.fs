@@ -29,7 +29,6 @@ let nextSteps result =
     let steps links = 
         links 
         |> List.map UpdateLegislator
-        |> List.append [ UpdateCommittees; UpdateSubjects ]
     result |> workflowContinues steps
 
 let workflow() =

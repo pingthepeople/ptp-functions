@@ -31,7 +31,7 @@ let fetchRecentlyUpdatedBillsFromApi sessionYear = trial {
     let! pages = url |> fetchAllPages 
     // parse the url for each bill
     let! billUrls = 
-        pages |> deserializeAs (fun json -> json?Link.AsString())
+        pages |> deserializeAs (fun json -> json?link.AsString())
     return billUrls
     }
 

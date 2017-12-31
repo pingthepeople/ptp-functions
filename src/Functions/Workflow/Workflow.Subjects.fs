@@ -24,9 +24,19 @@ let fetchAllSubjectsFromApi sessionYear = trial {
     return models
     }
 
-let fetchKnownSubjectsQuery = sprintf "SELECT Id, Link from Subject WHERE SessionId = %s" SessionIdSubQuery
-let persisSubjectsQuery = sprintf """INSERT INTO Subject(Name,Link,SessionId) 
-VALUES (@Name,@Link,%s)""" SessionIdSubQuery
+let fetchKnownSubjectsQuery = (sprintf """
+SELECT Id, Link FROM Subject 
+WHERE SessionId = %s""" SessionIdSubQuery)
+
+let persistSubjectsQuery = (sprintf """
+IF NOT EXISTS
+    ( SELECT Id FROM Subject
+      WHERE Link=@Link )
+BEGIN
+    INSERT INTO Subject
+    (Name,Link,SessionId) 
+    VALUES (@Name,@Link,%s)
+END""" SessionIdSubQuery)
 
 let fetchKnownSubjectsFromDb allSubjects = trial {
     let! knownSubjects = dbQuery<LinkAndId> fetchKnownSubjectsQuery
@@ -39,8 +49,11 @@ let filterOutKnownSubjects (allSubjects:Subject seq, knownSubjects: LinkAndId se
     |> Seq.toList
     |> ok
 
-let persistNewSubjects subjects = 
-    dbCommand persisSubjectsQuery subjects
+let persistSubject subject =
+    dbCommand persistSubjectsQuery subject
+
+let persistNewSubjects subjects =
+    subjects |> Seq.map persistSubject |> collect
 
 /// Invalidate the Redis cache key for bill subjects
 let invalidateSubjectsCache =

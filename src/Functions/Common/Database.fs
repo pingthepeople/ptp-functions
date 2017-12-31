@@ -105,12 +105,11 @@ let dbCommandById<'Result> (queryText:string) ids =
     dbCommand queryText idList
 
 let queryAndFilterKnownLinks table links =
+    let values = links |> toSqlValuesList
     let query = 
-        links 
-        |> toSqlValuesList
-        |> (sprintf """
+        (sprintf """
 SELECT a.Link FROM 
 ( VALUES %s ) AS a(Link)
 EXCEPT SELECT Link FROM %s;
-""" table)
+""" values table)
     dbQuery<string> query

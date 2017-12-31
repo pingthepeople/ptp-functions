@@ -75,18 +75,31 @@ let determineComposition legislators (committee,json) =
     then conferenceCommittee()
     else standingCommittee()
 
-let getSessionLegislatorsQuery = 
-    sprintf """SELECT Id, Link FROM Legislator WHERE SessionId = %s""" SessionIdSubQuery
+let getSessionLegislatorsQuery = (sprintf """
+SELECT Id, Link 
+FROM Legislator 
+WHERE SessionId = %s""" SessionIdSubQuery)
 
-let getKnownCommMembersQuery = """SELECT Id, LegislatorId, CommitteeId, Position 
+let getKnownCommMembersQuery = """
+SELECT Id, LegislatorId, CommitteeId, Position 
 FROM LegislatorCommittee
 WHERE CommitteeId = @Id"""
 
-let insertCommMemberCommand = """INSERT INTO LegislatorCommittee 
-(CommitteeId, LegislatorId, Position) 
-VALUES (@CommitteeId, @LegislatorId, @Position)"""
+let insertCommMemberCommand = """
+IF NOT EXISTS 
+    ( SELECT Id from LegislatorCommittee 
+      WHERE CommitteeId=@CommitteeId 
+       AND LegislatorId=@LegislatorId 
+       AND Position=@Position)
+BEGIN
+    INSERT INTO LegislatorCommittee 
+    (CommitteeId, LegislatorId, Position) 
+    VALUES (@CommitteeId, @LegislatorId, @Position)
+END"""
 
-let deleteQuery = """DELETE FROM LegislatorCommittee WHERE Id IN @Ids"""
+let deleteQuery = """
+DELETE FROM LegislatorCommittee 
+WHERE Id IN @Ids"""
 
 let getKnownMemberships (comm:Committee) = 
     dbParameterizedQuery<CommitteeMember> getKnownCommMembersQuery comm
@@ -96,7 +109,7 @@ let addNewMemberships (allMemberships, knownMemberships) = trial {
         allMemberships
         |> except' knownMemberships (fun x -> (x.CommitteeId, x.LegislatorId, x.Position))
         |> Seq.toList
-    let! added = dbCommand insertCommMemberCommand s
+    let! added = s |> Seq.map (dbCommand insertCommMemberCommand) |> collect
     return added
     }
 
@@ -118,7 +131,6 @@ let updateMemberships (allMemberships, knownMemberships) = trial {
     return added @ deleted
     }
 
-
 let fetchCommitteeMetadata link =
     fetch link
 
@@ -127,32 +139,20 @@ let deserializeCommitteeModel json = trial {
     return (comm,json)
     }
 
-let queryForExistingCommittee (comm,json) = trial {
-    let queryText = sprintf """SELECT Id FROM Committee WHERE Link = @Link"""
-    let! result = dbParameterizedQuery<int> queryText comm
-    let ret = 
-        match result |> Seq.tryHead with
-        | Some id -> {comm with Committee.Id=id}
-        | None -> comm
-    return (ret,json)
-    }
+let insertCommitteeQuery = (sprintf """
+IF NOT EXISTS 
+    ( SELECT Id FROM Committee 
+      WHERE Link=@Link )
+BEGIN
+    INSERT INTO Committee
+    (Name,Link,Chamber,CommitteeType,SessionId)
+    VALUES (@Name,@Link,@Chamber,@CommitteeType,%s)
+END
+SELECT * FROM Committee WHERE Link = @Link""" SessionIdSubQuery)
 
-let insertCommitteeQuery = sprintf """INSERT INTO 
-Committee(Name,Link,Chamber,CommitteeType,SessionId)
-VALUES (@Name,@Link,@Chamber,@CommitteeType,%s);
-SELECT Id FROM Committee WHERE Link = @Link""" SessionIdSubQuery
-
-let insertCommittee comm = trial {
-    let! id = dbParameterizedQueryOne<int> insertCommitteeQuery comm
-    return { comm with Committee.Id = id }
-    }
-
-let persistIfNotExists (comm:Committee,json) = trial {
-    let! ret = 
-        match comm.Id with
-        | 0 -> insertCommittee comm
-        | _ -> comm |> ok
-    return (ret,json)
+let addOrGetCommittee (comm,json) = trial {
+    let! c = dbParameterizedQueryOne<Committee> insertCommitteeQuery comm
+    return (c, json)
     }
 
 let reconcileCommitteeMembers (comm:Committee,json) = trial {
@@ -177,8 +177,7 @@ let workflow link =
     fun () ->
         fetchCommitteeMetadata link
         >>= deserializeCommitteeModel
-        >>= queryForExistingCommittee
-        >>= persistIfNotExists
+        >>= addOrGetCommittee
         >>= reconcileCommitteeMembers
         >>= invalidateCommitteeCache
         >>= invalidateMembershipCache

@@ -89,6 +89,7 @@ CREATE TABLE Legislator
 	Party TINYINT NOT NULL,
 	District TINYINT NOT NULL,
     Image nvarchar(256) NOT NULL,
+    WebUrl nvarchar(256) NOT NULL,
     SessionId int NOT NULL FOREIGN KEY REFERENCES [Session](Id)
 )
 
