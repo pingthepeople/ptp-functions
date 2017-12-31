@@ -227,5 +227,6 @@
     <None Include="DataUpdateEvents\function.json" />
     <Compile Include="DataUpdateSubjectsBills\DataUpdateSubjectsBills.fs" />
     <None Include="DataUpdateSubjectsBills\function.json" />
+    <Content Include="App.config" />
   </ItemGroup>
 </Project>
