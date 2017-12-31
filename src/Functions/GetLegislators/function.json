@@ -4,7 +4,7 @@
   "entryPoint": "Ptp.GetLegislators.Run",
   "bindings": [
     {
-      "authLevel": "admin",
+      "authLevel": "anonymous",
       "name": "req",
       "type": "httpTrigger",
       "direction": "in",
