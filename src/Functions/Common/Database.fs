@@ -113,3 +113,10 @@ SELECT a.Link FROM
 EXCEPT SELECT Link FROM %s;
 """ values table)
     dbQuery<string> query
+
+let rollbackInsert table link (errs:WorkFlowFailure list) = 
+    let queryText = sprintf "DELETE FROM %s WHERE Link=@Link" table
+    let res = dbCommand queryText {Link=link}
+    match res with
+    | Ok _ -> errs |> Next.FailWith
+    | Bad err -> err @ errs |> Next.FailWith

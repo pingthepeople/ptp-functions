@@ -127,10 +127,29 @@ let haltIfActionAlreadyExists (action:Action,bill) =
     | 0 -> fail EntityAlreadyExists
     | _ -> ok (action,bill)
 
+let assignCommitteeQuery = """
+INSERT INTO BillCommittee(BillId, Assigned, CommitteeId)
+VALUES (
+    @BillId, 
+    @Date,
+    (SELECT Id FROM Committee 
+        WHERE Chamber=@Chamber 
+        AND Name=@Description))
+"""
+
+let updateCommitteeAssignment (action:Action,bill) = trial {
+    if (action.ActionType = ActionType.AssignedToCommittee)
+    then 
+        let! res = dbCommand assignCommitteeQuery action
+        return (action,bill)
+    else 
+        return (action,bill)
+}
+
 let invalidateActionsCache = 
     tryInvalidateCache ActionsKey
 
-let inline nextSteps result = 
+let inline nextSteps link result = 
     match result with
     | Ok (_, msgs) ->   
         Next.Succeed(terminalState, msgs)
@@ -140,7 +159,7 @@ let inline nextSteps result =
         let updateBill = NextWorkflow [UpdateBill bill]
         Next.Succeed(updateBill, msgs)
     | Bad msgs ->
-        Next.FailWith(msgs)
+        msgs |> rollbackInsert "Action" link
 
 let workflow link = 
     fun () ->
@@ -150,5 +169,6 @@ let workflow link =
         >>= resolveAction
         >>= insertActionIfNotExists
         >>= haltIfActionAlreadyExists
+        >>= updateCommitteeAssignment
         >>= invalidateActionsCache
-        |> nextSteps
+        |> nextSteps link

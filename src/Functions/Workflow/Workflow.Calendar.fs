@@ -180,12 +180,6 @@ let insertEvents (events:ScheduledActionDTO seq) = trial {
         return Seq.empty<ScheduledAction>
 }
 
-let rollback link = 
-    let queryText = "DELETE FROM ScheduledAction WHERE Link=@Link"
-    let op() =
-        dbCommand queryText {Link=link}
-    tryFail op (fun e -> DatabaseCommandError(CommandText(queryText), e))
-
 let invalidateCalendarCache = 
     tryInvalidateCacheIfAny ScheduledActionsKey
 
@@ -204,9 +198,7 @@ let nextSteps link (result:Result<seq<ScheduledAction>, WorkFlowFailure>) =
     | Bad (EntityAlreadyExists::msgs) ->       
         Next.Succeed(terminalState, msgs)
     | Bad msgs ->
-        match rollback link with
-        | Ok _ -> Next.FailWith(msgs)
-        | Bad err -> Seq.append err msgs |> Next.FailWith       
+        msgs |> rollbackInsert "ScheduledAction" link   
 
 let formatBody event =
     let formatTimeOfDay time = System.DateTime.Parse(time).ToString("h:mm tt")
