@@ -1,5 +1,5 @@
 ﻿{
-  "disabled": true,
+  "disabled": false,
   "scriptFile": "../bin/Functions.dll",
   "entryPoint": "Ptp.DataUpdateCommittees.Run",
   "bindings": [
