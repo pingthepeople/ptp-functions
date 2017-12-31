@@ -4,7 +4,7 @@
   "entryPoint": "Ptp.GenerateBillReport.Run",
   "bindings": [
     {
-      "authLevel": "admin",
+      "authLevel": "anonymous",
       "name": "req",
       "type": "httpTrigger",
       "direction": "in",
