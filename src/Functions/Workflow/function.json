@@ -1,0 +1,31 @@
+﻿{
+  "disabled": false,
+  "scriptFile": "../bin/Functions.dll",
+  "entryPoint": "Ptp.Workflow.Function.Run",
+  "bindings": [
+    {
+      "name": "command",
+      "queueName": "command",
+      "connection": "ServiceBus.ConnectionString",
+      "accessRights": "manage",
+      "type": "serviceBusTrigger",
+      "direction": "in"
+    },
+    {
+      "name": "nextCommand",
+      "queueName": "command",
+      "connection": "ServiceBus.ConnectionString",
+      "accessRights": "manage",
+      "type": "serviceBus",
+      "direction": "out"
+    },
+    {
+      "name": "notifications",
+      "queueName": "notification",
+      "connection": "ServiceBus.ConnectionString",
+      "accessRights": "manage",
+      "type": "serviceBus",
+      "direction": "out"
+    }
+  ]
+}

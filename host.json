@@ -1,5 +1,0 @@
-{
-    // Set of shared code directories that should be monitored for changes to ensure that
-    // when code in these directories is changed, it is picked up by your functions
-    "watchDirectories": [ "shared" ]
-}
