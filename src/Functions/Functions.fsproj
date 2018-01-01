@@ -195,12 +195,14 @@
     <Compile Include="Common\Database.fs" />
     <Compile Include="Common\Cache.fs" />
     <Compile Include="Common\Formatting.fs" />
+    <Compile Include="Common\Messaging.fs" />
     <Compile Include="GenerateBillReport\GenerateBillReport.fs" />
     <None Include="GenerateBillReport\function.json" />
     <Compile Include="GetLegislators\GetLegislators.fs" />
     <None Include="GetLegislators\function.json" />
     <Compile Include="Workflow\Workflow.Common.fs" />
     <Compile Include="Workflow\Workflow.Action.fs" />
+    <Compile Include="Workflow\Workflow.Action.Notification.fs" />
     <Compile Include="Workflow\Workflow.Actions.fs" />
     <Compile Include="Workflow\Workflow.Bill.fs" />
     <Compile Include="Workflow\Workflow.Bills.fs" />

@@ -204,7 +204,7 @@ let nextSteps link (result:Result<seq<ScheduledAction>, WorkFlowFailure>) =
         let sendNotfications = 
             sas 
             |> Seq.map (fun sa -> sa.Id) 
-            |> Seq.map SendCalendarNotification 
+            |> Seq.map GenerateCalendarNotification 
             |> NextWorkflow
         Next.Succeed(terminalState, msgs)
     | Bad ((UnknownBills bills)::msgs) ->

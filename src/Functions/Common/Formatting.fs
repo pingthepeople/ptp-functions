@@ -21,8 +21,3 @@ let webLink (bill:Bill) =
     let chamber = bill.Chamber.ToString().ToLower()
     let number = printBillNumber bill
     sprintf "https://iga.in.gov/legislative/%s/bills/%s/%s" session chamber number
-
-/// A markdown bill link and title 
-let markdownBillHrefAndTitle bill =
-    sprintf "[%s](%s) ('%s')" (printBillName bill) (webLink bill) bill.Title
-    

@@ -59,6 +59,8 @@ let chooseWorkflow notifications msg =
     | UpdateAction link     -> Action.workflow link
     | UpdateCalendars       -> Calendars.workflow
     | UpdateCalendar link   -> Calendar.workflow link
+    | GenerateActionNotification id -> 
+        ActionNotification.workflow notifications id
     | _ -> raise (NotImplementedException())
 
 let logStart (log: TraceWriter) cmd =
