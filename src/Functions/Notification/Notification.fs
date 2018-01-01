@@ -34,7 +34,7 @@ let sendSms msg =
 let Run(log: TraceWriter, notification: string) =
     match deserializeQueueItem<Message> log notification with
     | Some msg -> 
-        sprintf "Sending %A to %s" msg.MessageType msg.Recipient
+        sprintf "Sending %A to %s re: %s" msg.MessageType msg.Recipient msg.Subject
         |> log.Info
         match msg.MessageType with
         | MessageType.Email ->  msg |> sendMail
