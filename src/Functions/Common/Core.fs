@@ -6,6 +6,7 @@ open Microsoft.Azure.WebJobs.Host
 open System
 open Newtonsoft.Json
 open System.Diagnostics
+open Twilio.TwiML.Voice
 
 type Link = Link of String
 
@@ -21,7 +22,8 @@ type Workflow =
     | UpdateAction of string
     | UpdateCalendars
     | UpdateCalendar of string
-    | SendCalendarNotification of int
+    | GenerateCalendarNotification of int
+    | GenerateActionNotification of int
     | UpdateDeadBills
     
 type HttpWorkflow =
@@ -186,12 +188,15 @@ let throwOnFail source result =
         errs |> flatten source |> Exception |> raise
     | _ -> ignore
 
+let inline enqueue (queue:ICollector<string>) items =
+    items 
+    |> Seq.map JsonConvert.SerializeObject
+    |> Seq.iter queue.Add
 
-let enqueue (queue:ICollector<string>) items =
-    items |> Seq.iter queue.Add
-
-let tryEnqueue (queue:ICollector<string>) items =
-    let op() = enqueue queue items
+let inline tryEnqueue (queue:ICollector<string>) items =
+    let op() = 
+        enqueue queue items
+        items
     tryFail op EnqueueFailure
 
 let enqueueNext log enqueue result =
@@ -203,16 +208,12 @@ let enqueueNext log enqueue result =
             |> log
             |> ignore
         | steps ->
-            let next = 
-                steps 
-                |> Seq.map JsonConvert.SerializeObject
-            next 
+            steps 
             |> Seq.map (fun n -> n.ToString())
             |> String.concat "\n"
             |> sprintf "Success. Next steps:\n%s"
             |> log
-
-            next
+            steps
             |> enqueue
     | Bad _ ->
         "Failed. Enqueueing no next step."

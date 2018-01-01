@@ -7,25 +7,8 @@ open Ptp.Core
 open Ptp.Model
 open Ptp.Http
 open Ptp.Database
-open Ptp.Formatting
 open Ptp.Cache
-open Ptp.Workflow.Common
-open Newtonsoft.Json
 open Ptp.Queries
-
-/// Generate an informative sms/email message body for this action.
-let formatBody (action:Action) title =
-    let desc = action.Description.TrimEnd(';')
-    match action.ActionType with
-    | ActionType.AssignedToCommittee -> sprintf "%s was assigned to the %A Committee on %s." title action.Chamber desc
-    | ActionType.CommitteeReading -> sprintf "%s had a committee hearing in the %A. The vote was: %s." title action.Chamber desc
-    | ActionType.SecondReading -> sprintf "%s had a second reading in the %A. The vote was: %s." title action.Chamber desc
-    | ActionType.ThirdReading -> sprintf "%s had a third reading in the %A. The vote was: %s." title action.Chamber desc
-    | ActionType.SignedByPresidentOfSenate -> sprintf "%s has been signed by the President of the Senate. It will now be sent to the Governor to be signed into law or vetoed." title
-    | ActionType.SignedByGovernor -> sprintf "%s has been signed into law by the Governor." title
-    | ActionType.VetoedByGovernor -> sprintf "%s has been vetoed by the Governor. The Assembly now has the option to override that veto." title
-    | ActionType.VetoOverridden -> sprintf "The veto on %s has been overridden in the %A. The vote was: %s." title action.Chamber desc
-    | _ -> "(some other event type?)"
 
 /// Determine the action type based on the API description
 let parseType description =
@@ -53,7 +36,6 @@ let parseDescription description =
     | StartsWith "Veto overridden by the House; " rest -> rest
     | StartsWith "Veto overridden by the Senate; " rest -> rest
     | other -> other
-
 
 // DB Query Text 
 let billQuery = """
@@ -118,15 +100,14 @@ let resolveAction (json, bill:Bill) =
 /// Add the Action to the database if it's not already present
 let insertActionIfNotExists (action:Action, bill) = trial {
     let! id = dbParameterizedQueryOne<int> insertAction action
-    let action' = {action with Id=id}
-    return (action', bill)
+    return {action with Id=id}
     }
 
 /// If the Action is already in te DB, we're done.
-let haltIfActionAlreadyExists (action:Action,bill) =
+let haltIfActionAlreadyExists (action:Action) =
     match action.Id with
     | 0 -> fail EntityAlreadyExists
-    | _ -> ok (action,bill)
+    | _ -> ok action
 
 let assignCommitteeQuery = (sprintf """
 INSERT INTO BillCommittee(BillId, Assigned, CommitteeId)
@@ -139,19 +120,24 @@ VALUES (
         AND SessionId = %s))
 """ SessionIdSubQuery)
 
-let updateCommitteeAssignment (action:Action,bill) = trial {
+let updateCommitteeAssignment (action:Action) = trial {
     if (action.ActionType = ActionType.AssignedToCommittee)
     then 
         let! res = dbCommand assignCommitteeQuery action
-        return (action,bill)
+        return action
     else 
-        return (action,bill)
+        return action
 }
 
-let inline nextSteps link result = 
+let tryInvalidateCache (action:Action) =
+    tryInvalidateCache ActionsKey action
+
+let inline nextSteps link (result:Result<Action,WorkFlowFailure>) = 
     match result with
-    | Ok (_, msgs) ->   
-        Next.Succeed(terminalState, msgs)
+    | Ok (a, _) ->
+        if a.ActionType = ActionType.Unknown
+        then Next.Succeed(terminalState)
+        else Next.Succeed(NextWorkflow([GenerateActionNotification(a.Id)]))
     | Bad (EntityAlreadyExists::msgs) ->       
         Next.Succeed(terminalState, msgs)
     | Bad ((UnknownBill bill)::msgs) ->
@@ -169,5 +155,5 @@ let workflow link =
         >>= insertActionIfNotExists
         >>= haltIfActionAlreadyExists
         >>= updateCommitteeAssignment
-        >>= (tryInvalidateCache ActionsKey)
+        >>= tryInvalidateCache
         |> nextSteps link

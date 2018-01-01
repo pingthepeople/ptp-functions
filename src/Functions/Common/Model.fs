@@ -195,6 +195,17 @@ type Message = {
 }
 
 [<CLIMutable>]
+type Recipient = {
+    Email:string;
+    Mobile:string;
+    ReceiveAlertEmail:bool;
+    ReceiveAlertSms:bool;
+    HouseDistrict:int;
+    SenateDistrict:int;
+}
+
+
+[<CLIMutable>]
 type BillStatus = { 
     Name:string;
     Title:string;
