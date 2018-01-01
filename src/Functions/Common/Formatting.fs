@@ -13,7 +13,7 @@ let printBillName (bill:Bill) =
 
 /// formats a bill name and title for print. Ex: "HB 1004 ('Biannual Budget')"
 let printBillNameAndTitle bill =
-    sprintf "%s ('%s')" (printBillName bill) bill.Title
+    sprintf "%s ('%s')" (printBillName bill) (bill.Title.TrimEnd('.'))
 
 /// a markdown-formatted link to the bill.
 let webLink (bill:Bill) = 

@@ -12,12 +12,12 @@ let formatBody action includeLink title =
         match action.Location with 
         | "House Chamber" -> "the House Chamber"
         | "Senate Chamber" -> "the Senate Chamber"
-        | other -> other
+        | room -> sprintf "State House %s" room
     let eventLocation = 
         match includeLink with
         | true -> sprintf "%s ([map](https://iga.in.gov/information/location_maps))" eventRoom
         | false -> eventRoom
-    let eventDate = action.Date.ToString("M/d/yyyy")
+    let eventDate = action.Date.ToString("dddd M/d/yyyy")
     match action.ActionType with
     | ActionType.CommitteeReading when action.Start |> System.String.IsNullOrWhiteSpace -> sprintf "%s is scheduled for a committee hearing on %s in %s" title eventDate eventLocation
     | ActionType.CommitteeReading -> sprintf "%s is scheduled for a committee hearing on %s from %s - %s in %s" title eventDate (formatTimeOfDay action.Start) (formatTimeOfDay action.End) eventLocation
