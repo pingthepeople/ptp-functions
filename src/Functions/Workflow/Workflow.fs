@@ -61,7 +61,10 @@ let chooseWorkflow notifications msg =
     | UpdateCalendar link   -> Calendar.workflow link
     | GenerateActionNotification id -> 
         ActionNotification.workflow notifications id
+    | GenerateCalendarNotification id -> 
+        CalendarNotification.workflow notifications id
     | _ -> raise (NotImplementedException())
+    
 
 let logStart (log: TraceWriter) cmd =
     sprintf "[Start] [%A]" cmd 

@@ -207,6 +207,7 @@
     <Compile Include="Workflow\Workflow.Bill.fs" />
     <Compile Include="Workflow\Workflow.Bills.fs" />
     <Compile Include="Workflow\Workflow.Calendar.fs" />
+    <Compile Include="Workflow\Workflow.Calendar.Notification.fs" />
     <Compile Include="Workflow\Workflow.Calendars.fs" />
     <Compile Include="Workflow\Workflow.Committee.fs" />
     <Compile Include="Workflow\Workflow.Committees.fs" />

@@ -7,10 +7,7 @@ open Ptp.Core
 open Ptp.Model
 open Ptp.Http
 open Ptp.Database
-open Ptp.Formatting
 open Ptp.Cache
-open Ptp.Workflow.Common
-open Newtonsoft.Json
 
 type ScheduledActionDTO = 
   {
@@ -206,7 +203,7 @@ let nextSteps link (result:Result<seq<ScheduledAction>, WorkFlowFailure>) =
             |> Seq.map (fun sa -> sa.Id) 
             |> Seq.map GenerateCalendarNotification 
             |> NextWorkflow
-        Next.Succeed(terminalState, msgs)
+        Next.Succeed(sendNotfications, msgs)
     | Bad ((UnknownBills bills)::msgs) ->
         let updateBills = bills |> mapNext UpdateBill
         Next.Succeed(updateBills, msgs)
@@ -214,21 +211,6 @@ let nextSteps link (result:Result<seq<ScheduledAction>, WorkFlowFailure>) =
         Next.Succeed(terminalState, msgs)
     | Bad msgs ->
         msgs |> rollbackInsert "ScheduledAction" link   
-
-let formatBody event =
-    let formatTimeOfDay time = System.DateTime.Parse(time).ToString("h:mm tt")
-    let eventRoom = 
-        match event.Location with 
-        | "House Chamber" -> "the House Chamber"
-        | "Senate Chamber" -> "the Senate Chamber"
-        | other -> other
-    let eventDate = event.Date.ToString("M/d/yyyy")
-    match event.ActionType with
-    | ActionType.CommitteeReading when isEmpty event.Start -> sprintf "is scheduled for a committee hearing on %s in %s" eventDate eventRoom
-    | ActionType.CommitteeReading -> sprintf "is scheduled for a committee hearing on %s from %s - %s in %s" eventDate (formatTimeOfDay event.Start) (formatTimeOfDay event.End) eventRoom
-    | ActionType.SecondReading -> sprintf "is scheduled for a second reading on %s in %s" eventDate eventRoom 
-    | ActionType.ThirdReading -> sprintf "is scheduled for a third reading on %s in %s" eventDate eventRoom
-    | _ -> "(some other event type?)"
 
 let workflow link = 
     fun () ->

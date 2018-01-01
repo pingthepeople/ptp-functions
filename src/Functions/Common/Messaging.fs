@@ -60,6 +60,7 @@ let generateSmsNotifications formatBody (bill,recipients) =
     recipients 
     |> Seq.filter (fun r -> r.ReceiveAlertSms && r.Mobile <> null)
     |> Seq.map (fun r -> r.Mobile)
+    |> Seq.distinct
     |> Seq.map msg
 
 let generateEmailNotifications formatBody (bill,recipients) =
@@ -70,12 +71,16 @@ let generateEmailNotifications formatBody (bill,recipients) =
     recipients 
     |> Seq.filter (fun r -> r.ReceiveAlertEmail && r.Email <> null)
     |> Seq.map (fun r -> r.Email)
+    |> Seq.distinct
     |> Seq.map msg
+
+let withoutLinks = false
+let withLinks = true
 
 let generateNotificationsForRecipients formatBody (bill,recipients) =
     let op() =
-        let sms = generateSmsNotifications formatBody (bill,recipients)
-        let emails = generateEmailNotifications formatBody (bill,recipients)
+        let sms = generateSmsNotifications (formatBody withoutLinks) (bill,recipients)
+        let emails = generateEmailNotifications (formatBody withLinks) (bill,recipients)
         Seq.append sms emails
     tryFail op NotificationGenerationError
 

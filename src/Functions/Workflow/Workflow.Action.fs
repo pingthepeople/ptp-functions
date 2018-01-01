@@ -7,10 +7,7 @@ open Ptp.Core
 open Ptp.Model
 open Ptp.Http
 open Ptp.Database
-open Ptp.Formatting
 open Ptp.Cache
-open Ptp.Workflow.Common
-open Newtonsoft.Json
 open Ptp.Queries
 
 /// Determine the action type based on the API description
