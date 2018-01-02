@@ -5,14 +5,14 @@ open Ptp.Model
 open Ptp.Formatting
 open Chessie.ErrorHandling
 open Ptp.Core
+open System
 
-/// A markdown bill link and title 
-let markdownBillHrefAndTitle bill =
-    sprintf "[%s](%s) ('%s')" (printBillName bill) (webLink bill) bill.Title
-
-/// A simple email subject, 'Update on <bill name> (<bill title>)'
-let formatSubject bill =
-    sprintf "Update on %s" (printBillNameAndTitle bill)
+let linebreak = "<br/>"
+let hr = "---"
+let timeZone = "All times are Eastern Standard Time (EST)."
+let locations = "All room and chamber locations are in the [Indiana State Capitol building](https://www.google.com/maps/place/Indiana+State+Capitol,+Indianapolis,+IN+46204/@39.7687106,-86.1650449,17z). Refer to [the building floor maps](https://iga.in.gov/information/location_maps) to find your room."
+let settings = "You received this email because you requested legislative alerts from [Ping the People](https://pingthepeople.org). You can [update your legislative watchlist](https://pingthepeople.org) to change the type of alerts you receive, or to stop receiving them altogether. If you have comments or need help, please contact [help@pingthepeople.org](mailto:help@pingthepeople.org?subject=Legislative%20alerts)."
+let closing = [linebreak; hr; linebreak; settings; timeZone; locations]
 
 /// An SMS message
 let smsAlert subject body recipient = 
@@ -26,6 +26,7 @@ let smsAlert subject body recipient =
 
 /// An email message 
 let emailAlert subject body recipient = 
+    let body = [body] @ closing |> String.concat "\n\n"
     {
         MessageType=MessageType.Email; 
         Recipient=recipient;
@@ -58,7 +59,7 @@ let generateSmsNotifications formatBody (bill,recipients) =
     let body = formatBody title
     let msg = smsAlert subject body
     recipients 
-    |> Seq.filter (fun r -> r.ReceiveAlertSms && r.Mobile <> null)
+    |> Seq.filter (fun r -> r.ReceiveAlertSms && (String.IsNullOrWhiteSpace(r.Mobile) = false))
     |> Seq.map (fun r -> r.Mobile)
     |> Seq.distinct
     |> Seq.map msg
@@ -69,7 +70,7 @@ let generateEmailNotifications formatBody (bill,recipients) =
     let body = formatBody title
     let msg = emailAlert subject body
     recipients 
-    |> Seq.filter (fun r -> r.ReceiveAlertEmail && r.Email <> null)
+    |> Seq.filter (fun r -> r.ReceiveAlertEmail && (String.IsNullOrWhiteSpace(r.Email) = false))
     |> Seq.map (fun r -> r.Email)
     |> Seq.distinct
     |> Seq.map msg

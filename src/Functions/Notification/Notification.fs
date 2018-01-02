@@ -10,6 +10,12 @@ open Twilio;
 open Twilio.Rest.Api.V2010.Account;
 open Twilio.Types;
 
+let ptpLogoMarkup = """
+    <img alt="Ping the People logo" src="https://pingthepeopleprod.blob.core.windows.net/images/ptplogo.PNG" />
+    <br/>
+    <br/>
+ """
+
 let sendMail msg = 
     let apiKey = env "SendGrid.ApiKey"
     let fromAddr = env "SendGrid.FromAddr"
@@ -18,7 +24,7 @@ let sendMail msg =
     let toAddr = msg.Recipient |> EmailAddress
     let subject = msg.Subject
     let textContent = msg.Body
-    let htmlContent = msg.Body |> Markdown.Parse |> Markdown.WriteHtml
+    let htmlContent = ptpLogoMarkup + (msg.Body |> Markdown.Parse |> Markdown.WriteHtml)
     let mail = MailHelper.CreateSingleEmail(from, toAddr, subject, textContent, htmlContent)
     SendGridClient(apiKey).SendEmailAsync(mail).Wait()
 

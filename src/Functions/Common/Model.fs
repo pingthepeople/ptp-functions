@@ -119,26 +119,7 @@ type ScheduledAction = {
     ActionType:ActionType;
     Chamber:Chamber;
     BillId:int;
-} (* with
-    member this.Describe includeLink =
-        let formatTimeOfDay time = System.DateTime.Parse(time).ToString("h:mm tt")
-        let eventRoom = 
-            match this.Location with 
-            | "House Chamber" -> "the House Chamber"
-            | "Senate Chamber" -> "the Senate Chamber"
-            | other -> other
-        let eventLocation = 
-            match includeLink with
-            | true -> sprintf "%s ([map](https://iga.in.gov/information/location_maps))" eventRoom
-            | false -> eventRoom
-        let eventDate = this.Date.ToString("M/d/yyyy")
-        match this.ActionType with
-        | ActionType.CommitteeReading when this.Start |> System.String.IsNullOrWhiteSpace -> sprintf "is scheduled for a committee hearing on %s in %s" eventDate eventLocation
-        | ActionType.CommitteeReading -> sprintf "is scheduled for a committee hearing on %s from %s - %s in %s" eventDate (formatTimeOfDay this.Start) (formatTimeOfDay this.End) eventLocation
-        | ActionType.SecondReading -> sprintf "is scheduled for a second reading on %s in %s" eventDate eventLocation 
-        | ActionType.ThirdReading -> sprintf "is scheduled for a third reading on %s in %s" eventDate eventLocation
-        | _ -> "(some other event type?)"
-*)
+}
 [<CLIMutable>]
 type UserBill = {
     Id:int;
