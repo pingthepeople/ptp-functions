@@ -59,10 +59,13 @@ let chooseWorkflow notifications msg =
     | UpdateAction link     -> Action.workflow link
     | UpdateCalendars       -> Calendars.workflow
     | UpdateCalendar link   -> Calendar.workflow link
+    | DailyRoundup          -> Roundup.workflow
     | GenerateActionNotification id -> 
         ActionNotification.workflow notifications id
     | GenerateCalendarNotification id -> 
         CalendarNotification.workflow notifications id
+    | GenerateRoundupNotification id -> 
+        RoundupNotification.workflow notifications id
     | _ -> raise (NotImplementedException())
     
 

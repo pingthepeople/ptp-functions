@@ -1,0 +1,29 @@
+﻿module Ptp.Workflow.Roundup
+
+open Ptp.Core
+open Ptp.Database
+open Chessie.ErrorHandling
+
+let digestUsersQuery = """
+SELECT Id 
+FROM users 
+WHERE DigestType in (2,3)
+    AND Email IS NOT NULL"""
+
+let fetchDigestUsers = 
+    dbQuery<int> digestUsersQuery
+
+let nextSteps result =
+    match result with
+    | Ok (users, msgs) ->
+        let sendNotfications = 
+            users 
+            |> Seq.map GenerateRoundupNotification 
+            |> NextWorkflow
+        Next.Succeed(sendNotfications, msgs)
+    | Bad msgs ->       
+        Next.FailWith(msgs)
+
+let workflow() =
+    fetchDigestUsers
+    |> nextSteps
