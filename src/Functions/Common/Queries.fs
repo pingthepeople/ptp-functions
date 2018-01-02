@@ -97,43 +97,7 @@ ORDER BY b.Name"""
     AND  b.Id IN (SELECT BillId FROM UserBill WHERE UserId = @Id)
  ORDER BY b.Name"""
 
-    [<Literal>]
-    let FetchAllActions = """SELECT 
-	s.Name as SessionName
-	,b.Name as BillName
-	,b.Chamber as BillChamber
-	,b.Title
-	,a.Chamber as ActionChamber
-	,a.ActionType
-	,a.Description
-FROM Action a
-JOIN Bill b ON a.BillId = b.Id
-JOIN Session s ON b.SessionId = s.Id
-WHERE a.Date BETWEEN @Today AND DateAdd(DAY,1,@Today)""" 
-
-    [<Literal>]
-    let FetchActionsForBills = FetchAllActions + """ AND b.Id IN @Ids""" 
-
-    [<Literal>]
-    let FetchAllScheduledActions = """SELECT
-	s.Name as SessionName
-	,b.Name as BillName
-	,b.Chamber as BillChamber
-	,b.Title
-	,sa.Chamber as ActionChamber
-	,sa.ActionType
-	,sa.Date
-	,sa.[Start]
-	,sa.[End]
-	,sa.Location
-FROM ScheduledAction sa
-JOIN Bill b ON sa.BillId = b.Id
-JOIN Session s ON b.SessionId = s.Id
-WHERE sa.Date > @Today AND sa.Created > @Today""" 
-    
-    [<Literal>]
-    let FetchScheduledActionsForBills = FetchAllScheduledActions + """ AND b.Id IN @Ids""" 
-
+ 
     [<Literal>]
     let FetchDigestUsers = """SELECT u.Id, u.Name, u.DigestType, u.Email 
 FROM [Users] u

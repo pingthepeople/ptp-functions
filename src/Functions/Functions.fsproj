@@ -213,6 +213,8 @@
     <Compile Include="Workflow\Workflow.Committees.fs" />
     <Compile Include="Workflow\Workflow.Legislator.fs" />
     <Compile Include="Workflow\Workflow.Legislators.fs" />
+    <Compile Include="Workflow\Workflow.Roundup.fs" />
+    <Compile Include="Workflow\Workflow.Roundup.Notification.fs" />
     <Compile Include="Workflow\Workflow.Subjects.fs" />
     <Compile Include="Workflow\Workflow.fs" />
     <None Include="Workflow\function.json" />
@@ -231,5 +233,7 @@
     <Compile Include="DataUpdateSubjectsBills\DataUpdateSubjectsBills.fs" />
     <None Include="DataUpdateSubjectsBills\function.json" />
     <Content Include="App.config" />
+    <Compile Include="DailyRoundup\DailyRoundup.fs" />
+    <None Include="DailyRoundup\function.json" />
   </ItemGroup>
 </Project>

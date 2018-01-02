@@ -22,8 +22,10 @@ type Workflow =
     | UpdateAction of string
     | UpdateCalendars
     | UpdateCalendar of string
+    | DailyRoundup
     | GenerateCalendarNotification of int
     | GenerateActionNotification of int
+    | GenerateRoundupNotification of int
     | UpdateDeadBills
     
 type HttpWorkflow =
@@ -50,6 +52,7 @@ type WorkFlowFailure =
     | NextStepResolution of string
     | EntityAlreadyExists
     | NotificationGenerationError of string
+    | BadRequestError of string
 
 type NextWorkflow = NextWorkflow of Workflow seq
 type Next = Result<NextWorkflow,WorkFlowFailure>
