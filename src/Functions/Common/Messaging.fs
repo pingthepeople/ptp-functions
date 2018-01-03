@@ -56,7 +56,7 @@ let fetchRecipients id bill = trial {
 let generateSmsNotifications formatBody (bill,recipients) =
     let subject = formatSubject bill
     let title = printBillNameAndTitle bill
-    let body = formatBody title
+    let body = formatBody bill title
     let msg = smsAlert subject body
     recipients 
     |> Seq.filter (fun r -> r.ReceiveAlertSms && (String.IsNullOrWhiteSpace(r.Mobile) = false))
@@ -67,7 +67,7 @@ let generateSmsNotifications formatBody (bill,recipients) =
 let generateEmailNotifications formatBody (bill,recipients) =
     let subject = formatSubject bill
     let title = markdownBillHrefAndTitle bill
-    let body = formatBody title
+    let body = formatBody bill title
     let msg = emailAlert subject body
     recipients 
     |> Seq.filter (fun r -> r.ReceiveAlertEmail && (String.IsNullOrWhiteSpace(r.Email) = false))

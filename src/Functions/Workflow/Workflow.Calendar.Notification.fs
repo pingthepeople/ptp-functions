@@ -6,7 +6,7 @@ open Ptp.Database
 open Ptp.Core
 open Ptp.Messaging
 
-let formatBody action includeLink title =
+let formatBody action includeLink bill title =
     let formatTimeOfDay time = System.DateTime.Parse(time).ToString("h:mm tt")
     let eventRoom = 
         match action.Location with 
