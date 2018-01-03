@@ -27,7 +27,7 @@ let diedForReason (action:Action) =
     | _ -> failwith ("Unrecognized action type")
 
 // Format a nice description of the action
-let formatBody (action:Action option) includeLink (bill:Bill) title =
+let formatBody (action:Action option) (bill:Bill) title =
     
     let diedInChamber = 
         match action with
@@ -41,7 +41,13 @@ let formatBody (action:Action option) includeLink (bill:Bill) title =
 
     sprintf "%s has died in the %A upon missing the deadline for a %s." title diedInChamber diedForReason
 
-let fetchActionQuery = "SELECT TOP 1 * FROM Action WHERE BillId = @Id ORDER BY Date DESC"
+let fetchActionQuery = """
+SELECT TOP 1 * 
+FROM Action 
+WHERE 
+    BillId = @Id 
+    AND ActionType <> 0
+ORDER BY Date DESC"""
 
 let fetchAction id = 
     dbParameterizedQuery<Action> fetchActionQuery {Id=id}

@@ -42,23 +42,11 @@ UPDATE Bill
 SET IsDead = 1
 WHERE Id IN @Ids"""
 
-[<Literal>]
-let fetchDeadBillsRequiringNotificationQuery = """
-SELECT DISTINCT(ub.BillId)
-FROM UserBill ub
-WHERE 
-    ( ub.ReceiveAlertEmail = 1
-      OR ub.ReceiveAlertSms = 1 )
-    AND ub.BillId in @Ids"""
-
 let fetchNewDeadBills() = 
     dbParameterizedQuery<int> fetchNewDeadBillsQuery {Date=(datestamp())}
 
 let setDeadBillFlag ids =
     dbCommandById setDeadBillFlagCommand ids
-
-let fetchDeadBillsRequiringNotification ids =
-    dbQueryById<int> fetchDeadBillsRequiringNotificationQuery ids
 
 let nextSteps result =
     let nextWorkflow ids = 
@@ -70,5 +58,4 @@ let nextSteps result =
 let workflow() =
     fetchNewDeadBills()
     >>= setDeadBillFlag
-    >>= fetchDeadBillsRequiringNotification
     |>  nextSteps
