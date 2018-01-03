@@ -6,7 +6,7 @@ open Ptp.Database
 open Ptp.Core
 open Ptp.Messaging
 
-let formatBody (action:Action) includeLink bill title =
+let formatBody (action:Action) bill title =
     let desc = action.Description.TrimEnd(';')
     match action.ActionType with
     | ActionType.AssignedToCommittee -> sprintf "%s was assigned to the %A Committee on %s." title action.Chamber desc
