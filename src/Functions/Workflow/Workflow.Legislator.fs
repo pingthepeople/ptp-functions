@@ -5,7 +5,6 @@ open FSharp.Data
 open FSharp.Data.JsonExtensions
 open Ptp.Core
 open Ptp.Model
-open Ptp.Queries
 open Ptp.Http
 open Ptp.Database
 open Ptp.Cache

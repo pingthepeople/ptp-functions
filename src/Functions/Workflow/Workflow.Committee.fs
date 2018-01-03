@@ -6,7 +6,6 @@ open FSharp.Data.JsonExtensions
 open Ptp.Core
 open Ptp.Cache
 open Ptp.Model
-open Ptp.Queries
 open Ptp.Database
 open Ptp.Http
 open Ptp.Workflow.Common
@@ -117,11 +116,10 @@ let deleteOldMemberships (allMemberships, knownMemberships) = trial {
     let toDelete =
         knownMemberships
         |> except' allMemberships (fun x -> (x.CommitteeId, x.LegislatorId, x.Position))
-    let ids =
+    let! deleted = 
         toDelete
         |> Seq.map (fun m -> m.Id)
-        |> Seq.toArray
-    let! deleted = dbCommand deleteQuery {Ids=ids}
+        |> dbCommandById deleteQuery
     return toDelete
     }
 

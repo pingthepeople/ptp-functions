@@ -11,7 +11,6 @@ open System
 open System.Net
 open System.Net.Http
 open Ptp.Database
-open Ptp.Queries
 
 let district (node:HtmlNode)  =
     node.CssSelect(".legislator-lookup-details-right")
