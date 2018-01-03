@@ -83,7 +83,6 @@ JOIN Session s
     ON s.Id = b.SessionId
 WHERE 
     sa.Date > @Today 
-    AND sa.Created > @Today
     AND (((SELECT DigestType from users where Id = @UserId) = 2) -- All bills
         OR
         (b.Id IN (SELECT BillId from UserBill where UserId = @UserId))) -- My bills
@@ -91,8 +90,8 @@ ORDER BY b.Name"""
 
 let linebreak = "<br/>"
 let hr = "---"
-let allBillsSalutation = "Hello! Here are the day's legislative activity and new upcoming events for all bills in this session of the Indiana General Assembly."
-let myBillsSalutation =  "Hello! Here are the day's legislative activity and new upcoming events for the bills you are following in this session of the Indiana General Assembly."
+let allBillsSalutation = "Hello! Here are the day's legislative activity and upcoming events for all bills in this session of the Indiana General Assembly."
+let myBillsSalutation =  "Hello! Here are the day's legislative activity and upcoming events for the bills you are following in this session of the Indiana General Assembly."
 let timeZone = "All times are Eastern Standard Time (EST)."
 let locations = "All room and chamber locations are in the [Indiana State Capitol building](https://www.google.com/maps/place/Indiana+State+Capitol,+Indianapolis,+IN+46204/@39.7687106,-86.1650449,17z). Refer to [the building floor maps](https://iga.in.gov/information/location_maps) to find your room."
 let settings = "You received this email because you requested a daily legislative update from [Ping the People](https://pingthepeople.org). You can [update your account settings](https://pingthepeople.org/account) to change the type of digest your recive, or to stop receiving it altogether. If you have comments or need help, please contact [help@pingthepeople.org](mailto:help@pingthepeople.org?subject=Daily%20digest)."

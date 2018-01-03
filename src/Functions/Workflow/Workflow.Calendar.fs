@@ -78,9 +78,10 @@ let chamberEvents link (json:JsonValue) h =
     | None -> Seq.empty<ScheduledActionDTO>
        
 let resolveChamberEvents link json =
-    chamberHeadings.Keys
-    |> Seq.collect (chamberEvents link json)
-    |> ok
+    let op() =
+        chamberHeadings.Keys
+        |> Seq.collect (chamberEvents link json)
+    tryFail op DTOtoDomainConversionFailure
 
 let committeeEvent link date chamber location startTime endTime billLink =
     { 
@@ -95,39 +96,44 @@ let committeeEvent link date chamber location startTime endTime billLink =
     }
 
 let resolveCommitteeChamber (json:JsonValue) =
-    let query = "SELECT * FROM Committee WHERE Link = @Link"
-    let link = 
+    let op()=
         json?committee?link
             .AsString()
             .Replace("standing-","")
             .Replace("interim-","")
             .Replace("conference-","")        
+    tryFail op DTOtoDomainConversionFailure
+
+let fetchCommittee link =
+    let query = "SELECT * FROM Committee WHERE Link = @Link"
     dbParameterizedQueryOne<Committee> query {Link=link}
 
 let generateCommitteeEvents link (json:JsonValue) (committee:Committee) =
-    let prettyPrintTime time =
-        System.DateTime.Parse(time).ToString("h:mm tt")
-    
-    let date = json?meetingDate.AsDateTime()
-    let location = json?location.AsString()
-    let startTime = json?starttime.AsString() |> prettyPrintTime
-    let endTime = json?endtime.AsString() |> prettyPrintTime
-    let chamber = committee.Chamber
-    let toMeeting = committeeEvent link date chamber location startTime endTime
-    let billLink json = 
-        json?bill.AsArray().[0]?link.AsString() 
-        |> split "/versions" 
-        |> List.head
+    let op() =
+        let prettyPrintTime time =
+            System.DateTime.Parse(time).ToString("h:mm tt")
+ 
+        let date = json?meetingDate.AsDateTime()
+        let location = json?location.AsString()
+        let startTime = json?starttime.AsString() |> prettyPrintTime
+        let endTime = json?endtime.AsString() |> prettyPrintTime
+        let chamber = committee.Chamber
+        let toMeeting = committeeEvent link date chamber location startTime endTime
+        let billLink json = 
+            json?bill.AsArray().[0]?link.AsString() 
+            |> split "/versions" 
+            |> List.head
 
-    json?agenda.AsArray()
-    |> Array.toSeq
-    |> Seq.map billLink
-    |> Seq.map toMeeting
-    |> ok
+        json?agenda.AsArray()
+        |> Array.toSeq
+        |> Seq.map billLink
+        |> Seq.map toMeeting
+    tryFail op DTOtoDomainConversionFailure
 
 let resolveCommitteeEvents link (json:JsonValue) =
-    (resolveCommitteeChamber json)
-    >>= (generateCommitteeEvents link json)
+    resolveCommitteeChamber json
+    >>= fetchCommittee
+    >>= generateCommitteeEvents link json
 
 let resolveEvents link = trial {
     let! json = fetch link
