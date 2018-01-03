@@ -56,7 +56,7 @@ let fetchRecipients id bill = trial {
 let generateSmsNotifications formatBody (bill,recipients) =
     let subject = formatSubject bill
     let title = printBillNameAndTitle bill
-    let body = formatBody title
+    let body = formatBody bill title
     let msg = smsAlert subject body
     recipients 
     |> Seq.filter (fun r -> r.ReceiveAlertSms && (String.IsNullOrWhiteSpace(r.Mobile) = false))
@@ -67,7 +67,7 @@ let generateSmsNotifications formatBody (bill,recipients) =
 let generateEmailNotifications formatBody (bill,recipients) =
     let subject = formatSubject bill
     let title = markdownBillHrefAndTitle bill
-    let body = formatBody title
+    let body = formatBody bill title
     let msg = emailAlert subject body
     recipients 
     |> Seq.filter (fun r -> r.ReceiveAlertEmail && (String.IsNullOrWhiteSpace(r.Email) = false))
@@ -75,13 +75,10 @@ let generateEmailNotifications formatBody (bill,recipients) =
     |> Seq.distinct
     |> Seq.map msg
 
-let withoutLinks = false
-let withLinks = true
-
 let generateNotificationsForRecipients formatBody (bill,recipients) =
     let op() =
-        let sms = generateSmsNotifications (formatBody withoutLinks) (bill,recipients)
-        let emails = generateEmailNotifications (formatBody withLinks) (bill,recipients)
+        let sms = generateSmsNotifications formatBody (bill,recipients)
+        let emails = generateEmailNotifications formatBody (bill,recipients)
         Seq.append sms emails
     tryFail op NotificationGenerationError
 

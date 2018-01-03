@@ -7,10 +7,10 @@ open Chessie.ErrorHandling
 let digestUsersQuery = """
 SELECT Id 
 FROM users 
-WHERE DigestType in (2,3)
+WHERE DigestType in (1,2)
     AND Email IS NOT NULL"""
 
-let fetchDigestUsers = 
+let fetchDigestUsers() = 
     dbQuery<int> digestUsersQuery
 
 let nextSteps result =
@@ -25,5 +25,5 @@ let nextSteps result =
         Next.FailWith(msgs)
 
 let workflow() =
-    fetchDigestUsers
+    fetchDigestUsers()
     |> nextSteps

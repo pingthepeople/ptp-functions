@@ -8,7 +8,6 @@ open Ptp.Model
 open Ptp.Http
 open Ptp.Database
 open Ptp.Cache
-open Ptp.Queries
 
 /// Determine the action type based on the API description
 let parseType description =

@@ -92,17 +92,23 @@ let dbCommand (commandText:string) items =
 let queryCurrentSessionYear () =
     dbQueryOne<string> "SELECT TOP 1 Name FROM Session WHERE Active = 1"
 
-let dbQueryById<'Result> (queryText:string) ids = 
+let dbQueryById<'Result> (queryText:string) ids = trial { 
     let idList = {Ids=(Seq.toArray ids)}
-    dbParameterizedQuery<'Result> queryText idList
+    let! res = dbParameterizedQuery<'Result> queryText idList
+    return ids
+ }
 
-let dbQueryByLinks<'Result> (queryText:string) links = 
+let dbQueryByLinks<'Result> (queryText:string) links = trial {
     let linksList = {Links=(Seq.toArray links)}
-    dbParameterizedQuery<'Result> queryText linksList
+    let! res = dbParameterizedQuery<'Result> queryText linksList
+    return links
+}
 
-let dbCommandById<'Result> (queryText:string) ids = 
+let dbCommandById<'Result> (queryText:string) ids = trial { 
     let idList = {Ids=(Seq.toArray ids)}
-    dbCommand queryText idList
+    let! res = dbCommand queryText idList
+    return ids
+}
 
 let queryAndFilterKnownLinks table links =
     let values = links |> toSqlValuesList
@@ -120,3 +126,7 @@ let rollbackInsert table link (errs:WorkFlowFailure list) =
     match res with
     | Ok _ -> errs |> Next.FailWith
     | Bad err -> err @ errs |> Next.FailWith
+
+[<Literal>]
+let SessionIdSubQuery = """
+(SELECT TOP 1 Id FROM [Session] WHERE Active = 1)"""
