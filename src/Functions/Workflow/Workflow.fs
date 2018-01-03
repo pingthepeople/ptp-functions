@@ -48,6 +48,7 @@ Every 10 Mins: [TIMER] ---> | Update Actions | ---+--> | Update Chamber Cal | --
 
 let chooseWorkflow notifications msg =
     match msg with
+    // Data updates
     | UpdateLegislators     -> Legislators.workflow
     | UpdateLegislator link -> Legislator.workflow link
     | UpdateCommittees      -> Committees.workflow
@@ -59,15 +60,13 @@ let chooseWorkflow notifications msg =
     | UpdateAction link     -> Action.workflow link
     | UpdateCalendars       -> Calendars.workflow
     | UpdateCalendar link   -> Calendar.workflow link
+    | UpdateDeadBills       -> DeadBill.workflow
+    // Notification generators
     | DailyRoundup          -> Roundup.workflow
-    | GenerateActionNotification id -> 
-        ActionNotification.workflow notifications id
-    | GenerateCalendarNotification id -> 
-        CalendarNotification.workflow notifications id
-    | GenerateRoundupNotification id -> 
-        RoundupNotification.workflow notifications id
-    | _ -> raise (NotImplementedException())
-    
+    | GenerateActionNotification id     -> ActionNotification.workflow notifications id
+    | GenerateCalendarNotification id   -> CalendarNotification.workflow notifications id
+    | GenerateRoundupNotification id    -> RoundupNotification.workflow notifications id
+    | GenerateDeadBillNotification id   -> DeadBillNotification.workflow notifications id   
 
 let logStart (log: TraceWriter) cmd =
     sprintf "[Start] [%A]" cmd 

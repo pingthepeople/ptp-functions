@@ -5,8 +5,6 @@ open Microsoft.Azure.WebJobs
 open Microsoft.Azure.WebJobs.Host
 open System
 open Newtonsoft.Json
-open System.Diagnostics
-open Twilio.TwiML.Voice
 
 type Link = Link of String
 
@@ -22,11 +20,12 @@ type Workflow =
     | UpdateAction of string
     | UpdateCalendars
     | UpdateCalendar of string
+    | UpdateDeadBills
     | DailyRoundup
     | GenerateCalendarNotification of int
     | GenerateActionNotification of int
     | GenerateRoundupNotification of int
-    | UpdateDeadBills
+    | GenerateDeadBillNotification of int
     
 type HttpWorkflow =
     | GenerateBillReport=90
@@ -85,8 +84,11 @@ let right (p:string) (s:string) =
             Some result
 
 let isEmpty str = str |> String.IsNullOrWhiteSpace
+/// A milisecond timestamp, eg. '14:10:02.352'
 let timestamp() = System.DateTime.Now.ToString("HH:mm:ss.fff")
+/// A timestamped message, eg. '14:10:02.352 msg'
 let timestamped s = sprintf "%s %s" (timestamp()) s
+/// The current datestamp in sortable/comparable form, eg. '2018-01-03'
 let datestamp() = System.DateTime.Now.ToString("yyyy-MM-dd")
 let env = System.Environment.GetEnvironmentVariable
 /// Split a string return the results as a list.

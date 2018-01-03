@@ -4,7 +4,6 @@ open Chessie.ErrorHandling
 open FSharp.Data
 open FSharp.Data.JsonExtensions
 open Ptp.Core
-open Ptp.Queries
 open Ptp.Http
 open Ptp.Database
 

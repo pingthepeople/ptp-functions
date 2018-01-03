@@ -29,13 +29,14 @@ let sendMail msg =
     SendGridClient(apiKey).SendEmailAsync(mail).Wait()
 
 let sendSms msg = 
+    let body = sprintf "[Ping the People] %s" msg.Body
     let accountSid = env "Twilio.AccountSid"
     let authToken = env "Twilio.AuthToken"
     let fromNumber = env "Twilio.From"
     TwilioClient.Init(accountSid, authToken)
     let toNumber = PhoneNumber(msg.Recipient)
     let fromNumber = PhoneNumber(fromNumber)
-    MessageResource.Create(``to``=toNumber, from=fromNumber, body=msg.Body) |> ignore
+    MessageResource.Create(``to``=toNumber, from=fromNumber, body=body) |> ignore
 
 let Run(log: TraceWriter, notification: string) =
     match deserializeQueueItem<Message> log notification with

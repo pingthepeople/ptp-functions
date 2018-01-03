@@ -190,7 +190,6 @@
     <None Include="Scaffolding\createDbTables.sql" />
     <Compile Include="Common\Core.fs" />
     <Compile Include="Common\Model.fs" />
-    <Compile Include="Common\Queries.fs" />
     <Compile Include="Common\Http.fs" />
     <Compile Include="Common\Database.fs" />
     <Compile Include="Common\Cache.fs" />
@@ -211,6 +210,8 @@
     <Compile Include="Workflow\Workflow.Calendars.fs" />
     <Compile Include="Workflow\Workflow.Committee.fs" />
     <Compile Include="Workflow\Workflow.Committees.fs" />
+    <Compile Include="Workflow\Workflow.DeadBill.fs" />
+    <Compile Include="Workflow\Workflow.DeadBill.Notification.fs" />
     <Compile Include="Workflow\Workflow.Legislator.fs" />
     <Compile Include="Workflow\Workflow.Legislators.fs" />
     <Compile Include="Workflow\Workflow.Roundup.fs" />
@@ -232,6 +233,8 @@
     <None Include="DataUpdateEvents\function.json" />
     <Compile Include="DataUpdateSubjectsBills\DataUpdateSubjectsBills.fs" />
     <None Include="DataUpdateSubjectsBills\function.json" />
+    <Compile Include="DataUpdateDeadBills\DataUpdateDeadBills.fs" />
+    <None Include="DataUpdateDeadBills\function.json" />
     <Content Include="App.config" />
     <Compile Include="DailyRoundup\DailyRoundup.fs" />
     <None Include="DailyRoundup\function.json" />
