@@ -111,14 +111,17 @@ let dbCommandById<'Result> (queryText:string) ids = trial {
 }
 
 let queryAndFilterKnownLinks table links =
-    let values = links |> toSqlValuesList
-    let query = 
-        (sprintf """
-SELECT a.Link FROM 
-( VALUES %s ) AS a(Link)
-EXCEPT SELECT Link FROM %s;
-""" values table)
-    dbQuery<string> query
+    match links with
+    | EmptySeq -> links |> ok
+    | _ ->
+        let values = links |> toSqlValuesList
+        let query = 
+            (sprintf """
+    SELECT a.Link FROM 
+    ( VALUES %s ) AS a(Link)
+    EXCEPT SELECT Link FROM %s;
+    """ values table)
+        dbQuery<string> query
 
 let rollbackInsert table link (errs:WorkFlowFailure list) = 
     let queryText = sprintf "DELETE FROM %s WHERE Link=@Link" table

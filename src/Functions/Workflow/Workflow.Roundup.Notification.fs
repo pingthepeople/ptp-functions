@@ -30,7 +30,9 @@ type DigestScheduledAction = {
     Date:DateTime;
     Start:string;
     End:string;
+    CustomStart:string;
     Location:string;
+    CommitteeName:string;
 }
 
 type DigestParams = {
@@ -74,13 +76,17 @@ SELECT
 	,sa.Date
 	,sa.[Start]
 	,sa.[End]
+    ,sa.CustomStart
 	,sa.Location
+    ,c.Name as CommitteeName
 FROM ScheduledAction sa
 JOIN Bill b 
     ON sa.BillId = b.Id
     AND b.SessionId = (SELECT TOP 1 Id FROM [Session] WHERE Active = 1)
 JOIN Session s
     ON s.Id = b.SessionId
+LEFT JOIN Committee c 
+    ON c.Link = sa.CommitteeLink
 WHERE 
     sa.Date > @Today 
     AND (((SELECT DigestType from users where Id = @UserId) = 2) -- All bills
@@ -149,10 +155,7 @@ let describeActionsForChamber chamber (actions:DigestAction seq) =
 
 // SCHEDULED ACTIONS
 let listScheduledAction sa =
-    let item = sprintf "* %s; %s" (mdBill sa.BillName sa.SessionName sa.BillChamber sa.Title) sa.Location
-    match sa.Start with
-    | "" -> item
-    | timed -> sprintf "%s, %s-%s" item (DateTime.Parse(sa.Start).ToString("t")) (DateTime.Parse(sa.End).ToString("t"))
+    sprintf "* %s" (mdBill sa.BillName sa.SessionName sa.BillChamber sa.Title)
     
 let listScheduledActions (scheduledActions:DigestScheduledAction seq) =
     scheduledActions 
@@ -160,20 +163,36 @@ let listScheduledActions (scheduledActions:DigestScheduledAction seq) =
     |> Seq.map listScheduledAction
     |> String.concat "\n"
 
-let describeScheduledActions actionType (actions:DigestScheduledAction seq) = 
-    let actionsOfType = actions |> Seq.filter (fun action -> action.ActionType = actionType)
-    match actionsOfType with
-    | EmptySeq -> []
-    | _ ->
-        let sectionTitle = sprintf "_%s_  " (printSectionTitle actionType)
-        let section = actionsOfType |> listScheduledActions
-        [sectionTitle; section]
+let describeScheduledActions (grouping,actions) =
+    let sa = actions |> Seq.head
+    let location = formatEventLocation sa.Location
+    let time = formatEventTime sa.Start sa.End sa.CustomStart
+    let sectionTitle = sprintf "%s, _%s%s_" grouping location time
+    let section = listScheduledActions actions
+    [sectionTitle; section]
 
 let describeScheduledActionsForDay (date:DateTime,scheduledActions) = 
-    let header = sprintf "**Events for _%s_**  " (date.ToString("D"))
-    let committeReadings = scheduledActions |> describeScheduledActions ActionType.CommitteeReading
-    let secondReadings = scheduledActions |> describeScheduledActions ActionType.SecondReading
-    let thirdReadings = scheduledActions |> describeScheduledActions ActionType.ThirdReading
+    let header = sprintf "**Events for _%s_**  " (formatEventDate date)
+    let list groupings = 
+        groupings
+        |> Seq.sortBy fst
+        |> Seq.collect describeScheduledActions
+        |> Seq.toList
+    let committeReadings = 
+        scheduledActions 
+        |> Seq.filter (fun sa -> sa.ActionType = ActionType.CommitteeReading)
+        |> Seq.groupBy (fun sa -> sprintf "%s Hearing" (formatCommitteeName sa.ActionChamber sa.CommitteeName)) 
+        |> list
+    let secondReadings = 
+        scheduledActions 
+        |> Seq.filter (fun sa -> sa.ActionType = ActionType.SecondReading)
+        |> Seq.groupBy (fun sa -> sprintf "Second Reading, %A" sa.ActionChamber)
+        |> list
+    let thirdReadings = 
+        scheduledActions 
+        |> Seq.filter (fun sa -> sa.ActionType = ActionType.ThirdReading)
+        |> Seq.groupBy (fun sa -> sprintf "Third Reading, %A" sa.ActionChamber)
+        |> list
     [linebreak; header] @ committeReadings @ secondReadings @ thirdReadings
 
 let generateNotification (user,actions,scheduledActions) =

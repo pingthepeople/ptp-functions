@@ -115,10 +115,12 @@ type ScheduledAction = {
     Date:System.DateTime;
     Start:string;
     End:string;
+    CustomStart:string;
     Location:string;
     ActionType:ActionType;
     Chamber:Chamber;
     BillId:int;
+    CommitteeLink:string;
 }
 [<CLIMutable>]
 type UserBill = {
