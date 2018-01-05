@@ -5,21 +5,19 @@ open Ptp.Model
 open Ptp.Database
 open Ptp.Core
 open Ptp.Messaging
+open Ptp.Formatting
 
-let formatBody action bill title =
-    let formatTimeOfDay time = System.DateTime.Parse(time).ToString("h:mm tt")
-    let eventRoom = 
-        match action.Location with 
-        | "House Chamber" -> "the House Chamber"
-        | "Senate Chamber" -> "the Senate Chamber"
-        | room -> sprintf "State House %s" room
-    let eventDate = action.Date.ToString("dddd M/d/yyyy")
-    match action.ActionType with
-    | ActionType.CommitteeReading when action.Start |> System.String.IsNullOrWhiteSpace -> sprintf "%s is scheduled for a committee hearing on %s in %s" title eventDate eventRoom
-    | ActionType.CommitteeReading -> sprintf "%s is scheduled for a committee hearing on %s from %s - %s in %s" title eventDate (formatTimeOfDay action.Start) (formatTimeOfDay action.End) eventRoom
-    | ActionType.SecondReading -> sprintf "%s is scheduled for a second reading on %s in %s" title eventDate eventRoom 
-    | ActionType.ThirdReading -> sprintf "%s is scheduled for a third reading on %s in %s" title eventDate eventRoom
-    | _ -> "(some other event type?)"
+let formatBody (a:ScheduledAction) bill title =
+    let eventType = 
+        match a.ActionType with
+        | ActionType.CommitteeReading -> "committee reading"
+        | ActionType.SecondReading -> "second reading"
+        | ActionType.ThirdReading -> "third reading"
+        | _ -> "(some other event type?)"
+    let eventDate = formatEventDate a.Date
+    let eventTime = formatEventTime a.Start a.End a.CustomStart
+    let eventLocation = formatEventLocation a.Location
+    sprintf "%s is scheduled for a %s on %s%s in %s" title eventType eventDate eventTime eventLocation
 
 let fetchActionQuery = "SELECT * FROM ScheduledAction WHERE Id = @Id"
 

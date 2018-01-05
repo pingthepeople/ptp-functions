@@ -7,6 +7,7 @@ open Ptp.Http
 open Ptp.Core
 open Chessie.ErrorHandling
 open FSharp.Data
+open FSharp.Data.JsonExtensions
 open Newtonsoft.Json
 
 let updateSubjects = UpdateSubjects
@@ -117,3 +118,23 @@ type HttpTests(output:ITestOutputHelper) =
             |> JsonConvert.DeserializeObject<Shape list>
 
         test <@ actual = expected @>
+    
+    //[<Fact>]
+    member __.``custom starts`` ()=
+        System.Environment.SetEnvironmentVariable("IgaApiKey", "5408755f289fcbd7baa1bec55be4483c94715859")
+        (fetchAllLinks "/2018/meetings")
+        //>>= (fun links -> links |> Seq.take 50 |> ok)
+        >>= fetchAllParallel
+        |> (fun res ->
+            match res with 
+            | Ok(jsons,_) ->
+                jsons 
+                |> Seq.iter (fun (link,json) ->
+                    match json with
+                    | Some(j) ->
+                        let customStart = j?customstart.AsString()
+                        if System.String.IsNullOrWhiteSpace(customStart)
+                        then output.WriteLine(sprintf "%s: ..." link)
+                        else output.WriteLine(sprintf "%s: %s" link customStart)
+                    | None -> output.WriteLine(sprintf "%s: error" link))
+            | Bad (msgs) -> output.WriteLine("Failed to fetch links"))

@@ -84,6 +84,9 @@ let right (p:string) (s:string) =
             Some result
 
 let isEmpty str = str |> String.IsNullOrWhiteSpace
+/// Whether a string has value (is not null/empty)
+let hasValue str = 
+    System.String.IsNullOrWhiteSpace(str) = false
 /// A milisecond timestamp, eg. '14:10:02.352'
 let timestamp() = System.DateTime.Now.ToString("HH:mm:ss.fff")
 /// A timestamped message, eg. '14:10:02.352 msg'

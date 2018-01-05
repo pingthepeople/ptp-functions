@@ -2,6 +2,8 @@
 
 open Ptp.Core
 open Ptp.Model
+open System
+
 
 /// formats a bill number for print. Ex: "1004", "269"
 let printBillNumber' (billName:string) = 
@@ -37,3 +39,27 @@ let markdownBillHrefAndTitle bill =
 /// A simple email subject, 'Update on <bill name> (<bill title>)'
 let formatSubject bill =
     sprintf "Update on %s" (printBillNameAndTitle bill)
+
+/// Format an event location (ex: "the House Chamber", "State House Room 130")
+let formatEventLocation location = 
+        match location with 
+        | "House Chamber" -> "the House Chamber"
+        | "Senate Chamber" -> "the Senate Chamber"
+        | room -> sprintf "State House %s" room
+
+/// Format an event date (ex: "Friday 1/5/2018")
+let formatEventDate (date:System.DateTime) = date.ToString("dddd, d MMM yyyy")
+
+/// Format a 12-hour time (ex: "10:30 AM", "3:30 PM")
+let formatTimeOfDay time = System.DateTime.Parse(time).ToString("h:mm tt")
+
+/// Format an event time (ex: "from 10:30 AM - 3:30 PM", "upon adjournment of Session")
+let formatEventTime startTime endTime customStart = 
+    if (hasValue startTime && hasValue endTime)
+    then sprintf " from %s - %s" (formatTimeOfDay startTime) (formatTimeOfDay endTime)
+    else if (hasValue startTime)
+    then sprintf " starting at %s" (formatTimeOfDay startTime)
+    else if (hasValue customStart)
+    then sprintf " %s" (customStart.Replace("Upon", "upon").Replace("Adjournment", "adjournment"))
+    else ""
+

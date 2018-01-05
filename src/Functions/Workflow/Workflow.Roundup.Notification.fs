@@ -30,6 +30,7 @@ type DigestScheduledAction = {
     Date:DateTime;
     Start:string;
     End:string;
+    CustomStart:string;
     Location:string;
 }
 
@@ -74,6 +75,7 @@ SELECT
 	,sa.Date
 	,sa.[Start]
 	,sa.[End]
+    ,sa.CustomStart
 	,sa.Location
 FROM ScheduledAction sa
 JOIN Bill b 
@@ -149,10 +151,9 @@ let describeActionsForChamber chamber (actions:DigestAction seq) =
 
 // SCHEDULED ACTIONS
 let listScheduledAction sa =
-    let item = sprintf "* %s; %s" (mdBill sa.BillName sa.SessionName sa.BillChamber sa.Title) sa.Location
-    match sa.Start with
-    | "" -> item
-    | timed -> sprintf "%s, %s-%s" item (DateTime.Parse(sa.Start).ToString("t")) (DateTime.Parse(sa.End).ToString("t"))
+    let location = formatEventLocation sa.Location
+    let time = formatEventTime sa.Start sa.End sa.CustomStart
+    sprintf "* %s; %s%s" (mdBill sa.BillName sa.SessionName sa.BillChamber sa.Title) location time   
     
 let listScheduledActions (scheduledActions:DigestScheduledAction seq) =
     scheduledActions 
@@ -170,7 +171,7 @@ let describeScheduledActions actionType (actions:DigestScheduledAction seq) =
         [sectionTitle; section]
 
 let describeScheduledActionsForDay (date:DateTime,scheduledActions) = 
-    let header = sprintf "**Events for _%s_**  " (date.ToString("D"))
+    let header = sprintf "**Events for _%s_**  " (formatEventDate date)
     let committeReadings = scheduledActions |> describeScheduledActions ActionType.CommitteeReading
     let secondReadings = scheduledActions |> describeScheduledActions ActionType.SecondReading
     let thirdReadings = scheduledActions |> describeScheduledActions ActionType.ThirdReading
