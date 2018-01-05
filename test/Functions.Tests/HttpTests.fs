@@ -121,7 +121,7 @@ type HttpTests(output:ITestOutputHelper) =
     
     //[<Fact>]
     member __.``custom starts`` ()=
-        System.Environment.SetEnvironmentVariable("IgaApiKey", "5408755f289fcbd7baa1bec55be4483c94715859")
+        System.Environment.SetEnvironmentVariable("IgaApiKey", "CHANGEME")
         (fetchAllLinks "/2018/meetings")
         //>>= (fun links -> links |> Seq.take 50 |> ok)
         >>= fetchAllParallel
