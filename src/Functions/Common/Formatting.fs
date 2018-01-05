@@ -63,3 +63,5 @@ let formatEventTime startTime endTime customStart =
     then sprintf " %s" (customStart.Replace("Upon", "upon").Replace("Adjournment", "adjournment"))
     else ""
 
+let formatCommitteeName chamber committeeName = 
+    sprintf "%A %s Committee" chamber committeeName

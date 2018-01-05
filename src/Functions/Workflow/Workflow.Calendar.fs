@@ -13,6 +13,7 @@ type ScheduledActionDTO =
   {
       ActionType: ActionType;
       BillLink: string;
+      CommitteeLink: string;
       CalendarLink: string;
       Date: System.DateTime;
       Chamber: Chamber;
@@ -39,6 +40,11 @@ let ensureNotAlreadyKnown link =
     fetchExistingEntity link
     >>= ensureEntityNotPresent link
 
+let billLinkSansVersion link = 
+    link 
+    |> split "/versions" 
+    |> List.head
+
 let chamberHeadings = 
     dict [ 
         "hb2head", ActionType.SecondReading; 
@@ -49,7 +55,8 @@ let chamberHeadings =
 let chamberEvent link date actionType chamber bill =
   { 
     ScheduledActionDTO.ActionType = actionType;
-    BillLink=bill?link.AsString();
+    BillLink=(bill?link.AsString() |> billLinkSansVersion)
+    CommitteeLink=null;
     CalendarLink=link;
     Date=date;
     Location=sprintf "%A Chamber" chamber;
@@ -85,11 +92,12 @@ let resolveChamberEvents link json =
         |> Seq.collect (chamberEvents link json)
     tryFail op DTOtoDomainConversionFailure
 
-let committeeEvent link date chamber location startTime endTime customStart billLink =
+let committeeEvent calendarlink committeelink date chamber location startTime endTime customStart billLink =
     { 
       ActionType = ActionType.CommitteeReading;
       BillLink=billLink;
-      CalendarLink=link;
+      CalendarLink=calendarlink;
+      CommitteeLink=committeelink;
       Date=date;
       Location=location;
       Chamber=chamber;
@@ -98,7 +106,7 @@ let committeeEvent link date chamber location startTime endTime customStart bill
       End=endTime;
     }
 
-let resolveCommitteeChamber (json:JsonValue) =
+let resoveCommitteeLink (json:JsonValue) =
     let op()=
         json?committee?link
             .AsString()
@@ -110,6 +118,7 @@ let resolveCommitteeChamber (json:JsonValue) =
 let fetchCommittee link =
     let query = "SELECT * FROM Committee WHERE Link = @Link"
     dbParameterizedQueryOne<Committee> query {Link=link}
+
 
 let generateCommitteeEvents link (json:JsonValue) (committee:Committee) =
     let op() =
@@ -124,11 +133,9 @@ let generateCommitteeEvents link (json:JsonValue) (committee:Committee) =
         let endTime = json?endtime.AsString() |> prettyPrintTime
         let customStart = json?customstart.AsString()
         let chamber = committee.Chamber
-        let toMeeting = committeeEvent link date chamber location startTime endTime customStart
-        let billLink json = 
-            json?bill.AsArray().[0]?link.AsString() 
-            |> split "/versions" 
-            |> List.head
+        let committeelink = committee.Link
+        let toMeeting = committeeEvent link committeelink date chamber location startTime endTime customStart
+        let billLink json = json?bill.AsArray().[0]?link.AsString() |> billLinkSansVersion
 
         json?agenda.AsArray()
         |> Array.toSeq
@@ -137,7 +144,7 @@ let generateCommitteeEvents link (json:JsonValue) (committee:Committee) =
     tryFail op DTOtoDomainConversionFailure
 
 let resolveCommitteeEvents link (json:JsonValue) =
-    resolveCommitteeChamber json
+    resoveCommitteeLink json
     >>= fetchCommittee
     >>= generateCommitteeEvents link json
 
@@ -179,9 +186,10 @@ IF NOT EXISTS
         AND Chamber=@Chamber
         AND Start=@Start
         AND [End]=@End
+        AND CustomStart=@CustomStart
         AND BillId=(SELECT Id FROM Bill WHERE Link = @BillLink))
     INSERT INTO ScheduledAction
-        (Link,Date,ActionType,Location,Chamber,Start,[End],BillId) 
+        (Link,Date,ActionType,Location,Chamber,Start,[End],CustomStart,CommitteeLink,BillId) 
         VALUES
             (@CalendarLink
             ,@Date
@@ -190,6 +198,8 @@ IF NOT EXISTS
             ,@Chamber
             ,@Start
             ,@End
+            ,@CustomStart
+            ,@CommitteeLink
             ,(SELECT Id FROM Bill WHERE Link = @BillLink));""")
 
 let getInsertedEventsQuery = """

@@ -120,6 +120,7 @@ type ScheduledAction = {
     ActionType:ActionType;
     Chamber:Chamber;
     BillId:int;
+    CommitteeLink:string;
 }
 [<CLIMutable>]
 type UserBill = {
