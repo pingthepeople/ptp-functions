@@ -19,6 +19,7 @@ type ScheduledActionDTO =
       Location: string;
       Start: string;
       End: string;
+      CustomStart: string;
   }
 
 let query = """
@@ -53,8 +54,9 @@ let chamberEvent link date actionType chamber bill =
     Date=date;
     Location=sprintf "%A Chamber" chamber;
     Chamber=chamber;
-    Start="";
-    End="";
+    Start=null;
+    End=null;
+    CustomStart=null;
   }
 
 let chamberEvents link (json:JsonValue) h =
@@ -83,7 +85,7 @@ let resolveChamberEvents link json =
         |> Seq.collect (chamberEvents link json)
     tryFail op DTOtoDomainConversionFailure
 
-let committeeEvent link date chamber location startTime endTime billLink =
+let committeeEvent link date chamber location startTime endTime customStart billLink =
     { 
       ActionType = ActionType.CommitteeReading;
       BillLink=billLink;
@@ -92,6 +94,7 @@ let committeeEvent link date chamber location startTime endTime billLink =
       Location=location;
       Chamber=chamber;
       Start=startTime;
+      CustomStart=customStart;
       End=endTime;
     }
 
@@ -111,14 +114,17 @@ let fetchCommittee link =
 let generateCommitteeEvents link (json:JsonValue) (committee:Committee) =
     let op() =
         let prettyPrintTime time =
-            System.DateTime.Parse(time).ToString("h:mm tt")
+            if System.String.IsNullOrWhiteSpace(time)
+            then null
+            else System.DateTime.Parse(time).ToString("h:mm tt")
  
         let date = json?meetingDate.AsDateTime()
         let location = json?location.AsString()
         let startTime = json?starttime.AsString() |> prettyPrintTime
         let endTime = json?endtime.AsString() |> prettyPrintTime
+        let customStart = json?customstart.AsString()
         let chamber = committee.Chamber
-        let toMeeting = committeeEvent link date chamber location startTime endTime
+        let toMeeting = committeeEvent link date chamber location startTime endTime customStart
         let billLink json = 
             json?bill.AsArray().[0]?link.AsString() 
             |> split "/versions" 
