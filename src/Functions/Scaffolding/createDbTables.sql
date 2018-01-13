@@ -93,6 +93,17 @@ CREATE TABLE Legislator
     SessionId int NOT NULL FOREIGN KEY REFERENCES [Session](Id)
 )
 
+CREATE TABLE NotificationLog
+(
+    Id int IDENTITY(1,1) PRIMARY KEY,
+	UserId int NOT NULL FOREIGN KEY REFERENCES [users](Id),
+	MessageType TINYINT NOT NULL,
+    Recipient nvarchar(256) NOT NULL,
+	Subject nvarchar(512) NOT NULL,
+	[Digest] nvarchar(128) NOT NULL,
+	Created DATETIME NOT NULL DEFAULT GetUtcDate(),	
+)
+
 -- Many-to-many tables
 
 Create Table UserBill
