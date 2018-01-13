@@ -58,6 +58,13 @@ let digest (str:string) =
     |> String.concat ""
     
 let tryLogDeliveryQuery = """
+IF NOT EXISTS 
+    ( SELECT TOP 1 1 FROM NotificationLog 
+      WHERE Recipient=@Recipient
+        AND MessageType=@MessageType
+        AND Subject=@Subject
+        AND Digest=@Digest)
+BEGIN
     INSERT INTO NotificationLog (Recipient,MessageType,Subject,Digest,UserId)
     VALUES (@Recipient
            ,@MessageType
@@ -66,6 +73,12 @@ let tryLogDeliveryQuery = """
            ,( SELECT Id FROM users
               WHERE (@MessageType=1 AND Email=@Recipient)
                  OR (@MessageType=2 AND Mobile=@Recipient)))
+    SELECT SCOPE_IDENTITY()
+END
+ELSE
+BEGIN
+    SELECT 0
+END
 """
 
 let generateLog msg = 
@@ -83,6 +96,10 @@ let logDelivery (msg,log) = trial {
     return (msg,id)
 }
 
+let ensureNotYetDelivered (msg,id) =
+    if (id = 0)
+    then fail NotificationAlreadyDelivered
+    else ok msg
 
 let deliver sendMail sendSms (msg:Message) =
     match msg.MessageType with
@@ -95,6 +112,7 @@ let deliver sendMail sendSms (msg:Message) =
         
 let evaluateResult desc result = 
     match result with
+    | Fail [NotificationAlreadyDelivered] -> ()
     | Fail errs -> throwErrors desc errs
     | _ -> ()
 
@@ -102,6 +120,7 @@ let workflow logDelivery sendSms sendMail msg =
     fun () ->
         generateLog msg
         >>= logDelivery
+        >>= ensureNotYetDelivered
         >>= deliver sendMail sendSms    
     
 let Run(log: TraceWriter, notification: string) =
