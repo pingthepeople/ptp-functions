@@ -65,3 +65,10 @@ let formatEventTime startTime endTime customStart =
 
 let formatCommitteeName chamber committeeName = 
     sprintf "%A %s Committee" chamber committeeName
+
+let sha256Hash (str:string) = 
+    str
+    |> System.Text.Encoding.UTF8.GetBytes
+    |> System.Security.Cryptography.SHA256Managed.Create().ComputeHash
+    |> Array.map (fun b -> b.ToString("x2").ToUpper())
+    |> String.concat ""

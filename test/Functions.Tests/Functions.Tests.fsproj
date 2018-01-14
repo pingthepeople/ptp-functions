@@ -64,6 +64,7 @@
     <Compile Include="WorkflowTests.fs" />
     <Compile Include="Workflow.SubjectTests.fs" />
     <Compile Include="Workflow.CommitteeTests.fs" />
+    <Compile Include="NotificationTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Chessie">

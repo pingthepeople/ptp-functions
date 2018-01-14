@@ -68,21 +68,26 @@ let httpResponse status content =
     |> (fun sc -> new HttpResponseMessage(StatusCode=status, Content=sc))
 
 let executeHttpWorkflow (log:TraceWriter) source workflow =
+    logStart log source
+    let logFinish = logFinish source (Diagnostics.Stopwatch.StartNew())
+
     let response = 
         match workflow() with
         | Fail (errs) ->  
             match List.head errs with
             | RequestValidationError _ -> 
-                let validationErrors = flatten source errs
+                let validationErrors = flatten errs
+                validationErrors |> logFinish log.Warning "Warn"
                 httpResponse HttpStatusCode.BadRequest validationErrors
             | _ -> 
-                errs |> flatten source |> log.Warning
+                errs |> flatten |> logFinish log.Error "Error"
                 let genericError = "An internal error occurred"
                 httpResponse HttpStatusCode.InternalServerError genericError
         | Warn (resp, errs) ->  
-            errs |> flatten source |> log.Warning
+            errs |> flatten |> logFinish log.Warning "Warn"
             resp |> httpResponse HttpStatusCode.OK
         | Pass (resp) ->
+            logFinish log.Info "Success" "Function finished successfully"
             resp |> httpResponse HttpStatusCode.OK
     response
 

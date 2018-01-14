@@ -19,3 +19,9 @@ let ``formats start time``() =
 [<Fact>]
 let ``formats date``() =
     test <@ formatEventDate (System.DateTime(2018,1,5)) = "Friday, 5 Jan 2018" @>
+
+[<Fact>]
+let ``generates message digest``()=
+    let testBody = "this is the message body"
+    let expectedHash = "95F1C48D1EDD2CB36B099F999E94FCC4BB0462FA4F8E6B650F0A94EEC4BA493E"
+    test <@ sha256Hash testBody = expectedHash @>

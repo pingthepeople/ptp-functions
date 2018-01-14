@@ -178,6 +178,14 @@ type Message = {
 }
 
 [<CLIMutable>]
+type NotificationLog = {
+    MessageType:MessageType;
+    Recipient:string;
+    Subject:string;
+    Digest:string;
+}
+
+[<CLIMutable>]
 type Recipient = {
     Email:string;
     Mobile:string;

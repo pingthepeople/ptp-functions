@@ -50,7 +50,9 @@ type WorkFlowFailure =
     | RequestValidationError of string
     | NextStepResolution of string
     | EntityAlreadyExists
+    | NotificationAlreadyDelivered
     | NotificationGenerationError of string
+    | NotificationDeliveryError of string
     | BadRequestError of string
 
 type NextWorkflow = NextWorkflow of Workflow seq
@@ -173,27 +175,42 @@ let chooseBoth (items:list<('a*'b option)>) =
         | None -> None)
     |> List.choose id
 
-let inline flatten source msgs = 
+let inline flatten msgs = 
     msgs 
     |> Seq.map (fun wf -> wf.ToString())
     |> String.concat "\n" 
-    |> sprintf "%A\n%s" source
+
+let logStart (log: TraceWriter) cmd =
+    sprintf "[Start] [%A]" cmd 
+    |> log.Info
+
+let logFinish cmd (stopwatch:Diagnostics.Stopwatch) logger label msg =
+    sprintf "[%s] [%A] (%d ms) %s" label cmd stopwatch.ElapsedMilliseconds msg
+    |> logger
 
 /// Log succesful or failed completion of the function, along with any warnings.
-let executeWorkflow (log:TraceWriter) source (workflow: unit -> Next) = 
+let executeWorkflow (log:TraceWriter) source workflow =
+    logStart log source
+    let logFinish = logFinish source (Diagnostics.Stopwatch.StartNew())
     let result = workflow()
     match result with
     | Fail (errs) -> 
-        errs |> flatten source |> log.Warning
-    | Warn (NextWorkflow steps, errs) ->  
-        errs |> flatten source |> log.Warning        
-    | Pass (NextWorkflow steps) -> ()            
+        errs |> flatten |> logFinish log.Error "Error"
+    | Warn (_, errs) ->  
+        errs |> flatten |> logFinish log.Warning "Warning"       
+    | Pass (_) -> logFinish log.Info "Success" ""
     result
+
+let throwErrors source errs =
+    errs 
+    |> flatten 
+    |> sprintf "[Error] [%A]:\n%s" source 
+    |> Exception 
+    |> raise
 
 let throwOnFail source result =
     match result with
-    | Fail (errs) ->
-        errs |> flatten source |> Exception |> raise
+    | Fail (errs) -> throwErrors source errs
     | _ -> ignore
 
 let inline enqueue (queue:ICollector<string>) items =
@@ -207,27 +224,25 @@ let inline tryEnqueue (queue:ICollector<string>) items =
         items
     tryFail op EnqueueFailure
 
-let enqueueNext log enqueue result =
+let enqueueNext (log:TraceWriter) source enqueue result =
     match result with
     | Ok (NextWorkflow next, _) ->
         match next with 
         | EmptySeq    -> 
-            "Success. This is a terminal step"
-            |> log
+            sprintf "[NextState] [%A] This is a terminal step." source
+            |> log.Info
             |> ignore
         | steps ->
             steps 
             |> Seq.map (fun n -> n.ToString())
             |> String.concat "\n"
-            |> sprintf "Success. Next steps:\n%s"
-            |> log
+            |> sprintf "[NextState] [%A] Next steps:\n%s" source
+            |> log.Info
             steps
             |> enqueue
-    | Bad _ ->
-        "Failed. Enqueueing no next step."
-        |> log
-        |> ignore
-    result
+        result
+    | _ -> 
+        result
 
 let inline workflowTerminates result = 
     match result with
@@ -244,7 +259,7 @@ let inline workflowContinues steps result =
     | Bad msgs ->       
         Next.FailWith(msgs)
 
-let deserializeQueueItem<'t> (log: TraceWriter) str =
+let inline deserializeQueueItem<'t> (log: TraceWriter) str =
     let error e =
         e
         |> timestamped 
