@@ -30,7 +30,8 @@ let get (endpoint:string) =
 
 let tryHandle (url:string) (ex:WebException) =
     use resp = ex.Response :?> HttpWebResponse
-    if resp.StatusCode =  HttpStatusCode.InternalServerError 
+    if ex.Status = WebExceptionStatus.ProtocolError
+       && resp.StatusCode =  HttpStatusCode.InternalServerError 
        && url.Contains("/bills/")
     then url |> split "/bills/" |> List.last |> APIBillNotAvailable |> Some
     else None
@@ -68,7 +69,7 @@ let fetchAll endpoint =
         | None -> 
             return items
         | Some n -> 
-            let! nextItems = fetchRec (n.ToString())
+            let! nextItems = fetchRec (n.AsString())
             return items @ nextItems
     }
     

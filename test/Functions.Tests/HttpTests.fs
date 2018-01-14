@@ -91,3 +91,11 @@ type HttpTests(output:ITestOutputHelper) =
             |> JsonConvert.DeserializeObject<Shape list>
 
         test <@ actual = expected @>
+
+    [<Fact>]
+    member __.``fetch all`` ()=
+        System.Environment.SetEnvironmentVariable("IgaApiKey", "CHANGEME")
+        test <@ match fetchAll "/2018/legislators" with
+                | Ok(_,[]) -> true
+                | _ -> false
+              @>
