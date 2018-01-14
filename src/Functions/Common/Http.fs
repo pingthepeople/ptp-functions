@@ -8,7 +8,6 @@ open Ptp.Core
 open System
 open System.Net
 open System.Net.Http
-open FSharp.Collections.ParallelSeq
 open Microsoft.Azure.WebJobs.Host
 open Newtonsoft.Json.Converters
 
@@ -137,20 +136,6 @@ let fetchHtml (url:string) =
 
 let fetchAllPages (url:string) =
     fetchAll url
-
-/// Fetch all URLs in parallel and pair the responses with their URL
-let fetchAllParallel (urls:string seq) =
-    let fetchOne url =
-        try
-            ok (url, Some(tryGet url))
-        with 
-        | ex -> 
-            let msg = APIQueryError (QueryText(url),(ex.ToString()))
-            Result.Succeed((url,None),msg)
-    urls
-    |> PSeq.map fetchOne
-    |> seq
-    |> collect
 
 let deserializeAs domainModel jsonValues =
     let op() = jsonValues |> Seq.map domainModel

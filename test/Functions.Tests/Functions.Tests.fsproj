@@ -63,7 +63,6 @@
     <Compile Include="GetLegislatorsTests.fs" />
     <Compile Include="WorkflowTests.fs" />
     <Compile Include="Workflow.SubjectTests.fs" />
-    <Compile Include="Workflow.CommitteeTests.fs" />
     <Compile Include="NotificationTests.fs" />
   </ItemGroup>
   <ItemGroup>
@@ -75,9 +74,6 @@
     </Reference>
     <Reference Include="FSharp.Data">
       <HintPath>..\..\packages\FSharp.Data.2.3.3\lib\net40\FSharp.Data.dll</HintPath>
-    </Reference>
-    <Reference Include="FSharpx.Collections">
-      <HintPath>..\..\packages\FSharpx.Collections.1.17.0\lib\net40\FSharpx.Collections.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="Newtonsoft.Json">
