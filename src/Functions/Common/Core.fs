@@ -230,14 +230,14 @@ let enqueueNext (log:TraceWriter) source enqueue result =
     | Ok (NextWorkflow next, _) ->
         match next with 
         | EmptySeq    -> 
-            sprintf "[NextState] [%A] This is a terminal step." source
+            sprintf "[Next] [%A] This is a terminal step." source
             |> log.Info
             |> ignore
         | steps ->
             steps 
             |> Seq.map (fun n -> n.ToString())
             |> String.concat "\n"
-            |> sprintf "[NextState] [%A] Next steps:\n%s" source
+            |> sprintf "[Next] [%A] Next steps:\n%s" source
             |> log.Info
             steps
             |> enqueue

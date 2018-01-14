@@ -202,6 +202,15 @@ let reconcileBillMembers (bill:Bill,json) = trial {
 let invalidateBillCache = 
     tryInvalidateCache BillsKey
 
+let evaluateResult result = 
+    match result with
+    | Ok (_, msgs) ->   
+        Next.Succeed(terminalState, msgs)
+    | Bad ([APIBillNotAvailable(b)]) ->
+        Next.Succeed(terminalState,[APIBillNotAvailable(b)])
+    | Bad msgs ->       
+        Next.FailWith(msgs)
+
 let workflow link = 
     fun () ->
         fetchBillMetadata link
@@ -210,4 +219,4 @@ let workflow link =
         >>= reconcileBillSubjects
         >>= reconcileBillMembers
         >>= invalidateBillCache
-        |> workflowTerminates
+        |> evaluateResult
