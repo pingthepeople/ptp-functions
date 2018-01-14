@@ -40,6 +40,7 @@ type WorkFlowFailure =
     | DatabaseQueryExpectationError of QueryText * string
     | APICommandError of CommandText * string
     | APIQueryError of QueryText * string
+    | APIBillNotAvailable of string
     | DTOtoDomainConversionFailure of string
     | DomainToDTOConversionFailure of string
     | EnqueueFailure of string
@@ -175,7 +176,7 @@ let chooseBoth (items:list<('a*'b option)>) =
         | None -> None)
     |> List.choose id
 
-let inline flatten msgs = 
+let inline flattenMsgs msgs = 
     msgs 
     |> Seq.map (fun wf -> wf.ToString())
     |> String.concat "\n" 
@@ -195,20 +196,20 @@ let executeWorkflow (log:TraceWriter) source workflow =
     let result = workflow()
     match result with
     | Fail (errs) -> 
-        errs |> flatten |> logFinish log.Error "Error"
+        errs |> flattenMsgs |> logFinish log.Error "Error"
     | Warn (_, errs) ->  
-        errs |> flatten |> logFinish log.Warning "Warning"       
+        errs |> flattenMsgs |> logFinish log.Warning "Warning"       
     | Pass (_) -> logFinish log.Info "Success" ""
     result
 
-let throwErrors source errs =
+let inline throwErrors source errs =
     errs 
-    |> flatten 
+    |> flattenMsgs
     |> sprintf "[Error] [%A]:\n%s" source 
     |> Exception 
     |> raise
 
-let throwOnFail source result =
+let inline throwOnFail source result =
     match result with
     | Fail (errs) -> throwErrors source errs
     | _ -> ignore
@@ -229,14 +230,14 @@ let enqueueNext (log:TraceWriter) source enqueue result =
     | Ok (NextWorkflow next, _) ->
         match next with 
         | EmptySeq    -> 
-            sprintf "[NextState] [%A] This is a terminal step." source
+            sprintf "[Next] [%A] This is a terminal step." source
             |> log.Info
             |> ignore
         | steps ->
             steps 
             |> Seq.map (fun n -> n.ToString())
             |> String.concat "\n"
-            |> sprintf "[NextState] [%A] Next steps:\n%s" source
+            |> sprintf "[Next] [%A] Next steps:\n%s" source
             |> log.Info
             steps
             |> enqueue
