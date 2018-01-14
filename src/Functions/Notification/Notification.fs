@@ -4,6 +4,7 @@ open Microsoft.Azure.WebJobs.Host
 open Ptp.Core
 open Ptp.Model
 open Ptp.Database
+open Ptp.Formatting
 open Chessie.ErrorHandling
 open FSharp.Markdown
 open SendGrid;
@@ -11,10 +12,7 @@ open SendGrid.Helpers.Mail
 open Twilio;
 open Twilio.Rest.Api.V2010.Account;
 open Twilio.Types;
-open System.Security.Cryptography
-open System.Text
 open Newtonsoft.Json
-open Ptp.Core
 
 let ptpLogoMarkup = """
     <img alt="Ping the People logo" src="https://pingthepeopleprod.blob.core.windows.net/images/ptplogo.PNG" />
@@ -50,41 +48,32 @@ let sendSms (msg:Message) =
         msg
     tryFail op NotificationDeliveryError
 
-let digest (str:string) = 
-    str
-    |> Encoding.UTF8.GetBytes
-    |> SHA256Managed.Create().ComputeHash
-    |> Array.map (fun b -> b.ToString("x2").ToUpper())
-    |> String.concat ""
-    
+let digest (msg:Message) =
+    sprintf "%A;%s;%s;%s" msg.MessageType msg.Recipient msg.Subject msg.Body
+    |> sha256Hash
+
 let tryLogDeliveryQuery = """
-IF NOT EXISTS 
-    ( SELECT TOP 1 1 FROM NotificationLog 
-      WHERE Recipient=@Recipient
-        AND MessageType=@MessageType
-        AND Subject=@Subject
-        AND Digest=@Digest)
-BEGIN
-    INSERT INTO NotificationLog (Recipient,MessageType,Subject,Digest,UserId)
-    VALUES (@Recipient
-           ,@MessageType
-           ,@Subject
-           ,@Digest
-           ,( SELECT Id FROM users
-              WHERE (@MessageType=1 AND Email=@Recipient)
-                 OR (@MessageType=2 AND Mobile=@Recipient)))
-    SELECT SCOPE_IDENTITY()
-END
-ELSE
-BEGIN
-    SELECT 0
-END
+MERGE INTO NotificationLog nl
+USING (VALUES(
+        @MessageType,
+        @Recipient,
+        @Subject,
+        @Digest,
+        ( SELECT Id FROM users
+          WHERE (@MessageType=1 AND Email=@Recipient)
+             OR (@MessageType=2 AND Mobile=@Recipient)))) 
+    X ([MessageType],[Recipient],[Subject],[Digest],[UserId])
+ON (nl.Digest=@Digest)
+WHEN NOT MATCHED BY TARGET THEN
+    INSERT ([UserId],[MessageType],[Recipient],[Subject],[Digest])
+    VALUES (X.[UserId],X.[MessageType],X.[Recipient],X.[Subject],X.[Digest])
+OUTPUT $action;
 """
 
 let generateLog msg = 
     let op()=
         let log = 
-          { Digest=(digest msg.Body)
+          { Digest= (digest msg)
             MessageType=msg.MessageType
             Recipient=msg.Recipient
             Subject=msg.Subject }
@@ -92,14 +81,15 @@ let generateLog msg =
     tryFail op NotificationGenerationError
 
 let logDelivery (msg,log) = trial {
-    let! id = dbParameterizedQueryOne<int> tryLogDeliveryQuery log
-    return (msg,id)
+    let! res = dbParameterizedQuery<string> tryLogDeliveryQuery log
+    let inserted = res |> Seq.tryHead 
+    return (msg,inserted)
 }
 
-let ensureNotYetDelivered (msg,id) =
-    if (id = 0)
-    then fail NotificationAlreadyDelivered
-    else ok msg
+let ensureNotYetDelivered (msg,inserted) =
+    match inserted with
+    | Some row -> ok msg
+    | None -> fail NotificationAlreadyDelivered
 
 let deliver sendMail sendSms (msg:Message) =
     match msg.MessageType with

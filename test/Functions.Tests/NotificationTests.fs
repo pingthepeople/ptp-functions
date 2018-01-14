@@ -23,24 +23,11 @@ let testSms =  {testMsg with MessageType=MessageType.SMS; Recipient="+1234567890
 
 // successful functions
 let sendMsgOk x = ok ""
-let logDeliveryOk (msg,x) = ok (msg,1)
-
-[<Fact>]
-let ``generates message digest``()=
-    test <@ Function.digest testBody = expectedHash @>
-
-[<Fact>]
-let ``generates log object``() =
-    let expectedLog =
-      { MessageType=MessageType.Email
-        Digest=expectedHash
-        Recipient="user@pingthepeople.org"
-        Subject="Email to foo regarding bar" }
-    test <@ Function.generateLog testMail = Result.Ok((testMail,expectedLog),[]) @>
+let logDeliveryOk (msg,x) = ok (msg,Some("inserted"))
 
 [<Fact>]
 let ``fails if notification already sent``() =
-    let logDelivery (msg,x) = ok (msg,0)
+    let logDelivery (msg,x) = ok (msg,None)
     let testWorkflow = Function.workflow logDelivery sendMsgOk sendMsgOk testMail
     test <@ testWorkflow() = Result.Bad([NotificationAlreadyDelivered]) @>
 
