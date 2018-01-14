@@ -99,9 +99,10 @@ CREATE TABLE NotificationLog
 	UserId int NOT NULL FOREIGN KEY REFERENCES [users](Id),
 	MessageType TINYINT NOT NULL,
     Recipient nvarchar(256) NOT NULL,
-	Subject nvarchar(512) NOT NULL,
-	[Digest] nvarchar(128) NOT NULL,
+	Subject nvarchar(256) NOT NULL,
+	[Digest] nchar(64) NOT NULL,
 	Created DATETIME NOT NULL DEFAULT GetUtcDate(),	
+    CONSTRAINT AK_Notification UNIQUE(Digest)
 )
 
 -- Many-to-many tables
