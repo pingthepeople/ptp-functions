@@ -28,7 +28,7 @@ let parseDescription description =
     | StartsWith "First reading: referred to Committee on " rest -> rest
     | StartsWith "Committee report: " rest -> rest
     | StartsWith "Second reading: " rest -> rest
-    | StartsWith "Third reading: " rest -> rest
+    | StartsWith "Third reading: " rest -> rest |> split ";" |> List.head
     | StartsWith "Signed by the President of the Senate" rest -> rest
     | StartsWith "Signed by the Governor" rest -> rest
     | StartsWith "Vetoed by the Governor" rest -> rest

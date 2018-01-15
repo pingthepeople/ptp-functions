@@ -68,31 +68,19 @@ let chooseWorkflow notifications msg =
     | GenerateRoundupNotification id    -> RoundupNotification.workflow notifications id
     | GenerateDeadBillNotification id   -> DeadBillNotification.workflow notifications id   
 
-let logStart (log: TraceWriter) cmd =
-    sprintf "[Start] [%A]" cmd 
-    |> timestamped
-    |> log.Info
-    cmd
 
-let logFinish (log: TraceWriter) cmd (stopwatch:Diagnostics.Stopwatch) msg =
-    sprintf "[Finish] (%d ms) [%A] %s" stopwatch.ElapsedMilliseconds cmd msg
-    |> timestamped
-    |> log.Info
 
 let Run(log: TraceWriter, command: string, nextCommand: ICollector<string>, notifications:ICollector<string>) =
     
-    let stopwatch = Diagnostics.Stopwatch.StartNew()
     let notifications = tryEnqueue notifications
     let nextCommand = enqueue nextCommand
 
     match deserializeQueueItem<Workflow> log command with
     | Some cmd ->
-        let logFinish msg = logFinish log cmd stopwatch msg
         cmd
-        |> logStart log
         |> (chooseWorkflow notifications)
         |> executeWorkflow log cmd
-        |> enqueueNext logFinish nextCommand
+        |> enqueueNext log cmd nextCommand
         |> throwOnFail cmd
         |> ignore
     | None -> ()

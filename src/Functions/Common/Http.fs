@@ -8,7 +8,6 @@ open Ptp.Core
 open System
 open System.Net
 open System.Net.Http
-open FSharp.Collections.ParallelSeq
 open Microsoft.Azure.WebJobs.Host
 open Newtonsoft.Json.Converters
 
@@ -29,13 +28,22 @@ let get (endpoint:string) =
     Http.RequestString(uri, httpMethod = "GET", headers = standardHeaders, timeout=15000) 
     |> JsonValue.Parse
 
+let tryHandle (url:string) (ex:WebException) =
+    use resp = ex.Response :?> HttpWebResponse
+    if ex.Status = WebExceptionStatus.ProtocolError
+       && resp.StatusCode =  HttpStatusCode.InternalServerError 
+       && url.Contains("/bills/")
+    then url |> split "/bills/" |> List.last |> APIBillNotAvailable |> Some
+    else None
+
 let tryGet endpoint =
     let failwith errors = 
         errors
         |> List.rev
         |> String.concat "\n"
         |> sprintf "Failed to fetch %s after 3 attempts: %s" endpoint
-        |> failwith
+        |> (fun e -> APIQueryError(QueryText(endpoint),e))
+        |> fail
     
     let rec tryGet' attempt endpoint errors =
         match attempt with
@@ -43,20 +51,28 @@ let tryGet endpoint =
         | x ->
             try
                 System.Threading.Thread.Sleep(x * 2000)
-                get endpoint
+                (get endpoint) |> ok
             with
+            | :? WebException as ex ->
+                match (tryHandle endpoint ex) with
+                | Some workflowFailure -> fail workflowFailure
+                | None -> tryGet' (x+1) endpoint (ex.ToString() :: errors)
             | ex -> tryGet' (x+1) endpoint (ex.ToString() :: errors)
     tryGet' 0 endpoint []    
 
 
 let fetchAll endpoint =
-    let rec fetchRec link =
-        let json = tryGet link
+    let rec fetchRec link = trial {
+        let! json = tryGet link
         let items = json?items.AsArray() |> Array.toList
-        match json.TryGetProperty("nextLink") with
-        | Some link -> items @ (fetchRec (link.AsString()))
-        | None -> items
-
+        match json.TryGetProperty("nextLink") with 
+        | None -> 
+            return items
+        | Some n -> 
+            let! nextItems = fetchRec (n.AsString())
+            return items @ nextItems
+    }
+    
     fetchRec endpoint
 
 type Error = { Error:string; }
@@ -68,21 +84,26 @@ let httpResponse status content =
     |> (fun sc -> new HttpResponseMessage(StatusCode=status, Content=sc))
 
 let executeHttpWorkflow (log:TraceWriter) source workflow =
+    logStart log source
+    let logFinish = logFinish source (Diagnostics.Stopwatch.StartNew())
+
     let response = 
         match workflow() with
         | Fail (errs) ->  
             match List.head errs with
             | RequestValidationError _ -> 
-                let validationErrors = flatten source errs
+                let validationErrors = flattenMsgs errs
+                validationErrors |> logFinish log.Warning "Warn"
                 httpResponse HttpStatusCode.BadRequest validationErrors
             | _ -> 
-                errs |> flatten source |> log.Warning
+                errs |> flattenMsgs |> logFinish log.Error "Error"
                 let genericError = "An internal error occurred"
                 httpResponse HttpStatusCode.InternalServerError genericError
         | Warn (resp, errs) ->  
-            errs |> flatten source |> log.Warning
+            errs |> flattenMsgs |> logFinish log.Warning "Warn"
             resp |> httpResponse HttpStatusCode.OK
         | Pass (resp) ->
+            logFinish log.Info "Success" "Function finished successfully"
             resp |> httpResponse HttpStatusCode.OK
     response
 
@@ -108,30 +129,14 @@ let inline validateInt x f (errorMessage:string) (param:int) =
     else errorMessage |> validationError
 
 let fetch (url:string) =
-    let op() = tryGet url
-    tryFail op (fun e -> APIQueryError (QueryText(url),e))
+    tryGet url
 
 let fetchHtml (url:string) = 
     let op() = url |> HtmlDocument.Load
     tryFail op (fun err -> (APIQueryError(QueryText(url), err)))
 
 let fetchAllPages (url:string) =
-    let op() = fetchAll url
-    tryFail op (fun e -> APIQueryError (QueryText(url),e))
-
-/// Fetch all URLs in parallel and pair the responses with their URL
-let fetchAllParallel (urls:string seq) =
-    let fetchOne url =
-        try
-            ok (url, Some(tryGet url))
-        with 
-        | ex -> 
-            let msg = APIQueryError (QueryText(url),(ex.ToString()))
-            Result.Succeed((url,None),msg)
-    urls
-    |> PSeq.map fetchOne
-    |> seq
-    |> collect
+    fetchAll url
 
 let deserializeAs domainModel jsonValues =
     let op() = jsonValues |> Seq.map domainModel

@@ -21,7 +21,7 @@ let formatBody (a:ScheduledAction,c:Committee option) bill title =
     let eventDate = formatEventDate a.Date
     let eventTime = formatEventTime a.Start a.End a.CustomStart
     let eventLocation = formatEventLocation a.Location
-    sprintf "%s is scheduled for a %s%s on %s%s in %s" title eventType readingBody eventDate eventTime eventLocation
+    sprintf "%s is scheduled for a %s%s on %s%s in %s." title eventType readingBody eventDate eventTime eventLocation
 
 let fetchActionQuery = "SELECT * FROM ScheduledAction WHERE Id = @Id"
 let fetchCommitteeQuery = "SELECT * FROM Committee WHERE Link = @Link"
