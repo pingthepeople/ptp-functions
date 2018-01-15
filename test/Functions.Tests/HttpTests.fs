@@ -92,7 +92,7 @@ type HttpTests(output:ITestOutputHelper) =
 
         test <@ actual = expected @>
 
-    [<Fact>]
+    //[<Fact>]
     member __.``fetch all`` ()=
         System.Environment.SetEnvironmentVariable("IgaApiKey", "CHANGEME")
         test <@ match fetchAll "/2018/legislators" with
