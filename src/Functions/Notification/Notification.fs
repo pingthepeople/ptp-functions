@@ -58,15 +58,12 @@ USING (VALUES(
         @MessageType,
         @Recipient,
         @Subject,
-        @Digest,
-        ( SELECT Id FROM users
-          WHERE (@MessageType=1 AND Email=@Recipient)
-             OR (@MessageType=2 AND Mobile=@Recipient)))) 
-    X ([MessageType],[Recipient],[Subject],[Digest],[UserId])
+        @Digest)) 
+    X ([MessageType],[Recipient],[Subject],[Digest])
 ON (nl.Digest=@Digest)
 WHEN NOT MATCHED BY TARGET THEN
-    INSERT ([UserId],[MessageType],[Recipient],[Subject],[Digest])
-    VALUES (X.[UserId],X.[MessageType],X.[Recipient],X.[Subject],X.[Digest])
+    INSERT ([MessageType],[Recipient],[Subject],[Digest])
+    VALUES (X.[MessageType],X.[Recipient],X.[Subject],X.[Digest])
 OUTPUT $action;
 """
 
