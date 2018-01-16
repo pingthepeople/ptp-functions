@@ -302,3 +302,4 @@ __pycache__/
 .DS_Store
 src/Functions/local.prod.settings.json
 src/Functions/local.test.settings.json
+.powerbirc

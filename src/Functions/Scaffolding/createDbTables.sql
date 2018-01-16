@@ -96,7 +96,6 @@ CREATE TABLE Legislator
 CREATE TABLE NotificationLog
 (
     Id int IDENTITY(1,1) PRIMARY KEY,
-	UserId int NOT NULL FOREIGN KEY REFERENCES [users](Id),
 	MessageType TINYINT NOT NULL,
     Recipient nvarchar(256) NOT NULL,
 	Subject nvarchar(256) NOT NULL,
