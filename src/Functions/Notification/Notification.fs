@@ -40,6 +40,8 @@ let sendMail (msg:Message) =
         let b = msg |> generateBody
 
         use client = new SmtpClient()
+        // ignore cert validation...
+        client.ServerCertificateValidationCallback <- (fun s c h e -> true)
         client.Connect ("smtp.sendgrid.com", 587, false);
         client.Authenticate (username, password);
         client.Send (MimeMessage([f],[t],s,b));
