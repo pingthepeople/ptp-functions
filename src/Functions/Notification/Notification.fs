@@ -34,8 +34,8 @@ let sendMail (msg:Message) =
             body.HtmlBody <- ptpLogoMarkup + (m.Body |> Markdown.Parse |> Markdown.WriteHtml)
             body.ToMessageBody()
 
-        let f = MailboxAddress (fromName, fromAddr)
-        let t = MailboxAddress (msg.Recipient)
+        let f = [MailboxAddress (fromName, fromAddr)] |> List.toSeq
+        let t = [MailboxAddress (msg.Recipient)] |> List.toSeq
         let s = msg.Subject
         let b = msg |> generateBody
 
@@ -44,7 +44,7 @@ let sendMail (msg:Message) =
         client.ServerCertificateValidationCallback <- (fun s c h e -> true)
         client.Connect ("smtp.sendgrid.com", 587, false);
         client.Authenticate (username, password);
-        client.Send (MimeMessage([f],[t],s,b));
+        client.Send (MimeMessage(f,t,s,b));
         client.Disconnect (true);
 
         msg
