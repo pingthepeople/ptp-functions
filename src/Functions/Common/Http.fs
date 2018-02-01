@@ -25,7 +25,7 @@ let get (endpoint:string) =
         match endpoint.StartsWith("http") with
         | true -> endpoint
         | false -> apiRoot + endpoint
-    Http.RequestString(uri, httpMethod = "GET", headers = standardHeaders, timeout=15000) 
+    Http.RequestString(uri, httpMethod = "GET", headers = standardHeaders, timeout=30000) 
     |> JsonValue.Parse
 
 let tryHandle (url:string) (ex:WebException) =
