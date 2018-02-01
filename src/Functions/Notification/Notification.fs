@@ -34,17 +34,18 @@ let sendMail (msg:Message) =
             body.HtmlBody <- ptpLogoMarkup + (m.Body |> Markdown.Parse |> Markdown.WriteHtml)
             body.ToMessageBody()
 
-        let f = [MailboxAddress (fromName, fromAddr)] |> List.toSeq
-        let t = [MailboxAddress (msg.Recipient)] |> List.toSeq
-        let s = msg.Subject
-        let b = msg |> generateBody
+        let mail = MimeMessage()
+        mail.From.Add(MailboxAddress(fromName, fromAddr))
+        mail.To.Add(MailboxAddress(msg.Recipient))
+        mail.Subject <- msg.Subject
+        mail.Body <- (msg |> generateBody)
 
         use client = new SmtpClient()
         // ignore cert validation...
         client.ServerCertificateValidationCallback <- (fun s c h e -> true)
         client.Connect ("smtp.sendgrid.com", 587, false);
         client.Authenticate (username, password);
-        client.Send (MimeMessage(f,t,s,b));
+        client.Send (mail);
         client.Disconnect (true);
 
         msg
