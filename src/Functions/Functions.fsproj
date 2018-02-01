@@ -126,9 +126,6 @@
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="SendGrid">
-      <HintPath>..\..\packages\Sendgrid.9.9.0\lib\net452\SendGrid.dll</HintPath>
-    </Reference>
     <Reference Include="StackExchange.Redis">
       <HintPath>..\..\packages\StackExchange.Redis.1.2.6\lib\net46\StackExchange.Redis.dll</HintPath>
     </Reference>
@@ -158,6 +155,16 @@
     <Reference Include="System.Xml.Linq" />
     <Reference Include="Twilio">
       <HintPath>..\..\packages\Twilio.5.8.2\lib\net451\Twilio.dll</HintPath>
+    </Reference>
+    <Reference Include="BouncyCastle.Crypto">
+      <HintPath>..\..\packages\BouncyCastle.1.8.1\lib\BouncyCastle.Crypto.dll</HintPath>
+    </Reference>
+    <Reference Include="MimeKit">
+      <HintPath>..\..\packages\MimeKit.2.0.1\lib\net45\MimeKit.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Security" />
+    <Reference Include="MailKit">
+      <HintPath>..\..\packages\MailKit.2.0.1\lib\net45\MailKit.dll</HintPath>
     </Reference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
