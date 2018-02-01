@@ -7,12 +7,13 @@ open Ptp.Database
 open Ptp.Formatting
 open Chessie.ErrorHandling
 open FSharp.Markdown
-open SendGrid;
-open SendGrid.Helpers.Mail
 open Twilio;
 open Twilio.Rest.Api.V2010.Account;
 open Twilio.Types;
 open Newtonsoft.Json
+open MailKit
+open MimeKit
+open MailKit.Net.Smtp
 
 let ptpLogoMarkup = """
     <img alt="Ping the People logo" src="https://pingthepeopleprod.blob.core.windows.net/images/ptplogo.PNG" />
@@ -22,16 +23,31 @@ let ptpLogoMarkup = """
 
 let sendMail (msg:Message) = 
     let op() =
-        let apiKey = env "SendGrid.ApiKey"
-        let fromAddr = env "SendGrid.FromAddr"
+        let username = env "SendGrid.Username"
+        let password = env "SendGrid.Password"
         let fromName = env "SendGrid.FromName" 
-        let from = EmailAddress(fromAddr, fromName)
-        let toAddr = msg.Recipient |> EmailAddress
-        let subject = msg.Subject
-        let textContent = msg.Body
-        let htmlContent = ptpLogoMarkup + (msg.Body |> Markdown.Parse |> Markdown.WriteHtml)
-        let mail = MailHelper.CreateSingleEmail(from, toAddr, subject, textContent, htmlContent)
-        SendGridClient(apiKey).SendEmailAsync(mail).Wait() |> ignore
+        let fromAddr = env "SendGrid.FromAddr"
+
+        let generateBody m =
+            let body = BodyBuilder()
+            body.TextBody <- m.Body
+            body.HtmlBody <- ptpLogoMarkup + (m.Body |> Markdown.Parse |> Markdown.WriteHtml)
+            body.ToMessageBody()
+
+        let mail = MimeMessage()
+        mail.From.Add(MailboxAddress(fromName, fromAddr))
+        mail.To.Add(MailboxAddress(msg.Recipient))
+        mail.Subject <- msg.Subject
+        mail.Body <- (msg |> generateBody)
+
+        use client = new SmtpClient()
+        // ignore cert validation...
+        client.ServerCertificateValidationCallback <- (fun s c h e -> true)
+        client.Connect ("smtp.sendgrid.com", 587, false);
+        client.Authenticate (username, password);
+        client.Send (mail);
+        client.Disconnect (true);
+
         msg
     tryFail op NotificationDeliveryError
 
