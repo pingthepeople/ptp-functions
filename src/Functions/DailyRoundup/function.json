@@ -1,5 +1,5 @@
 ﻿{
-  "disabled": false,
+  "disabled": true,
   "scriptFile": "../bin/Functions.dll",
   "entryPoint": "Ptp.DailyRoundup.Run",
   "bindings": [
