@@ -15,24 +15,24 @@ WHERE
 	AND NOT ( 
 		b.Chamber = 1 AND
 		(
-				(@Date <= '2018-01-30' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 1 AND a.Description like '%adopted%'))   -- HB comm report
-			AND (@Date <= '2018-02-02' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 2 AND a.Description like '%engrossed%')) -- HB 2nd reading
-			AND (@Date <= '2018-02-05' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 3 AND a.Description like '%passed%'))    -- HB 3rd reading
-			AND (@Date <= '2018-02-27' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 1 AND a.Description like '%adopted%'))   -- SB comm report
-			AND (@Date <= '2018-03-02' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 2 AND a.Description like '%engrossed%')) -- SB 2nd reading
-			AND (@Date <= '2018-03-05' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 3 AND a.Description like '%passed%'))    -- SB 3rd reading
+				(@Date <= '2019-02-19' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 1 AND a.Description like '%adopted%'))   -- HB comm report
+			AND (@Date <= '2019-02-21' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 2 AND a.Description like '%engrossed%')) -- HB 2nd reading
+			AND (@Date <= '2019-02-25' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 3 AND a.Description like '%passed%'))    -- HB 3rd reading
+			AND (@Date <= '2019-04-09' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 1 AND a.Description like '%adopted%'))   -- SB comm report
+			AND (@Date <= '2019-04-11' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 2 AND a.Description like '%engrossed%')) -- SB 2nd reading
+			AND (@Date <= '2019-04-15' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 3 AND a.Description like '%passed%'))    -- SB 3rd reading
 		)
 	)
 	AND	NOT (
 		b.Chamber = 2 AND
 		(
-				(@Date <= '2018-01-12' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 4))                                      -- assign to comm
-			AND	(@Date <= '2018-02-01' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 1 AND a.Description like '%adopted%'))   -- SB comm report
-			AND (@Date <= '2018-02-05' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 2 AND a.Description like '%engrossed%')) -- SB 2nd reading
-			AND (@Date <= '2018-02-06' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 3 AND a.Description like '%passed%'))    -- SB 3rd reading
-			AND (@Date <= '2018-03-01' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 1 AND a.Description like '%adopted%'))   -- HB comm report
-			AND (@Date <= '2018-03-05' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 2 AND a.Description like '%engrossed%')) -- HB 2nd reading
-			AND (@Date <= '2018-03-06' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 3 AND a.Description like '%passed%'))    -- HB 3rd reading
+				(@Date <= '2019-01-17' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 4))                                      -- assign to comm
+			AND	(@Date <= '2019-02-21' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 1 AND a.Description like '%adopted%'))   -- SB comm report
+			AND (@Date <= '2019-02-25' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 2 AND a.Description like '%engrossed%')) -- SB 2nd reading
+			AND (@Date <= '2019-02-26' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 2 AND a.ActionType = 3 AND a.Description like '%passed%'))    -- SB 3rd reading
+			AND (@Date <= '2019-04-11' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 1 AND a.Description like '%adopted%'))   -- HB comm report
+			AND (@Date <= '2019-04-15' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 2 AND a.Description like '%engrossed%')) -- HB 2nd reading
+			AND (@Date <= '2019-04-16' OR EXISTS (SELECT a.Id from Action a where a.BillId = b.Id AND a.Chamber = 1 AND a.ActionType = 3 AND a.Description like '%passed%'))    -- HB 3rd reading
 		)
 	)"""
 
