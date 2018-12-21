@@ -4,7 +4,7 @@ open Chessie.ErrorHandling
 open Ptp.Model
 open Ptp.Database
 open Ptp.Core
-open Ptp.Messaging
+open Ptp.Workflow.Messaging
 
 let formatBody (action:Action) bill title =
     let desc = action.Description.TrimEnd(';')

@@ -2,7 +2,7 @@
 
 open Ptp.Core
 open Ptp.Model
-open Ptp.Messaging
+open Ptp.Workflow.Messaging
 open Ptp.Database
 open Chessie.ErrorHandling
 

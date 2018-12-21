@@ -3,6 +3,7 @@
 open Chessie.ErrorHandling
 open Microsoft.Azure.WebJobs
 open Microsoft.Azure.WebJobs.Host
+open Microsoft.Extensions.Logging
 open System
 open Newtonsoft.Json
 
@@ -62,16 +63,19 @@ let terminalState = NextWorkflow List.empty<Workflow>
 let mapNext m x = x |> Seq.map m |> NextWorkflow
 
 let (|StartsWith|_|) (p:string) (s:string) =
-    if s.StartsWith(p) then
-        Some(s.Substring(p.Length))
-    else
-        None
+    if s.StartsWith(p) 
+    then Some(s.Substring(p.Length))
+    else None
 
 let (|Contains|_|) (p:string) (s:string) =
-    if s.Contains(p) then Some(s) else None
+    if s.Contains(p) 
+    then Some(s) 
+    else None
     
 let (|EmptySeq|_|) a = 
-    if Seq.isEmpty a then Some () else None
+    if Seq.isEmpty a 
+    then Some () 
+    else None
 
 let right (p:string) (s:string) =
     if String.IsNullOrWhiteSpace(p) || String.IsNullOrWhiteSpace(s)
@@ -181,25 +185,25 @@ let inline flattenMsgs msgs =
     |> Seq.map (fun wf -> wf.ToString())
     |> String.concat "\n" 
 
-let logStart (log: TraceWriter) cmd =
+let logStart (log: ILogger) cmd =
     sprintf "[Start] [%A]" cmd 
-    |> log.Info
+    |> log.LogInformation
 
 let logFinish cmd (stopwatch:Diagnostics.Stopwatch) logger label msg =
     sprintf "[%s] [%A] (%d ms) %s" label cmd stopwatch.ElapsedMilliseconds msg
     |> logger
 
 /// Log succesful or failed completion of the function, along with any warnings.
-let executeWorkflow (log:TraceWriter) source workflow =
+let executeWorkflow (log:ILogger) source workflow =
     logStart log source
     let logFinish = logFinish source (Diagnostics.Stopwatch.StartNew())
     let result = workflow()
     match result with
     | Fail (errs) -> 
-        errs |> flattenMsgs |> logFinish log.Error "Error"
+        errs |> flattenMsgs |> logFinish log.LogError "Error"
     | Warn (_, errs) ->  
-        errs |> flattenMsgs |> logFinish log.Warning "Warning"       
-    | Pass (_) -> logFinish log.Info "Success" ""
+        errs |> flattenMsgs |> logFinish log.LogWarning "Warning"       
+    | Pass (_) -> logFinish log.LogInformation "Success" ""
     result
 
 let inline throwErrors source errs =
@@ -225,20 +229,20 @@ let inline tryEnqueue (queue:ICollector<string>) items =
         items
     tryFail op EnqueueFailure
 
-let enqueueNext (log:TraceWriter) source enqueue result =
+let enqueueNext (log:ILogger) source enqueue result =
     match result with
     | Ok (NextWorkflow next, _) ->
         match next with 
         | EmptySeq    -> 
             sprintf "[Next] [%A] This is a terminal step." source
-            |> log.Info
+            |> log.LogInformation
             |> ignore
         | steps ->
             steps 
             |> Seq.map (fun n -> n.ToString())
             |> String.concat "\n"
             |> sprintf "[Next] [%A] Next steps:\n%s" source
-            |> log.Info
+            |> log.LogInformation
             steps
             |> enqueue
         result
@@ -260,11 +264,11 @@ let inline workflowContinues steps result =
     | Bad msgs ->       
         Next.FailWith(msgs)
 
-let inline deserializeQueueItem<'t> (log: TraceWriter) str =
+let inline deserializeQueueItem<'t> (log: ILogger) str =
     let error e =
         e
         |> timestamped 
-        |> log.Warning
+        |> log.LogWarning
     try
         match str with 
         | null -> 
@@ -282,7 +286,7 @@ let inline deserializeQueueItem<'t> (log: TraceWriter) str =
         |> error
         None
 
-let processQueueItem<'t> (log: TraceWriter) str action  =
+let processQueueItem<'t> (log: ILogger) str action  =
     match deserializeQueueItem<'t> log str with
     | Some item -> 
         item |> action

@@ -4,7 +4,7 @@ open Chessie.ErrorHandling
 open Ptp.Model
 open Ptp.Database
 open Ptp.Core
-open Ptp.Messaging
+open Ptp.Workflow.Messaging
 open Ptp.Formatting
 
 let formatBody (a:ScheduledAction,c:Committee option) bill title =

@@ -10,6 +10,7 @@ open System.Net
 open System.Net.Http
 open Microsoft.Azure.WebJobs.Host
 open Newtonsoft.Json.Converters
+open Microsoft.Extensions.Logging
 
 let apiRoot = "https://api.iga.in.gov"
 let contentType = "application/json"
@@ -85,7 +86,7 @@ let httpResponse status content =
     |> (fun j -> new StringContent(j, contentEncoding, contentType))
     |> (fun sc -> new HttpResponseMessage(StatusCode=status, Content=sc))
 
-let executeHttpWorkflow (log:TraceWriter) source workflow =
+let executeHttpWorkflow (log:ILogger) source workflow =
     logStart log source
     let logFinish = logFinish source (Diagnostics.Stopwatch.StartNew())
 
@@ -95,17 +96,17 @@ let executeHttpWorkflow (log:TraceWriter) source workflow =
             match List.head errs with
             | RequestValidationError _ -> 
                 let validationErrors = flattenMsgs errs
-                validationErrors |> logFinish log.Warning "Warn"
+                validationErrors |> logFinish log.LogWarning "Warn"
                 httpResponse HttpStatusCode.BadRequest validationErrors
             | _ -> 
-                errs |> flattenMsgs |> logFinish log.Error "Error"
+                errs |> flattenMsgs |> logFinish log.LogError "Error"
                 let genericError = "An internal error occurred"
                 httpResponse HttpStatusCode.InternalServerError genericError
         | Warn (resp, errs) ->  
-            errs |> flattenMsgs |> logFinish log.Warning "Warn"
+            errs |> flattenMsgs |> logFinish log.LogWarning "Warn"
             resp |> httpResponse HttpStatusCode.OK
         | Pass (resp) ->
-            logFinish log.Info "Success" "Function finished successfully"
+            logFinish log.LogInformation "Success" "Function finished successfully"
             resp |> httpResponse HttpStatusCode.OK
     response
 
