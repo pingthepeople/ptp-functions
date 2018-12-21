@@ -303,3 +303,4 @@ __pycache__/
 src/Functions/local.prod.settings.json
 src/Functions/local.test.settings.json
 .powerbirc
+src/Functions/test.settings.json

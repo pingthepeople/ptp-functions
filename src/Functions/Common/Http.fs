@@ -29,12 +29,14 @@ let get (endpoint:string) =
     |> JsonValue.Parse
 
 let tryHandle (url:string) (ex:WebException) =
-    use resp = ex.Response :?> HttpWebResponse
-    if ex.Status = WebExceptionStatus.ProtocolError
-       && resp.StatusCode =  HttpStatusCode.InternalServerError 
-       && url.Contains("/bills/")
-    then url |> split "/bills/" |> List.last |> APIBillNotAvailable |> Some
-    else None
+    match ex.Response with
+    | :? HttpWebResponse as resp ->
+        if ex.Status = WebExceptionStatus.ProtocolError
+            && resp.StatusCode =  HttpStatusCode.InternalServerError 
+            && url.Contains("/bills/")
+        then url |> split "/bills/" |> List.last |> APIBillNotAvailable |> Some
+        else None
+    | _ -> None
 
 let tryGet endpoint =
     let failwith errors = 
@@ -50,7 +52,7 @@ let tryGet endpoint =
         | 3 -> failwith errors
         | x ->
             try
-                System.Threading.Thread.Sleep(x * 2000)
+                System.Threading.Thread.Sleep(x * 5000)
                 (get endpoint) |> ok
             with
             | :? WebException as ex ->
