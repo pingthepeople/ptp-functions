@@ -90,14 +90,17 @@ workflows:
          requires:
            - build_test
      - deploy_to_test:
+         filters:
+           branches:
+             ignore: gh-pages
          requires:
            - package
          context: ptp
      - deploy_to_production:
-         filters:
-           branches:
-             only:
-               - master
-         requires:
-           - package
-         context: ptp
+        filters:
+          branches:
+            only:
+              - master
+        requires:
+          - package
+        context: ptp
