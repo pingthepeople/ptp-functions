@@ -57,6 +57,7 @@ module Functions =
          [<ServiceBus("command", Connection=sbConnection)>] nextCommand: ICollector<string>) =
         Workflow.UpdateDeadBills |> enqueue nextCommand
 
+    [<DisableAttribute("DISABLE_DAILY_ROUNDUP")>]]
     [<FunctionName("DailyRoundup")>]
     let DailyRoundup
         ([<TimerTrigger("0 30 19 * * 1-5")>] timer,
