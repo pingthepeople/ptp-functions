@@ -31,6 +31,7 @@
                 "command": "dotnet build && cp src/Functions/local.settings.json src/Functions/bin/Debug/netcoreapp2.1"
             },
             "type": "shell",
+            "dependsOn": "clean",            
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -63,7 +64,7 @@
             "label": "publish",
             "command": "dotnet publish --configuration Release",
             "type": "shell",
-            "dependsOn": "clean release",
+            "dependsOn": "clean",
             "presentation": {
                 "reveal": "always"
             },
