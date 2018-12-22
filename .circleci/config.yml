@@ -89,7 +89,6 @@ workflows:
      - package:
          requires:
            - build_test
-         context: itpro
      - deploy_to_test:
          requires:
            - package
