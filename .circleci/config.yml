@@ -19,12 +19,9 @@ commands:
           # Other options described here: https://docs.microsoft.com/en-us/cli/azure/reference-index?view=azure-cli-latest#az-login
           name: Login with Azure Service Principal
           command: az login --service-principal --username http://ptp-ci-bot --password $PTP_SERVICE_PRINCIPAL_PASSWORD --tenant $PTP_SERVICE_PRINCIPAL_TENANT
-      - run:
-          name: Set Azure Subscription
-          command: az account set --subscription $PTP_SUBSCRIPTION
       - run: 
-          name: Publish Functions + SPA package to Test Function App
-          command: az webapp deployment source config-zip --name ptp-functions-<<parameters.environment>> --resource-group ptp-functions-<<parameters.environment>> --src /tmp/workspace/publish/publish.zip
+          name: Publish Function Package to Function App
+          command: az webapp deployment source config-zip --subscription $PTP_SUBSCRIPTION --name ptp-functions-<<parameters.environment>> --resource-group ptp-functions-<<parameters.environment>> --src /tmp/workspace/publish/publish.zip --timeout 300
 # Job definitions. Job execution is orchestrated in the 'workflows' section.
 jobs:
   # Build and test the Azure Functions
