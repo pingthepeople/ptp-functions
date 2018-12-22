@@ -48,7 +48,9 @@ let UpdateLegislators
 let UpdateCommittees 
     ([<TimerTrigger("0 10 6 * * 1-5")>] timer,
         [<ServiceBus("command", Connection=sbConnection)>] nextCommand: ICollector<string>) =
+    Console.Out.WriteLine("Enqueuing UpdateCommittees...")
     Workflow.UpdateCommittees |> enqueue nextCommand
+    Console.Out.WriteLine("Enqueued UpdateCommittees.")
 
 [<FunctionName("UpdateSubjectsAndBills")>]
 let UpdateSubjectsAndBills
