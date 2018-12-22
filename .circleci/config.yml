@@ -19,7 +19,7 @@ commands:
           command: az login --service-principal -u http://ptp-ci-bot -p $PTP_SERVICE_PRINCIPAL_PASSWORD --tenant $PTP_SERVICE_PRINCIPAL_TENANT
       - run: 
           name: Publish Functions + SPA package to Test Function App
-          command: az webapp deployment source config-zip --name $ptp-functions-<<parameters.environment>> --resource-group ptp-functions-<<parameters.environment>> --src /tmp/workspace/publish/publish.zip
+          command: az webapp deployment source config-zip --name ptp-functions-<<parameters.environment>> --resource-group ptp-functions-<<parameters.environment>> --src /tmp/workspace/publish/publish.zip
 # Job definitions. Job execution is orchestrated in the 'workflows' section.
 jobs:
   # Build and test the Azure Functions
