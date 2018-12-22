@@ -1,0 +1,104 @@
+# Javascript Node CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-javascript/ for more details
+#
+version: 2.1
+
+commands: 
+  deploy:
+    description: "Publish package to specified environment"
+    parameters:
+      environment:
+        type: string
+        default: "test"
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Login with Azure Service Principal
+          command: az login --service-principal -u http://ptp-ci-bot -p $PTP_SERVICE_PRINCIPAL_PASSWORD --tenant $PTP_SERVICE_PRINCIPAL_TENANT
+      - run: 
+          name: Publish Functions + SPA package to Test Function App
+          command: az webapp deployment source config-zip --name $ptp-functions-<<parameters.environment>> --resource-group ptp-functions-<<parameters.environment>> --src /tmp/workspace/publish/publish.zip
+# Job definitions. Job execution is orchestrated in the 'workflows' section.
+jobs:
+  # Build and test the Azure Functions
+  build_test:
+    docker:
+      - image: microsoft/dotnet:2.1-sdk
+    steps:
+      - run:
+          # A workspace allows us to pass files/artifacts from job to job.
+          # https://circleci.com/blog/deep-diving-into-circleci-workspaces/
+          name: Create workspace
+          command: mkdir -p /tmp/workspace
+      - checkout 
+      - run: 
+          name: Test Functions
+          working_directory: tests/Unit
+          command: dotnet test
+      - run: 
+          name: Build Release Functions
+          working_directory: src/Functions
+          command: dotnet build -c Release
+      - run:
+          name: Save compiled Functions to workspace
+          command: cp -a src/Functions/bin/Release/netcoreapp2.1/. /tmp/workspace/publish/
+      - persist_to_workspace:
+          root: /tmp/workspace
+          paths:
+            - publish
+  package:
+    docker:
+      - image: circleci/node:8
+    steps:
+      - checkout 
+      - attach_workspace:
+          at: /tmp/workspace
+      - run: 
+          name: Create Functions publish package
+          command: cd /tmp/workspace/publish && zip -r publish.zip ./*
+      - persist_to_workspace:
+          root: /tmp/workspace
+          paths:
+            - publish/publish.zip
+  # Publish the deployment package to the TEST Azure Function App
+  deploy_to_test:
+    docker:
+      - image: microsoft/azure-cli
+    steps:
+      - deploy:
+          environment: "test"
+  deploy_to_production:
+    docker:
+      - image: microsoft/azure-cli
+    steps:
+      - deploy:
+          environment: "test"
+# Job orchestration
+workflows:
+  version: 2
+  # Build and test the code on every commit. 
+  # Publish the style guide on successful build/test of master.
+  build-deploy-migrate:
+    jobs:
+     - build_test:
+         filters:
+           branches:
+             ignore: gh-pages          
+     - package:
+         requires:
+           - build_test
+         context: itpro
+     - deploy_to_test:
+         requires:
+           - package
+         context: ptp
+     - deploy_to_production:
+         filters:
+           branches:
+             only:
+               - master
+         requires:
+           - package
+         context: ptp
