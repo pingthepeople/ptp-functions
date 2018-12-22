@@ -40,7 +40,6 @@ let Heartbeat
     ([<TimerTrigger("0 */1 * * * *")>] timer, 
         log: Microsoft.Extensions.Logging.ILogger) =
         log.LogInformation "Heartbeat (ILogger)"
-        logger.Information "Heartbeat (Serilog)"
 
 [<FunctionName("UpdateLegislators")>]
 let UpdateLegislators 
