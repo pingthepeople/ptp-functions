@@ -3,9 +3,9 @@
 open Swensen.Unquote
 open Xunit
 open Xunit.Abstractions
-open Ptp.Http
-open Ptp.Core
-open Ptp.Model
+open Ptp.Common.Http
+open Ptp.Common.Core
+open Ptp.Common.Model
 open Ptp.Messaging.Notification
 open Chessie.ErrorHandling
 open Newtonsoft.Json

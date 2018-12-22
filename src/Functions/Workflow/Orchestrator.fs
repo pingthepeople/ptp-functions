@@ -3,7 +3,7 @@ module Ptp.Workflow.Orchestrator
 open Microsoft.Extensions.Logging
 open Microsoft.Azure.WebJobs
 open Microsoft.Azure.WebJobs.Host
-open Ptp.Core
+open Ptp.Common.Core
 open Ptp.Workflow
 open System
 

@@ -1,10 +1,10 @@
 ﻿module Ptp.Messaging.Notification
 
 open Microsoft.Azure.WebJobs.Host
-open Ptp.Core
-open Ptp.Model
-open Ptp.Database
-open Ptp.Formatting
+open Ptp.Common.Core
+open Ptp.Common.Model
+open Ptp.Common.Database
+open Ptp.Common.Formatting
 open Chessie.ErrorHandling
 open Twilio
 open Twilio.Rest.Api.V2010.Account

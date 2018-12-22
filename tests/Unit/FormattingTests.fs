@@ -2,7 +2,7 @@
 
 open Swensen.Unquote
 open Xunit
-open Ptp.Formatting
+open Ptp.Common.Formatting
 
 [<Fact>]
 let ``formats start/end times``() =

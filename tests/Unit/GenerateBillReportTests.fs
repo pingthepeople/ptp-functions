@@ -5,7 +5,7 @@ open Swensen.Unquote
 open System.Net
 open Xunit
 open System.Net.Http
-open Ptp.Core
+open Ptp.Common.Core
 open Ptp.API.GetBillReport
 
 [<Fact>] 

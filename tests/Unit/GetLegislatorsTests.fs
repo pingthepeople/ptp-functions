@@ -1,8 +1,8 @@
 ﻿module GetLegislatorsTests
 
 open Chessie.ErrorHandling
-open Ptp.Model
-open Ptp.Core
+open Ptp.Common.Model
+open Ptp.Common.Core
 open Ptp.API.GetLegislators
 open Swensen.Unquote
 open Xunit

@@ -25,10 +25,10 @@
         {
             "label": "build",
             "windows": {
-                "command": "dotnet build; copy local.settings.json bin/Debug/netcoreapp2.1"
+                "command": "dotnet build; copy src/Functions/local.settings.json src/Functions/bin/Debug/netcoreapp2.1"
             },
             "osx": {
-                "command": "dotnet build && cp local.settings.json bin/Debug/netcoreapp2.1"
+                "command": "dotnet build && cp src/Functions/local.settings.json src/Functions/bin/Debug/netcoreapp2.1"
             },
             "type": "shell",
             "group": {

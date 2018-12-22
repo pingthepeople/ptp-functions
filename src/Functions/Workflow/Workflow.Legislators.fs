@@ -3,9 +3,9 @@
 open Chessie.ErrorHandling
 open FSharp.Data
 open FSharp.Data.JsonExtensions
-open Ptp.Core
-open Ptp.Http
-open Ptp.Database
+open Ptp.Common.Core
+open Ptp.Common.Http
+open Ptp.Common.Database
 
 /// Fetch URLs for all legislators in the current session.
 let fetchAllLegislatorsFromApi sessionYear = trial {

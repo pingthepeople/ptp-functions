@@ -1,7 +1,7 @@
 ﻿module UpdateCanonicalData_SubjectsTests
 
 open Chessie.ErrorHandling
-open Ptp.Model
+open Ptp.Common.Model
 open Ptp.Workflow.Subjects
 open Swensen.Unquote
 open Xunit

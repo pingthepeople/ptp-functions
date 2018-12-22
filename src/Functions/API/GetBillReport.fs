@@ -3,10 +3,10 @@ module Ptp.API.GetBillReport
 open Chessie.ErrorHandling
 open Microsoft.Azure.WebJobs.Host
 open Newtonsoft.Json
-open Ptp.Core
-open Ptp.Model
-open Ptp.Http
-open Ptp.Database
+open Ptp.Common.Core
+open Ptp.Common.Model
+open Ptp.Common.Http
+open Ptp.Common.Database
 open System.Net.Http
 open Microsoft.Extensions.Logging
 

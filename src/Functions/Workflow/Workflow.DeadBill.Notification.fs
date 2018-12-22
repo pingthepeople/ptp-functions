@@ -1,9 +1,9 @@
 ﻿module Ptp.Workflow.DeadBillNotification
 
-open Ptp.Core
-open Ptp.Model
+open Ptp.Common.Core
+open Ptp.Common.Model
 open Ptp.Workflow.Messaging
-open Ptp.Database
+open Ptp.Common.Database
 open Chessie.ErrorHandling
 
 let diedInChamber (action:Action) =

@@ -3,7 +3,7 @@
 open Swensen.Unquote
 open Xunit
 open Xunit.Abstractions
-open Ptp.Core
+open Ptp.Common.Core
 
 let a = [1; 2; 3]
 let b = [   2; 3; 4] 

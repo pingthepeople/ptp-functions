@@ -1,10 +1,10 @@
 ﻿module Ptp.Workflow.Calendars
 
 open Chessie.ErrorHandling
-open Ptp.Core
-open Ptp.Http
-open Ptp.Database
-open Ptp.Model
+open Ptp.Common.Core
+open Ptp.Common.Http
+open Ptp.Common.Database
+open Ptp.Common.Model
 
 /// Get all actions that occurred today
 let fetchChamberCalendarLinks sessionYear chamber  = trial {

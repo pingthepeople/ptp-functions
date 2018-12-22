@@ -4,13 +4,13 @@ open Chessie.ErrorHandling
 open FSharp.Data
 open FSharp.Data.CssSelectorExtensions
 open Microsoft.Azure.WebJobs.Host
-open Ptp.Core
-open Ptp.Model
-open Ptp.Http
+open Ptp.Common.Core
+open Ptp.Common.Model
+open Ptp.Common.Http
 open System
 open System.Net
 open System.Net.Http
-open Ptp.Database
+open Ptp.Common.Database
 open Microsoft.Extensions.Logging
 
 let district (node:HtmlNode)  =

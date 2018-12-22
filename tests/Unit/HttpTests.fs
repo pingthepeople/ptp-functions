@@ -3,8 +3,8 @@
 open Swensen.Unquote
 open Xunit
 open Xunit.Abstractions
-open Ptp.Http
-open Ptp.Core
+open Ptp.Common.Http
+open Ptp.Common.Core
 open Chessie.ErrorHandling
 open FSharp.Data
 open FSharp.Data.JsonExtensions

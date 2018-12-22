@@ -1,6 +1,6 @@
 ﻿module Ptp.Workflow.Common
 
-open Ptp.Model
+open Ptp.Common.Model
 open FSharp.Data
 open FSharp.Data.JsonExtensions
 

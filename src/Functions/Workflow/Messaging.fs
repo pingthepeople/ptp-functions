@@ -1,10 +1,10 @@
 ﻿module Ptp.Workflow.Messaging
 
-open Ptp.Database
-open Ptp.Model
-open Ptp.Formatting
+open Ptp.Common.Core
+open Ptp.Common.Database
+open Ptp.Common.Model
+open Ptp.Common.Formatting
 open Chessie.ErrorHandling
-open Ptp.Core
 open System
 
 let linebreak = "<br/>"

@@ -1,10 +1,10 @@
-﻿module Ptp.Http
+﻿module Ptp.Common.Http
 
 open Chessie.ErrorHandling
 open FSharp.Data
 open FSharp.Data.JsonExtensions
 open Newtonsoft.Json
-open Ptp.Core
+open Ptp.Common.Core
 open System
 open System.Net
 open System.Net.Http

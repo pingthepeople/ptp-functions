@@ -1,5 +1,5 @@
 ﻿open System
-open Ptp.Core
+open Ptp.Common.Core
 open Microsoft.Azure.ServiceBus
 open Newtonsoft.Json
 

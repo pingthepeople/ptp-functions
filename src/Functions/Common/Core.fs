@@ -1,4 +1,4 @@
-﻿module Ptp.Core
+﻿module Ptp.Common.Core
 
 open Chessie.ErrorHandling
 open Microsoft.Azure.WebJobs
