@@ -20,48 +20,49 @@ let sbConnection = "ServiceBus.ConnectionString"
 
 /// Workflow Functions
 
-let enqueue (collector:ICollector<string>) workflow = 
-    Workflow.UpdateLegislators
+let enqueue (collector:ICollector<string>) (log:ILogger) workflow = 
+    sprintf "Timer Trigger: Enqueueing %A" workflow |> log.LogInformation
+    workflow
     |> JsonConvert.SerializeObject
     |> collector.Add
 
 [<FunctionName("UpdateLegislators")>]
 let UpdateLegislators 
-    ([<TimerTrigger("0 0 6 * * 1-5")>] timer,
+    ([<TimerTrigger("0 0 6 * * 1-5")>] timer, log: ILogger,
         [<ServiceBus("command", Connection=sbConnection)>] nextCommand: ICollector<string>) =
-        Workflow.UpdateLegislators |> enqueue nextCommand
+        Workflow.UpdateLegislators |> enqueue nextCommand log
 
 [<FunctionName("UpdateCommittees")>]
 let UpdateCommittees 
-    ([<TimerTrigger("0 10 6 * * 1-5")>] timer,
+    ([<TimerTrigger("0 10 6 * * 1-5")>] timer, log: ILogger,
         [<ServiceBus("command", Connection=sbConnection)>] nextCommand: ICollector<string>) =
-    Workflow.UpdateCommittees |> enqueue nextCommand
+    Workflow.UpdateCommittees |> enqueue nextCommand log
 
 [<FunctionName("UpdateSubjectsAndBills")>]
 let UpdateSubjectsAndBills
-    ([<TimerTrigger("0 20 6 * * 1-5")>] timer,
+    ([<TimerTrigger("0 20 6 * * 1-5")>] timer, log: ILogger,
         [<ServiceBus("command", Connection=sbConnection)>] nextCommand: ICollector<string>) =
-    Workflow.UpdateSubjects |> enqueue nextCommand
+    Workflow.UpdateSubjects |> enqueue nextCommand log
 
 [<FunctionName("UpdateCalendarsAndActions")>]
 let UpdateCalendarsAndActions
-    ([<TimerTrigger("0 */10 8-20 * * 1-5")>] timer,
+    ([<TimerTrigger("0 */10 8-20 * * 1-5")>] timer, log: ILogger,
         [<ServiceBus("command", Connection=sbConnection)>] nextCommand: ICollector<string>) =
-    Workflow.UpdateCalendars |> enqueue nextCommand
-    Workflow.UpdateActions |> enqueue nextCommand
+    Workflow.UpdateCalendars |> enqueue nextCommand log
+    Workflow.UpdateActions |> enqueue nextCommand log
 
 [<FunctionName("UpdateDeadBills")>]
 let UpdateDeadBills
-    ([<TimerTrigger("0 0 9 * * 1-6")>] timer,
+    ([<TimerTrigger("0 0 9 * * 1-6")>] timer, log: ILogger,
         [<ServiceBus("command", Connection=sbConnection)>] nextCommand: ICollector<string>) =
-    Workflow.UpdateDeadBills |> enqueue nextCommand
+    Workflow.UpdateDeadBills |> enqueue nextCommand log
 
 [<DisableAttribute("DISABLE_DAILY_ROUNDUP")>]
 [<FunctionName("DailyRoundup")>]
 let DailyRoundup
-    ([<TimerTrigger("0 30 19 * * 1-5")>] timer,
+    ([<TimerTrigger("0 30 19 * * 1-5")>] timer, log: ILogger,
         [<ServiceBus("command", Connection=sbConnection)>] nextCommand: ICollector<string>) =
-    Workflow.DailyRoundup |> enqueue nextCommand
+    Workflow.DailyRoundup |> enqueue nextCommand log
 
 [<FunctionName("Workflow")>]
 let Workflow
