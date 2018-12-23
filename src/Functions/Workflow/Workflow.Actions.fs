@@ -2,9 +2,9 @@
 module Ptp.Workflow.Actions
 
 open Chessie.ErrorHandling
-open Ptp.Core
-open Ptp.Http
-open Ptp.Database
+open Ptp.Common.Core
+open Ptp.Common.Http
+open Ptp.Common.Database
 
 /// Get all actions that occurred today
 let fetchRecentActions sessionYear = trial {

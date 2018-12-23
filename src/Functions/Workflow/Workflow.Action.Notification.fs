@@ -1,10 +1,10 @@
 ﻿module Ptp.Workflow.ActionNotification
 
 open Chessie.ErrorHandling
-open Ptp.Model
-open Ptp.Database
-open Ptp.Core
-open Ptp.Messaging
+open Ptp.Common.Model
+open Ptp.Common.Database
+open Ptp.Common.Core
+open Ptp.Workflow.Messaging
 
 let formatBody (action:Action) bill title =
     let desc = action.Description.TrimEnd(';')

@@ -3,11 +3,11 @@
 open Chessie.ErrorHandling
 open FSharp.Data
 open FSharp.Data.JsonExtensions
-open Ptp.Core
-open Ptp.Cache
-open Ptp.Model
-open Ptp.Database
-open Ptp.Http
+open Ptp.Common.Core
+open Ptp.Common.Cache
+open Ptp.Common.Model
+open Ptp.Common.Database
+open Ptp.Common.Http
 open Ptp.Workflow.Common
 open System
 

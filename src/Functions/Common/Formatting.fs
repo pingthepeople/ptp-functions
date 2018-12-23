@@ -1,7 +1,7 @@
-﻿module Ptp.Formatting
+﻿module Ptp.Common.Formatting
 
-open Ptp.Core
-open Ptp.Model
+open Ptp.Common.Core
+open Ptp.Common.Model
 open System
 
 

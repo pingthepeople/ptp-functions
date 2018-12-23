@@ -1,8 +1,8 @@
 ﻿module Ptp.Workflow.DeadBill
 
 open Chessie.ErrorHandling
-open Ptp.Core
-open Ptp.Database
+open Ptp.Common.Core
+open Ptp.Common.Database
 
 [<Literal>]
 let fetchNewDeadBillsQuery = """

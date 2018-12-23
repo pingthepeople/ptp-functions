@@ -1,7 +1,7 @@
-﻿module Ptp.Cache
+﻿module Ptp.Common.Cache
 
 open Chessie.ErrorHandling
-open Ptp.Core
+open Ptp.Common.Core
 open StackExchange.Redis
 
 [<Literal>]
