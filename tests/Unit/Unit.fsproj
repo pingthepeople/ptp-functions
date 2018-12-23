@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+
+   <ItemGroup>
+    <Compile Include="CoreTests.fs" />
+    <Compile Include="FormattingTests.fs" />
+    <Compile Include="HttpTests.fs" />
+    <Compile Include="GenerateBillReportTests.fs" />
+    <Compile Include="GetLegislatorsTests.fs" />
+    <Compile Include="WorkflowTests.fs" />
+    <Compile Include="Workflow.SubjectTests.fs" />
+    <Compile Include="NotificationTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Functions\Functions.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="Microsoft.Azure.ServiceBus" Version="3.2.1" />
+    <PackageReference Include="Chessie" Version="0.6.0" />
+    <PackageReference Include="FSharp.Core" Version="4.5.2" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
+    <PackageReference Include="Unquote" Version="4.0.0" />
+  </ItemGroup>
+
+</Project>

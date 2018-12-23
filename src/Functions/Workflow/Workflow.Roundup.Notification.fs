@@ -1,10 +1,10 @@
 ﻿module Ptp.Workflow.RoundupNotification
 
-open Ptp.Core
-open Ptp.Formatting
-open Ptp.Model
+open Ptp.Common.Core
+open Ptp.Common.Formatting
+open Ptp.Common.Model
 open System
-open Ptp.Database
+open Ptp.Common.Database
 open Chessie.ErrorHandling
 
 [<CLIMutable>]

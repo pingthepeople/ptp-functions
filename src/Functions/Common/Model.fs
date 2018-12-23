@@ -1,7 +1,7 @@
-﻿module Ptp.Model
+﻿module Ptp.Common.Model
 
 open System
-open Ptp.Core 
+open Ptp.Common.Core 
 
 //  Database models
 type Chamber = None=0 | House=1 | Senate=2

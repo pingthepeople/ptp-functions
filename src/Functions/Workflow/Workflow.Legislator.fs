@@ -3,11 +3,11 @@
 open Chessie.ErrorHandling
 open FSharp.Data
 open FSharp.Data.JsonExtensions
-open Ptp.Core
-open Ptp.Model
-open Ptp.Http
-open Ptp.Database
-open Ptp.Cache
+open Ptp.Common.Core
+open Ptp.Common.Model
+open Ptp.Common.Http
+open Ptp.Common.Database
+open Ptp.Common.Cache
 open System
 
 let legislatorModel json = 

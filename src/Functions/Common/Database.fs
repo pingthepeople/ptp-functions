@@ -1,11 +1,11 @@
-﻿module Ptp.Database
+﻿module Ptp.Common.Database
 
 open Chessie.ErrorHandling
 open Dapper
 open System.Collections.Generic
 open System.Data.SqlClient
 open System.Dynamic
-open Ptp.Core
+open Ptp.Common.Core
 
 type DateSelectArgs = {Date:string}
 type IdSelect = {Id:int}

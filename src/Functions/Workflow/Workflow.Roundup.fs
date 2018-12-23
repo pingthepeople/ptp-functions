@@ -1,7 +1,7 @@
 ﻿module Ptp.Workflow.Roundup
 
-open Ptp.Core
-open Ptp.Database
+open Ptp.Common.Core
+open Ptp.Common.Database
 open Chessie.ErrorHandling
 
 let digestUsersQuery = """

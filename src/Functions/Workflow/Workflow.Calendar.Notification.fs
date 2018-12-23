@@ -1,11 +1,11 @@
 ﻿module Ptp.Workflow.CalendarNotification
 
 open Chessie.ErrorHandling
-open Ptp.Model
-open Ptp.Database
-open Ptp.Core
-open Ptp.Messaging
-open Ptp.Formatting
+open Ptp.Common.Model
+open Ptp.Common.Database
+open Ptp.Common.Core
+open Ptp.Workflow.Messaging
+open Ptp.Common.Formatting
 
 let formatBody (a:ScheduledAction,c:Committee option) bill title =
     let eventType = 
