@@ -76,7 +76,7 @@ jobs:
       - image: microsoft/azure-cli
     steps:
       - deploy:
-          environment: "test"
+          environment: "prod"
 # Job orchestration
 workflows:
   version: 2
