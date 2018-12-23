@@ -53,7 +53,7 @@ let tryGet endpoint =
         | 3 -> failwith errors
         | x ->
             try
-                System.Threading.Thread.Sleep(x * 5000)
+                System.Threading.Thread.Sleep(x * 10000)
                 (get endpoint) |> ok
             with
             | :? WebException as ex ->
