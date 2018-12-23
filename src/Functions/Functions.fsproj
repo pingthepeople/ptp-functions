@@ -47,9 +47,7 @@
     <PackageReference Include="FSharp.Data" Version="3.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageReference Include="Dapper" Version="1.50.5" />
-    <PackageReference Include="Dapper.SimpleCRUD" Version="2.0.0" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.24" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage	" Version="3.0.2" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.ServiceBus" Version="3.0.2" />
     <PackageReference Include="Chessie" Version="0.6.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.0.519" />
@@ -57,10 +55,6 @@
     <PackageReference Include="MimeKit" Version="2.1.1" />
     <PackageReference Include="MailKit" Version="2.1.1" />
     <PackageReference Include="Markdig" Version="0.15.5" />
-    <PackageReference Include="Serilog.AspNetCore" Version="2.1.1" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
-    <PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="2.6.0" />
-    <PackageReference Include="Serilog.Enrichers.Demystify" Version="0.1.0-dev-00016" />
   </ItemGroup>
 
 </Project>

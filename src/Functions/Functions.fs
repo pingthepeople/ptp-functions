@@ -10,90 +10,68 @@ open System
 open System.Net.Http
 open Newtonsoft.Json
 open Microsoft.Extensions.Logging
-open Microsoft.Azure.WebJobs.Extensions.Storage
 open Microsoft.Azure.WebJobs.Extensions.Http
-open Microsoft.Azure.WebJobs.Extensions.Timers
-open Serilog
-open Serilog.Core
-open Serilog.Context
     
-let logger =
-    let appInsightsKey = System.Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY")
-    Serilog.Debugging.SelfLog.Enable(Console.Out);
-    Serilog.LoggerConfiguration()
-        .Enrich.WithDemystifiedStackTraces()
-        .WriteTo.Console()
-        .WriteTo.ApplicationInsightsTraces(appInsightsKey)
-        .CreateLogger()
-
 /// Workflow Functions
 
-let enqueue (collector:ICollector<string>) workflow = 
-    sprintf "Timer Trigger: Enqueueing %A" workflow 
-    |> logger.Information
+[<Literal>]
+let sb="AzureWebJobsServiceBus"
+
+let enqueue (log:ILogger) (collector:ICollector<string>) workflow = 
     workflow
+    |> tee (printfn "Enqueuing %A")
     |> JsonConvert.SerializeObject
     |> collector.Add
 
-[<FunctionName("Heartbeat")>]
-let Heartbeat 
-    ([<TimerTrigger("0 */1 * * * *")>] timer, 
-        log: Microsoft.Extensions.Logging.ILogger) =
-        log.LogInformation "Heartbeat (ILogger)"
-
-[<FunctionName("Heartbeat2")>]
-let Heartbeat2
-    ([<TimerTrigger("0 */1 * * * *")>] timer, 
-        log: Microsoft.Extensions.Logging.ILogger) =
-        log.LogInformation "Heartbeat2 (ILogger)"
-        logger.Information "Heartbeat2 (Serilog)"
-
 [<FunctionName("UpdateLegislators")>]
 let UpdateLegislators 
-    ([<TimerTrigger("0 0 6 * * 1-5")>] timer,
-        [<ServiceBus("command", EntityType.Queue, Connection="ServiceBus.ConnectionString")>] nextCommand: ICollector<string>) =
-        Workflow.UpdateLegislators |> enqueue nextCommand
+    ([<TimerTrigger("0 0 6 * * 1-5")>] timer: TimerInfo)
+    (log: ILogger)
+    ([<ServiceBus("command", Connection=sb)>] nextCommand: ICollector<string>) =
+        Workflow.UpdateLegislators |> enqueue log nextCommand
 
 [<FunctionName("UpdateCommittees")>]
 let UpdateCommittees 
-    ([<TimerTrigger("0 10 6 * * 1-5")>] timer,
-        [<ServiceBus("command", EntityType.Queue, Connection="ServiceBus.ConnectionString")>] nextCommand: ICollector<string>) =
-    Console.Out.WriteLine("Enqueuing UpdateCommittees...")
-    Workflow.UpdateCommittees |> enqueue nextCommand
-    Console.Out.WriteLine("Enqueued UpdateCommittees.")
-
+    ([<TimerTrigger("0 10 6 * * 1-5")>] timer: TimerInfo)
+    (log: ILogger)
+    ([<ServiceBus("command", Connection=sb)>] nextCommand: ICollector<string>) =
+    Workflow.UpdateCommittees |> enqueue log nextCommand
+    
 [<FunctionName("UpdateSubjectsAndBills")>]
 let UpdateSubjectsAndBills
-    ([<TimerTrigger("0 20 6 * * 1-5")>] timer,
-        [<ServiceBus("command", EntityType.Queue, Connection="ServiceBus.ConnectionString")>] nextCommand: ICollector<string>) =
-    Workflow.UpdateSubjects |> enqueue nextCommand
+    ([<TimerTrigger("0 20 6 * * 1-5")>] timer: TimerInfo)
+    (log: ILogger)
+    ([<ServiceBus("command", Connection=sb)>] nextCommand: ICollector<string>) =
+    Workflow.UpdateSubjects |> enqueue log nextCommand
 
 [<FunctionName("UpdateCalendarsAndActions")>]
 let UpdateCalendarsAndActions
-    ([<TimerTrigger("0 */10 8-20 * * 1-5")>] timer,
-        [<ServiceBus("command", EntityType.Queue, Connection="ServiceBus.ConnectionString")>] nextCommand: ICollector<string>) =
-    Workflow.UpdateCalendars |> enqueue nextCommand
-    Workflow.UpdateActions |> enqueue nextCommand
+    ([<TimerTrigger("0 */10 8-20 * * 1-5")>] timer: TimerInfo)
+    (log: ILogger)
+    ([<ServiceBus("command", Connection=sb)>] nextCommand: ICollector<string>) =
+    Workflow.UpdateCalendars |> enqueue log nextCommand
+    Workflow.UpdateActions |> enqueue log nextCommand
 
 [<FunctionName("UpdateDeadBills")>]
 let UpdateDeadBills
-    ([<TimerTrigger("0 0 9 * * 1-6")>] timer,
-        [<ServiceBus("command", EntityType.Queue, Connection="ServiceBus.ConnectionString")>] nextCommand: ICollector<string>) =
-    Workflow.UpdateDeadBills |> enqueue nextCommand
+    ([<TimerTrigger("0 0 9 * * 1-6")>] timer: TimerInfo)
+    (log: ILogger)
+    ([<ServiceBus("command", Connection=sb)>] nextCommand: ICollector<string>) =
+    Workflow.UpdateDeadBills |> enqueue log nextCommand
 
-[<DisableAttribute("DISABLE_DAILY_ROUNDUP")>]
 [<FunctionName("DailyRoundup")>]
 let DailyRoundup
-    ([<TimerTrigger("0 30 19 * * 1-5")>] timer,
-        [<ServiceBus("command", EntityType.Queue, Connection="ServiceBus.ConnectionString")>] nextCommand: ICollector<string>) =
-    Workflow.DailyRoundup |> enqueue nextCommand
+    ([<TimerTrigger("0 30 19 * * 1-5")>] timer: TimerInfo)
+    (log: ILogger)
+    ([<ServiceBus("command", Connection=sb)>] nextCommand: ICollector<string>) =
+    Workflow.DailyRoundup |> enqueue log nextCommand
 
 [<FunctionName("Workflow")>]
 let Workflow
-    ([<ServiceBusTrigger("command", Connection="ServiceBus.ConnectionString")>] command,
-        log: Microsoft.Extensions.Logging.ILogger,
-        [<ServiceBus("command", EntityType.Queue, Connection="ServiceBus.ConnectionString")>] nextCommand: ICollector<string>,
-        [<ServiceBus("notification", EntityType.Queue, Connection="ServiceBus.ConnectionString")>] notifications: ICollector<string>) =
+    ([<ServiceBusTrigger("command", Connection=sb)>] command)
+    (log: ILogger)
+    ([<ServiceBus("command", Connection=sb)>] nextCommand: ICollector<string>)
+    ([<ServiceBus("notification", Connection=sb)>] notifications: ICollector<string>) =
     Ptp.Workflow.Orchestrator.Execute log command nextCommand notifications
 
 
@@ -101,8 +79,8 @@ let Workflow
 
 [<FunctionName("Notifications")>]
 let Notification
-    ([<ServiceBusTrigger("notification", Connection="ServiceBus.ConnectionString")>] notification, 
-        log: Microsoft.Extensions.Logging.ILogger) =
+    ([<ServiceBusTrigger("notification", Connection=sb)>] notification)
+    (log: ILogger) =
     Ptp.Messaging.Notification.Execute log notification
 
 
@@ -110,12 +88,12 @@ let Notification
 
 [<FunctionName("GetLegislators")>]
 let GetLegislators
-    ([<HttpTrigger(AuthorizationLevel.Anonymous, "post", Route="getLegislators")>] req, 
-        log: Microsoft.Extensions.Logging.ILogger) =
+    ([<HttpTrigger(AuthorizationLevel.Anonymous, "post", Route="getLegislators")>] req)
+    (log: ILogger) =
     Ptp.API.GetLegislators.Execute log req
 
 [<FunctionName("GenerateBillReport")>]
 let GenerateBillReport
-    ([<HttpTrigger(AuthorizationLevel.Anonymous, "post", Route="generateBillReport")>] req, 
-        log: Microsoft.Extensions.Logging.ILogger) =
+    ([<HttpTrigger(AuthorizationLevel.Anonymous, "post", Route="generateBillReport")>] req)
+    (log: ILogger) =
     Ptp.API.GetBillReport.Execute log req
