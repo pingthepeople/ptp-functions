@@ -135,7 +135,11 @@ let generateCommitteeEvents link (json:JsonValue) (committee:Committee) =
         let chamber = committee.Chamber
         let committeelink = committee.Link
         let toMeeting = committeeEvent link committeelink date chamber location startTime endTime customStart
-        let billLink json = json?bill.AsArray().[0]?link.AsString() |> billLinkSansVersion
+        let billLink json =
+            let billArray = json?bill.AsArray()
+            if billArray.Length <> 0
+            then billArray.[0]?link.AsString() |> billLinkSansVersion
+            else json?bill?link.AsString() |> billLinkSansVersion
 
         json?agenda.AsArray()
         |> Array.toSeq
