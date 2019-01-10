@@ -5,10 +5,23 @@ open Ptp.Common.Database
 open Chessie.ErrorHandling
 
 let digestUsersQuery = """
-SELECT Id 
-FROM users 
-WHERE DigestType in (1,2)
-    AND Email IS NOT NULL"""
+( 
+SELECT distinct u.Id
+FROM users u
+JOIN UserBill ub on ub.UserId = u.Id
+JOIN Bill b 
+    ON ub.BillId = b.Id
+    AND b.SessionId = (SELECT Id from Session where Active = 1)
+WHERE u.DigestType = 1
+    AND u.Email IS NOT NULL
+)
+UNION
+(
+SELECT distinct u.Id
+FROM users u
+WHERE u.DigestType = 2
+    AND u.Email IS NOT NULL
+)"""
 
 let fetchDigestUsers() = 
     dbQuery<int> digestUsersQuery
