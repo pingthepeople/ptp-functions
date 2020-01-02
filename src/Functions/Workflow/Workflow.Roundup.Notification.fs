@@ -146,6 +146,7 @@ let describeActionsForChamber chamber (actions:DigestAction seq) =
         [linebreak; header; "(No Activity)"]
     | _ ->
         [linebreak; header] 
+        @ (actions |> describeActions chamber ActionType.AssignedToCommittee)
         @ (actions |> describeActions chamber ActionType.CommitteeReading)
         @ (actions |> describeActions chamber ActionType.SecondReading)
         @ (actions |> describeActions chamber ActionType.ThirdReading)
