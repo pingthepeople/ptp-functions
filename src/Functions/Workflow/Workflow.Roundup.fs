@@ -9,10 +9,11 @@ let digestUsersQuery = """
 SELECT distinct u.Id
 FROM users u
 JOIN UserBill ub on ub.UserId = u.Id
-JOIN Bill b 
-    ON ub.BillId = b.Id
-    AND b.SessionId = (SELECT Id from Session where Active = 1)
-WHERE u.DigestType = 1
+JOIN Bill b ON ub.BillId = b.Id
+JOIN Session s on b.SessionId = s.Id
+WHERE 
+    s.Active = 1
+    AND u.DigestType = 1
     AND u.Email IS NOT NULL
 )
 UNION
