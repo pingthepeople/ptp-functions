@@ -58,7 +58,7 @@ JOIN Session s
     ON b.SessionId = s.Id
 WHERE 
     a.Created > @Today
-    AND a.ActionType NOT IN (0,4) -- ignore unknown actions and committee assignments
+    AND a.ActionType NOT IN (0) -- ignore unknown actions
     AND (((SELECT DigestType from users where Id = @UserId) = 2) -- All bills
         OR
         (b.Id IN (SELECT BillId from UserBill where UserId = @UserId))) -- My bills
@@ -105,6 +105,7 @@ let closing = [linebreak; hr; linebreak; settings; timeZone; locations]
 
 let printSectionTitle actionType = 
     match actionType with 
+    | ActionType.AssignedToCommittee -> "Committee Assignments"
     | ActionType.CommitteeReading -> "Committee Hearings"
     | ActionType.SecondReading -> "Second Readings"
     | ActionType.ThirdReading -> "Third Readings"
@@ -127,11 +128,11 @@ let listActions (actions:DigestAction seq) =
     |> Seq.map listAction
     |> String.concat "\n"
 
-let describeActions chamber actionType (actions:DigestAction seq) = 
+let describeActions actionType (actions:DigestAction seq) = 
     let sectionTitle = sprintf "_%s_  " (printSectionTitle actionType)
     let section = 
         actions 
-        |> Seq.filter (fun a -> a.ActionChamber = chamber && a.ActionType = actionType) 
+        |> Seq.filter (fun a -> a.ActionType = actionType) 
         |> listActions
 
     match section with
@@ -140,18 +141,20 @@ let describeActions chamber actionType (actions:DigestAction seq) =
 
 let describeActionsForChamber chamber (actions:DigestAction seq) = 
     let header = sprintf "**Today's %A Activity**  " chamber
-    match actions with
+    let filtered = actions |> Seq.filter (fun a -> a.ActionChamber = chamber)
+    match filtered with
     | EmptySeq -> 
         [linebreak; header; "(No Activity)"]
     | _ ->
         [linebreak; header] 
-        @ (actions |> describeActions chamber ActionType.CommitteeReading)
-        @ (actions |> describeActions chamber ActionType.SecondReading)
-        @ (actions |> describeActions chamber ActionType.ThirdReading)
-        @ (actions |> describeActions chamber ActionType.SignedByPresidentOfSenate)
-        @ (actions |> describeActions chamber ActionType.SignedByGovernor)
-        @ (actions |> describeActions chamber ActionType.VetoedByGovernor)
-        @ (actions |> describeActions chamber ActionType.VetoOverridden)
+        @ (filtered |> describeActions ActionType.AssignedToCommittee)
+        @ (filtered |> describeActions ActionType.CommitteeReading)
+        @ (filtered |> describeActions ActionType.SecondReading)
+        @ (filtered |> describeActions ActionType.ThirdReading)
+        @ (filtered |> describeActions ActionType.SignedByPresidentOfSenate)
+        @ (filtered |> describeActions ActionType.SignedByGovernor)
+        @ (filtered |> describeActions ActionType.VetoedByGovernor)
+        @ (filtered |> describeActions ActionType.VetoOverridden)
 
 // SCHEDULED ACTIONS
 let listScheduledAction sa =
