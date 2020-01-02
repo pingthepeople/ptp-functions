@@ -58,7 +58,7 @@ JOIN Session s
     ON b.SessionId = s.Id
 WHERE 
     a.Created > @Today
-    AND a.ActionType NOT IN (0,4) -- ignore unknown actions and committee assignments
+    AND a.ActionType NOT IN (0) -- ignore unknown actions
     AND (((SELECT DigestType from users where Id = @UserId) = 2) -- All bills
         OR
         (b.Id IN (SELECT BillId from UserBill where UserId = @UserId))) -- My bills
@@ -105,6 +105,7 @@ let closing = [linebreak; hr; linebreak; settings; timeZone; locations]
 
 let printSectionTitle actionType = 
     match actionType with 
+    | ActionType.AssignedToCommittee -> "Committee Assignments"
     | ActionType.CommitteeReading -> "Committee Hearings"
     | ActionType.SecondReading -> "Second Readings"
     | ActionType.ThirdReading -> "Third Readings"
