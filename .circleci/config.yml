@@ -94,7 +94,9 @@ workflows:
      - deploy_to_test:
          filters:
            branches:
-             ignore: gh-pages
+             ignore: 
+               - gh-pages
+               - master
          requires:
            - package
          context: ptp
