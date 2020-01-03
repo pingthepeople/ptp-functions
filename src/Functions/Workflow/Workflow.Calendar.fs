@@ -127,7 +127,7 @@ let generateCommitteeEvents link (json:JsonValue) (committee:Committee) =
             then null
             else System.DateTime.Parse(time).ToString("h:mm tt")
  
-        let date = json?meetingDate.AsDateTime()
+        let date = json?meetingdate.AsDateTime()
         let location = json?location.AsString()
         let startTime = json?starttime.AsString() |> prettyPrintTime
         let endTime = json?endtime.AsString() |> prettyPrintTime
